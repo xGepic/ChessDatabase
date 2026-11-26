@@ -46,7 +46,7 @@ public static class ChessDatabaseApp
     {
         var app = builder.Build();
         app.Services.MigrateCollection();
-        PositionIndex.Backfill(app.Services);
+        Games.PositionIndex.Backfill(app.Services);
 
         app.UseDefaultFiles();
         app.UseStaticFiles();

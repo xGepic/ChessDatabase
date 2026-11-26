@@ -1,5 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } from '../api/api';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
+import { Api, Game, OpeningTree, PositionGame, TreeMove, problemMessage, resultLabel } from '../api/api';
 
 /**
  * The Opening Tree for the board position, from the Owner's Games: every move played from here
@@ -12,7 +14,7 @@ import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } fro
       <header class="card-head">
         <h2>Opening Tree</h2>
         <span class="spacer"></span>
-        @if (tree(); as t) { <span class="hint" data-testid="tree-count">{{ t.games }} {{ t.games === 1 ? 'Game' : 'Games' }}</span> }
+        @if (tree(); as t) { <span class="hint" data-testid="tree-count">{{ t.gameCount }} {{ t.gameCount === 1 ? 'Game' : 'Games' }}</span> }
       </header>
       @if (error()) {
         <p class="assessment-note error" role="alert">{{ error() }}</p>
@@ -23,9 +25,9 @@ import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } fro
             <tbody>
               @for (m of t.moves; track m.uci) {
                 <tr>
-                  <td><button type="button" class="tree-move mono" data-testid="tree-move" (click)="play.emit(m.uci)"
+                  <td><button type="button" class="tree-move mono" data-testid="tree-move" (click)="play.emit(m)"
                               [title]="'Play ' + m.san">{{ m.san }}</button></td>
-                  <td class="num" data-testid="tree-games">{{ m.games }}</td>
+                  <td class="num" data-testid="tree-games">{{ m.gameCount }}</td>
                   <td>
                     <div class="score-cell">
                     <div class="score-bar" [title]="m.wins + ' won, ' + m.draws + ' drawn, ' + m.losses + ' lost'">
@@ -40,13 +42,13 @@ import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } fro
               }
             </tbody>
           </table>
-        } @else if (t.games) {
+        } @else if (t.gameCount) {
           <p class="assessment-note">No Game went on from here.</p>
         } @else {
           <p class="assessment-note">None of your Games reached this position.</p>
         }
 
-        @if (t.gameList.length) {
+        @if (t.games.length) {
           <h3 class="tree-subhead">Games with this position</h3>
           <ul class="position-games">
             @for (p of shownGames(); track p.game.id) {
@@ -61,8 +63,10 @@ import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } fro
               </li>
             }
           </ul>
-          @if (t.gameList.length > shownGames().length) {
-            <button type="button" class="link-button tree-more" (click)="showAll.set(true)">Show all {{ t.gameList.length }}</button>
+          @if (t.games.length > shownGames().length) {
+            <button type="button" class="link-button tree-more" (click)="showAll.set(true)">Show {{ t.games.length }}</button>
+          } @else if (t.gameCount > t.games.length) {
+            <p class="hint tree-more">The newest {{ t.games.length }} of {{ t.gameCount }}. Position Search lists more.</p>
           }
         }
       } @else {
@@ -78,7 +82,8 @@ export class OpeningTreePanel {
   readonly fen = input.required<string>();
   /** The open Game; a change to it (a move added, a line promoted) reloads the tree. */
   readonly game = input.required<Game>();
-  readonly play = output<string>();
+  /** A move from the tree: the Game view steps into it, or shows it without saving. */
+  readonly play = output<TreeMove>();
   readonly openGame = output<PositionGame>();
 
   protected readonly tree = signal<OpeningTree | null>(null);
@@ -86,29 +91,33 @@ export class OpeningTreePanel {
   protected readonly showAll = signal(false);
   protected readonly resultLabel = resultLabel;
   protected readonly shownGames = computed(() => {
-    const list = this.tree()?.gameList ?? [];
+    const list = this.tree()?.games ?? [];
     return this.showAll() ? list : list.slice(0, 8);
   });
 
-  constructor() {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    effect(() => {
-      const fen = this.fen();
-      this.game();
-      clearTimeout(timer);
-      // Briefly debounced, so holding an arrow key doesn't ask for every position on the way.
-      timer = setTimeout(() => this.load(fen), 120);
-    });
-  }
+  /** Positions to load. Only the latest one's answer is shown, so a slow earlier answer never wins. */
+  private readonly requests = new Subject<string>();
 
-  private load(fen: string) {
-    this.api.openingTree(fen).subscribe({
-      next: (tree) => {
+  constructor() {
+    this.requests
+      .pipe(
+        debounceTime(120), // holding an arrow key doesn't ask for every position on the way
+        switchMap((fen) =>
+          this.api.openingTree(fen).pipe(
+            map((tree) => ({ tree, error: '' })),
+            catchError((e) => of({ tree: null, error: problemMessage(e) })),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ tree, error }) => {
         this.tree.set(tree);
-        this.error.set('');
+        this.error.set(error);
         this.showAll.set(false);
-      },
-      error: (e) => this.error.set(problemMessage(e)),
+      });
+    effect(() => {
+      this.game(); // a changed Game (a move added, a line promoted) reloads the tree too
+      this.requests.next(this.fen());
     });
   }
 }

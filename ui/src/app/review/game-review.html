@@ -3,7 +3,7 @@
     <div class="board-column">
       <div class="board-with-bar">
         <app-eval-bar [line]="engine.on() ? (engine.update()?.lines?.[0] ?? null) : null" [orientation]="orientation()" />
-        <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="current()?.uci ?? null"
+        <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()"
                    (move)="onBoardMove($event)" />
       </div>
       <div class="board-tools">
@@ -17,9 +17,16 @@
            title="Find every Game that reached this position">Search position</a>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
       </div>
+      @if (explore().length) {
+        <div class="explore-bar" role="status" data-testid="explore-bar">
+          <span class="explore-line">Exploring <span class="mono" data-testid="explore-line">{{ exploreLine() }}</span>, not saved.</span>
+          <button type="button" data-testid="explore-add" (click)="addExploration()">Add to Game</button>
+          <button type="button" data-testid="explore-back" (click)="stopExploring()">Back to the Game</button>
+        </div>
+      }
       <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
                         (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
-      <app-opening-tree [fen]="fen()" [game]="g" (play)="onBoardMove($event)" (openGame)="onOpenAtPosition($event)" />
+      <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)" />
     </div>
 
     <section class="card scoresheet-card">

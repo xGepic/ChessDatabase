@@ -1,11 +1,14 @@
 import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Chess } from 'chess.js';
 import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
+  AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, PositionGame, TreeMove, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
+import { nextPly, numberedLine } from '../engine/scores';
+import { openGameAt } from '../shared/chess';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 import { AssessmentCard } from '../engine/assessment-card';
 import { OpeningTreePanel } from '../research/opening-tree';
@@ -16,6 +19,14 @@ import { Board } from './board';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
 import { Scoresheet, TreeAction } from './scoresheet';
+
+/** A move shown on the board while exploring: not part of the Game until the Owner adds it. */
+interface ExploreStep {
+  uci: string;
+  san: string;
+  /** The position after the move. */
+  fen: string;
+}
 
 /** The Game view: board, scoresheet and details. */
 @Component({
@@ -70,7 +81,21 @@ export class GameReview {
     const g = this.game();
     return g ? [g.event?.name, g.round ? `Round ${g.round}` : null, g.date].filter((x) => !!x).join(" · ") : "";
   });
-  protected readonly fen = computed(() => this.current()?.fen ?? this.game()?.startFen ?? '');
+  /** The position of the Game's move on the board (exploring starts from here). */
+  private readonly gameFen = computed(() => this.current()?.fen ?? this.game()?.startFen ?? '');
+
+  /**
+   * Moves played on from the Game's position without saving them: from the Opening Tree, or on
+   * the board while exploring. Empty when the board shows the Game.
+   */
+  protected readonly explore = signal<ExploreStep[]>([]);
+  /** The position on the board: the Game's, or the end of the exploration. */
+  protected readonly fen = computed(() => this.explore().at(-1)?.fen ?? this.gameFen());
+  protected readonly lastMove = computed(() => this.explore().at(-1)?.uci ?? this.current()?.uci ?? null);
+  /** The exploration as move text, e.g. "3...Bc5 4.c3". */
+  protected readonly exploreLine = computed(() =>
+    numberedLine(nextPly(this.gameFen()), this.explore().map((s) => s.san)),
+  );
   protected readonly orientation = computed<'white' | 'black'>(() => {
     const owner = this.game()?.ownerColour ?? 'white';
     return this.flipped() ? (owner === 'white' ? 'black' : 'white') : owner;
@@ -81,7 +106,7 @@ export class GameReview {
     const moves: string[] = [];
     for (let node = this.current(); node; node = node.parentId === null ? null : (this.nodes().get(node.parentId) ?? null))
       moves.unshift(node.uci);
-    return moves;
+    return [...moves, ...this.explore().map((s) => s.uci)];
   });
 
   constructor() {
@@ -183,6 +208,10 @@ export class GameReview {
     const handled = (() => {
       switch (event.key) {
         case 'ArrowLeft':
+          if (this.explore().length) {
+            this.explore.update((steps) => steps.slice(0, -1));
+            return true;
+          }
           return this.goTo(this.current()?.parentId ?? null);
         case 'ArrowRight':
           return this.forward();
@@ -207,13 +236,16 @@ export class GameReview {
     if (handled) event.preventDefault();
   }
 
+  /** Shows a move of the Game; any exploration is dropped. */
   protected goTo(id: number | null): true {
+    this.explore.set([]);
     this.currentId.set(id);
     return true;
   }
 
   /** One move on along the current line (the first continuation). */
   protected forward(): true {
+    if (this.explore().length) return true;
     return this.goTo(this.continuations(this.currentId())[0] ?? this.currentId());
   }
 
@@ -243,7 +275,37 @@ export class GameReview {
 
   /** Opens a Game from the Opening Tree at the position it shares with the board. */
   protected onOpenAtPosition(entry: PositionGame) {
-    this.router.navigate(['/games', entry.game.id], { queryParams: { ply: entry.ply } });
+    openGameAt(this.router, entry.game.id, entry.ply);
+  }
+
+  // ---------------------------------------------------------------- exploring
+
+  /**
+   * A move clicked in the Opening Tree: if the Game has it here, step into it; otherwise show
+   * it on the board without saving (exploring).
+   */
+  protected onTreeMove(move: TreeMove) {
+    if (!this.explore().length) {
+      const recorded = this.continuations(this.currentId()).find((id) => this.nodes().get(id)?.uci === move.uci);
+      if (recorded !== undefined) {
+        this.goTo(recorded);
+        return;
+      }
+    }
+    this.explore.update((steps) => [...steps, { uci: move.uci, san: move.san, fen: move.fen }]);
+  }
+
+  /** Back to the Game's position, dropping the exploration. */
+  protected stopExploring() {
+    this.explore.set([]);
+  }
+
+  /** Saves the exploration into the Game from where it started (a Variation, or the main line's end). */
+  protected addExploration() {
+    const game = this.game();
+    const steps = this.explore();
+    if (!game || !steps.length) return;
+    this.saveLine(game.id, steps.map((s) => s.uci));
   }
 
   /** Follows first continuations from a node to the end of its line. */
@@ -261,6 +323,10 @@ export class GameReview {
   protected onBoardMove(uci: string) {
     const game = this.game();
     if (!game) return;
+    if (this.explore().length) {
+      this.exploreBoardMove(uci);
+      return;
+    }
     this.error.set('');
     this.api.addMove(game.id, this.currentId(), uci).subscribe({
       next: ({ nodeId, game: updated }) => {
@@ -274,6 +340,34 @@ export class GameReview {
     });
   }
 
+  /**
+   * A board move while exploring goes on exploring. chess.js only gives the instant feedback here;
+   * nothing is saved until "Add to Game", where the backend checks every move (ADR 0002).
+   */
+  private exploreBoardMove(uci: string) {
+    const chess = new Chess(this.fen());
+    try {
+      const move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+      this.explore.update((steps) => [...steps, { uci, san: move.san, fen: chess.fen() }]);
+    } catch {
+      this.board()?.reset();
+    }
+  }
+
+  /** Adds moves from the Game's move on the board and steps to the first of them. */
+  private saveLine(gameId: number, moves: string[]) {
+    const from = this.currentId();
+    this.error.set('');
+    this.api.addLine(gameId, from, moves).subscribe({
+      next: ({ game: updated }) => {
+        this.game.set(updated);
+        const first = this.continuations(from).find((id) => this.nodes().get(id)?.uci === moves[0]);
+        this.goTo(first ?? from);
+      },
+      error: (e) => this.error.set(problemMessage(e)),
+    });
+  }
+
   // ---------------------------------------------------------------- engine
 
   protected toggleEngine() {
@@ -281,20 +375,14 @@ export class GameReview {
     else this.engine.start(this.path());
   }
 
-  /** Adds the Engine line at the board position (as a Variation if a move is recorded there) and steps into it. */
+  /**
+   * Adds the Engine line at the board position (as a Variation if a move is recorded there) and
+   * steps into it. While exploring, the explored moves are added first.
+   */
   protected onPlayLine(line: AnalysisLine) {
     const game = this.game();
     if (!game) return;
-    const from = this.currentId();
-    this.error.set('');
-    this.api.addLine(game.id, from, line.uci).subscribe({
-      next: ({ game: updated }) => {
-        this.game.set(updated);
-        const first = this.continuations(from).find((id) => this.nodes().get(id)?.uci === line.uci[0]);
-        if (first !== undefined) this.currentId.set(first);
-      },
-      error: (e) => this.error.set(problemMessage(e)),
-    });
+    this.saveLine(game.id, [...this.explore().map((s) => s.uci), ...line.uci]);
   }
 
   protected onTreeAction({ action, node }: { action: TreeAction; node: MoveNode }) {

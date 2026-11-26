@@ -70,6 +70,10 @@ public class PositionSearchTests
 
 public static class PositionSearchTestExtensions
 {
-    public static async Task<List<PositionGameDto>> SearchAsync(this HttpClient client, string fen) =>
-        (await client.GetFromJsonAsync<List<PositionGameDto>>($"/api/research/search?fen={Uri.EscapeDataString(fen)}"))!;
+    public static async Task<List<PositionGameDto>> SearchAsync(this HttpClient client, string fen)
+    {
+        var result = (await client.GetFromJsonAsync<PositionSearchDto>($"/api/research/search?fen={Uri.EscapeDataString(fen)}"))!;
+        Assert.Equal(result.GameCount, result.Games.Count); // every test Collection is far below the limit
+        return result.Games;
+    }
 }

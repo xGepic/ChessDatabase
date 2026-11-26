@@ -15,8 +15,7 @@ import { Chessground } from '@lichess-org/chessground';
 import type { Api as BoardApi } from '@lichess-org/chessground/api';
 import { dragNewPiece } from '@lichess-org/chessground/drag';
 import type { Color, Key, Piece, Role } from '@lichess-org/chessground/types';
-
-const START_BOARD = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+import { INITIAL_FEN } from '../shared/chess';
 const ROLES: Role[] = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'];
 const CASTLING = [
   { flag: 'K', label: 'White O-O' },
@@ -85,18 +84,18 @@ type Tool = Piece | 'erase';
 })
 export class PositionEditor implements OnDestroy {
   /** The position to start from; setting it again replaces whatever is on the board. */
-  readonly initialFen = input<string>(`${START_BOARD} w KQkq - 0 1`);
+  readonly initialFen = input<string>(INITIAL_FEN);
   /** The position on the editor as a FEN, every time it changes. */
   readonly fenChange = output<string>();
 
   protected readonly roles = ROLES;
   protected readonly castlingOptions = CASTLING;
-  protected readonly startFen = `${START_BOARD} w KQkq - 0 1`;
+  protected readonly startFen = INITIAL_FEN;
   protected readonly tool = signal<Tool | null>(null);
   protected readonly side = signal<'w' | 'b'>('w');
   protected readonly castling = signal('KQkq');
   protected readonly flipped = signal(false);
-  private readonly board = signal(START_BOARD);
+  private readonly board = signal(INITIAL_FEN.split(' ')[0]);
   /** The en passant square of the starting FEN, kept until the Owner changes anything. */
   private readonly enPassant = signal('-');
 

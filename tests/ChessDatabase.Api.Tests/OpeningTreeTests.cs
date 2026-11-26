@@ -21,8 +21,8 @@ public class OpeningTreeTests
 
         var tree = await client.TreeAsync();
 
-        Assert.Equal(3, tree.Games);
-        Assert.Equal([("e4", "e2e4", 2), ("d4", "d2d4", 1)], tree.Moves.Select(m => (m.San, m.Uci, m.Games)));
+        Assert.Equal(3, tree.GameCount);
+        Assert.Equal([("e4", "e2e4", 2), ("d4", "d2d4", 1)], tree.Moves.Select(m => (m.San, m.Uci, m.GameCount)));
     }
 
     [Fact]
@@ -39,9 +39,9 @@ public class OpeningTreeTests
         var tree = await client.TreeAsync("e4");
 
         var c5 = tree.Moves.Single(m => m.San == "c5");
-        Assert.Equal((3, 1, 1, 1, 50.0), (c5.Games, c5.Wins, c5.Draws, c5.Losses, c5.Score));
+        Assert.Equal((3, 1, 1, 1, 50.0), (c5.GameCount, c5.Wins, c5.Draws, c5.Losses, c5.Score));
         var e5 = tree.Moves.Single(m => m.San == "e5");
-        Assert.Equal((1, 1, 0, 0, 100.0), (e5.Games, e5.Wins, e5.Draws, e5.Losses, e5.Score));
+        Assert.Equal((1, 1, 0, 0, 100.0), (e5.GameCount, e5.Wins, e5.Draws, e5.Losses, e5.Score));
     }
 
     [Fact]
@@ -56,9 +56,9 @@ public class OpeningTreeTests
 
         var tree = await client.TreeAsync("d4", "Nf6", "c4", "e6", "Nc3");
 
-        Assert.Equal(2, tree.Games);
+        Assert.Equal(2, tree.GameCount);
         var bb4 = Assert.Single(tree.Moves);
-        Assert.Equal(("Bb4", 2, 50.0), (bb4.San, bb4.Games, bb4.Score));
+        Assert.Equal(("Bb4", 2, 50.0), (bb4.San, bb4.GameCount, bb4.Score));
     }
 
     [Fact]
@@ -72,13 +72,13 @@ public class OpeningTreeTests
 
         var before = await client.TreeAsync("e4", "e5");
         Assert.Equal(["Nf3"], before.Moves.Select(m => m.San));
-        Assert.Empty((await client.TreeAsync("e4", "e5", "Bc4")).GameList);
+        Assert.Empty((await client.TreeAsync("e4", "e5", "Bc4")).Games);
 
         await client.PostAsync($"/api/games/{game.Id}/moves/{bc4}/promote", null);
 
         Assert.Equal(["Bc4"], (await client.TreeAsync("e4", "e5")).Moves.Select(m => m.San));
-        Assert.Single((await client.TreeAsync("e4", "e5", "Bc4")).GameList);
-        Assert.Empty((await client.TreeAsync("e4", "e5", "Nf3")).GameList);
+        Assert.Single((await client.TreeAsync("e4", "e5", "Bc4")).Games);
+        Assert.Empty((await client.TreeAsync("e4", "e5", "Nf3")).Games);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class OpeningTreeTests
 
         var tree = await client.TreeAsync("e4");
         Assert.Empty(tree.Moves);
-        Assert.Equal(1, tree.Games); // the Game still ends in this position
+        Assert.Equal(1, tree.GameCount); // the Game still ends in this position
     }
 
     [Fact]
@@ -109,9 +109,9 @@ public class OpeningTreeTests
 
         var tree = await client.TreeAsync("d4", "d5", "Nf3", "Nf6");
 
-        Assert.Equal([(newer.Id, 4, 3), (older.Id, 4, 3)], tree.GameList.Select(g => (g.Game.Id, g.Ply, g.MoveNumber)));
+        Assert.Equal([(newer.Id, 4, 3), (older.Id, 4, 3)], tree.Games.Select(g => (g.Game.Id, g.Ply, g.MoveNumber)));
         Assert.Equal(["c4"], tree.Moves.Select(m => m.San));
-        Assert.Equal(2, tree.Games);
+        Assert.Equal(2, tree.GameCount);
     }
 
     [Fact]
@@ -161,6 +161,46 @@ public class OpeningTreeTests
     }
 
     [Fact]
+    public async Task Each_move_carries_the_position_after_it_so_it_can_be_shown_without_saving()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        await client.SetOwnerNameAsync("Max Mustermann");
+        await client.SeedGameAsync("1-0", "e4", "e5");
+
+        var e5 = Assert.Single((await client.TreeAsync("e4")).Moves);
+
+        Assert.Equal(ResearchTestExtensions.Fen("e4", "e5"), e5.Fen);
+    }
+
+    [Fact]
+    public async Task A_common_position_counts_every_Game_but_lists_only_the_newest()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        await client.SetOwnerNameAsync("Max Mustermann");
+        var pgn = string.Join("\n\n", Enumerable.Range(1, 55).Select(i => $"""
+            [White "Mustermann, Max"]
+            [Black "Opponent {i}"]
+            [Date "2020.01.{i % 28 + 1:00}"]
+            [Result "1-0"]
+
+            1. e4 e5 1-0
+            """));
+        Assert.Equal(55, (await client.ImportTextAsync(pgn, allowDuplicates: true)).Imported);
+
+        var tree = await client.TreeAsync();
+        var search = (await client.GetFromJsonAsync<PositionSearchDto>(
+            $"/api/research/search?fen={Uri.EscapeDataString(ResearchTestExtensions.Fen())}"))!;
+
+        Assert.Equal(55, tree.GameCount);
+        Assert.Equal(55, Assert.Single(tree.Moves).GameCount);
+        Assert.Equal(50, tree.Games.Count);
+        Assert.Equal("2020-01-28", tree.Games[0].Game.Date);
+        Assert.Equal((55, 55), (search.GameCount, search.Games.Count));
+    }
+
+    [Fact]
     public async Task A_position_that_is_not_a_valid_FEN_is_refused()
     {
         using var factory = new CollectionFactory();
@@ -171,11 +211,13 @@ public class OpeningTreeTests
     }
 }
 
-public sealed record TreeMoveDto(string Uci, string San, int Games, int Wins, int Draws, int Losses, double Score);
+public sealed record TreeMoveDto(string Uci, string San, string Fen, int GameCount, int Wins, int Draws, int Losses, double Score);
 
 public sealed record PositionGameDto(GameSummaryDto Game, int Ply, int MoveNumber);
 
-public sealed record OpeningTreeDto(int Games, List<TreeMoveDto> Moves, List<PositionGameDto> GameList);
+public sealed record OpeningTreeDto(int GameCount, List<TreeMoveDto> Moves, List<PositionGameDto> Games);
+
+public sealed record PositionSearchDto(int GameCount, List<PositionGameDto> Games);
 
 public static class ResearchTestExtensions
 {

@@ -1,11 +1,13 @@
 using ChessDatabase.Api.Collection;
-using ChessDatabase.Api.Games;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
 
-namespace ChessDatabase.Api.Research;
+namespace ChessDatabase.Api.Games;
 
-/// <summary>Builds and maintains the position index (<see cref="PositionIndexRecord"/>).</summary>
+/// <summary>
+/// The position index (<see cref="PositionIndexRecord"/>): how a main line becomes rows, and the
+/// one-time filling for Games stored before the index existed. Kept current by <see cref="MainLine"/>.
+/// </summary>
 public static class PositionIndex
 {
     /// <summary>A position as the index stores it.</summary>
@@ -25,34 +27,24 @@ public static class PositionIndex
         }
     }
 
-    /// <summary>Replaces a Game's rows with those of its current main line. The new rows are saved with the next SaveChanges.</summary>
-    public static async Task RebuildAsync(CollectionDbContext db, int gameId, MoveTree tree)
-    {
-        await db.PositionIndex.Where(p => p.GameId == gameId).ExecuteDeleteAsync();
-        db.PositionIndex.AddRange(ForGame(gameId, [.. tree.MainLine().Select(n => n.Uci)]));
-    }
-
-    private static IEnumerable<PositionIndexRecord> ForGame(int gameId, IReadOnlyList<string> mainLine) =>
-        Rows(mainLine).Select(r =>
-        {
-            r.GameId = gameId;
-            return r;
-        });
-
     /// <summary>
-    /// Indexes every Game that has no rows yet: the Games that existed before the index did. Runs
-    /// once at start-up after the migrations; afterwards every Game keeps its own rows current.
+    /// Indexes every Game that has no rows yet: the Games stored before the index existed. Runs at
+    /// start-up after the migrations; afterwards every Game keeps its own rows current.
     /// </summary>
     public static void Backfill(IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
         var missing = db.Games.Where(g => !g.Positions.Any()).Select(g => g.Id).ToList();
+        if (missing.Count == 0) return;
+
+        var nodesByGame = db.MoveNodes.AsNoTracking().Where(n => missing.Contains(n.GameId)).ToList().ToLookup(n => n.GameId);
         foreach (var id in missing)
-        {
-            var nodes = db.MoveNodes.AsNoTracking().Where(n => n.GameId == id).ToList();
-            db.PositionIndex.AddRange(ForGame(id, [.. new MoveTree(nodes).MainLine().Select(n => n.Uci)]));
-        }
+            foreach (var row in Rows([.. new MoveTree(nodesByGame[id]).MainLine().Select(n => n.Uci)]))
+            {
+                row.GameId = id;
+                db.PositionIndex.Add(row);
+            }
         db.SaveChanges();
     }
 }

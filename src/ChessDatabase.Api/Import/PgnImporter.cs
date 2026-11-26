@@ -190,7 +190,6 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
     /// <summary>Adds the Game to the Collection with its details from the PGN tags.</summary>
     private async Task<GameRecord> CreateGameAsync(PgnEntry entry, TreeBuilder tree, GameAssignment assignment)
     {
-        var opening = openings.Classify(tree.MainLinePositions);
         var game = new GameRecord
         {
             OwnerColour = assignment.OwnerColour,
@@ -205,12 +204,10 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
             TimeControl = PgnValues.OptionalTag(entry.Tag("TimeControl")),
             Notes = PgnValues.OptionalTag(entry.Tag("Notes")),
             Tags = await EventsAndTags.FindOrCreateTagsAsync(db, (entry.Tag("Tags") ?? "").Split(';')),
-            Eco = opening?.Eco,
-            OpeningName = opening?.Name,
             CreatedAt = DateTime.UtcNow,
             MoveNodes = tree.Nodes,
-            Positions = Research.PositionIndex.Rows(tree.MainLineUcis),
         };
+        MainLine.Apply(game, tree.MainLineUcis, openings);
         db.Games.Add(game);
         await db.SaveChangesAsync();
         return game;
@@ -299,7 +296,6 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
         private TreeBuilder() { }
 
         public List<MoveNodeRecord> Nodes { get; } = [];
-        public List<Position> MainLinePositions { get; } = [];
         public List<string> MainLineUcis { get; } = [];
 
         /// <summary>The tree, or null with the move that is not legal.</summary>
@@ -337,7 +333,6 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
                 position = position.Play(move);
                 if (isMainLine)
                 {
-                    MainLinePositions.Add(position);
                     MainLineUcis.Add(node.Uci);
                 }
                 parent = node;

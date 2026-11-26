@@ -435,9 +435,21 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("tree-move")).ToHaveTextAsync(["e4"]);
         await Expect(Page.GetByTestId("tree-games")).ToHaveTextAsync(["2"]);
 
-        await Page.GetByTestId("tree-move").First.ClickAsync(); // plays 1.e4 on the board
+        await Page.GetByTestId("tree-move").First.ClickAsync(); // the Game has 1.e4: it steps into it
         await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("e4");
         await Expect(Page.GetByTestId("tree-move")).ToHaveTextAsync(["c5", "e5"]);
+
+        // 1...c5 is not in this Game: the board shows it, nothing is saved.
+        await Page.GetByTestId("tree-move").Filter(new() { HasText = "c5" }).ClickAsync();
+        await Expect(Page.GetByTestId("explore-line")).ToHaveTextAsync("1...c5");
+        await Expect(Page.GetByTestId("variation")).ToHaveCountAsync(0);
+        await Page.Keyboard.PressAsync("ArrowLeft"); // back out of the exploration
+        await Expect(Page.GetByTestId("explore-bar")).ToHaveCountAsync(0);
+        await Page.GetByTestId("tree-move").Filter(new() { HasText = "c5" }).ClickAsync();
+        await Page.GetByTestId("explore-add").ClickAsync(); // now it becomes a Variation
+        await Expect(Page.GetByTestId("variation")).ToContainTextAsync("1...c5");
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("1...c5");
+        await Page.GetByTestId("move").Filter(new() { HasText = "e4" }).ClickAsync();
 
         // Both Games reached 1.e4; the newest (the second) is listed first. Opening it lands on 1.e4.
         await Expect(Page.GetByTestId("tree-game")).ToHaveCountAsync(2);

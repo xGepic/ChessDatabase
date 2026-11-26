@@ -287,6 +287,14 @@ app-eval-bar .eval-bar { flex: 1; }
 .position-game:hover { background: var(--cream-deep) !important; }
 .position-game.current { font-weight: 600; }
 .tree-more { margin: 0 12px 8px; }
+.search-more { padding: 8px 16px 12px; margin: 0; }
+
+/* exploring: a position shown on the board but not part of the Game */
+.explore-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; border-radius: var(--radius); background: var(--cream); border-left: 4px solid var(--amber);
+}
+.explore-bar .explore-line { flex: 1; min-width: 0; }
 
 /* ---------- Position Search and the position editor ---------- */
 .search-layout { display: grid; grid-template-columns: minmax(360px, 560px) 1fr; gap: 20px; align-items: start; }

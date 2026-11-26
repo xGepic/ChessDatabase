@@ -193,7 +193,9 @@ export interface AnalysisFinished {
 export interface TreeMove {
   uci: string;
   san: string;
-  games: number;
+  /** The position after the move (worked out by the backend). */
+  fen: string;
+  gameCount: number;
   wins: number;
   draws: number;
   losses: number;
@@ -210,9 +212,17 @@ export interface PositionGame {
 
 export interface OpeningTree {
   /** Games that reached the position. */
-  games: number;
+  gameCount: number;
   moves: TreeMove[];
-  gameList: PositionGame[];
+  /** The newest of those Games (at most 50). */
+  games: PositionGame[];
+}
+
+export interface PositionSearchResult {
+  /** Games that reached the position. */
+  gameCount: number;
+  /** The newest of them (at most 200). */
+  games: PositionGame[];
 }
 
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
@@ -371,8 +381,8 @@ export class Api {
     return this.http.get<OpeningTree>('/api/research/tree', { params: { fen } });
   }
   /** Games whose main line reached the position. */
-  searchPosition(fen: string): Observable<PositionGame[]> {
-    return this.http.get<PositionGame[]>('/api/research/search', { params: { fen } });
+  searchPosition(fen: string): Observable<PositionSearchResult> {
+    return this.http.get<PositionSearchResult>('/api/research/search', { params: { fen } });
   }
 
   // Settings

@@ -1,3 +1,4 @@
+using ChessDatabase.Api.Openings;
 using ChessDatabase.Api.Collection;
 using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.Games.GameValues;
@@ -20,12 +21,13 @@ public static class GameEndpoints
         games.MapGet("/{id:int}", async (int id, CollectionDbContext db) =>
             await GameQueries.LoadGameDtoAsync(db, id) is { } game ? Results.Ok(game) : Results.NotFound());
 
-        games.MapPost("/", async (GameDetailsRequest body, CollectionDbContext db) =>
+        games.MapPost("/", async (GameDetailsRequest body, CollectionDbContext db, OpeningClassifier openings) =>
         {
             var errors = await ValidateAsync(body, db);
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
-            var game = new GameRecord { CreatedAt = DateTime.UtcNow, Positions = Research.PositionIndex.Rows([]) };
+            var game = new GameRecord { CreatedAt = DateTime.UtcNow };
+            MainLine.Apply(game, [], openings);
             await ApplyAsync(body, game, db);
             db.Games.Add(game);
             await db.SaveChangesAsync();

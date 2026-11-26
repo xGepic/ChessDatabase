@@ -1,9 +1,8 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Api, PositionGame, problemMessage, resultLabel } from '../api/api';
+import { Api, PositionGame, PositionSearchResult, problemMessage, resultLabel } from '../api/api';
+import { INITIAL_FEN, openGameAt } from '../shared/chess';
 import { PositionEditor } from './position-editor';
-
-const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 /**
  * Position Search: find every Game whose main line reached a position. The position comes from
@@ -28,9 +27,10 @@ const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
         <header class="card-head">
           <h2>Games with this position</h2>
           <span class="spacer"></span>
-          @if (results(); as r) { <span class="hint" data-testid="search-count">{{ r.length }} found</span> }
+          @if (results(); as r) { <span class="hint" data-testid="search-count">{{ r.gameCount }} found</span> }
         </header>
-        @if (results(); as r) {
+        @if (results(); as result) {
+          @let r = result.games;
           @if (r.length === 0) {
             <p class="empty" data-testid="search-empty">None of your Games reached this position in its main line.</p>
           } @else {
@@ -49,6 +49,9 @@ const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
                 }
               </tbody>
             </table>
+            @if (result.gameCount > r.length) {
+              <p class="hint search-more">Showing the newest {{ r.length }} of {{ result.gameCount }}.</p>
+            }
           }
         } @else {
           <p class="empty">Set up a position and search, or use "Search this position" in a Game.</p>
@@ -64,11 +67,11 @@ export class PositionSearch implements OnInit {
   /** Query parameter: the position to start with (and search at once). */
   readonly fen = input<string | undefined>();
 
-  protected readonly current = signal(START);
-  protected readonly results = signal<PositionGame[] | null>(null);
+  protected readonly current = signal(INITIAL_FEN);
+  protected readonly results = signal<PositionSearchResult | null>(null);
   protected readonly error = signal('');
   protected readonly resultLabel = resultLabel;
-  protected readonly startFen = signal(START);
+  protected readonly startFen = signal(INITIAL_FEN);
 
   /** Arriving with a position (from a Game view) searches it straight away. */
   ngOnInit() {
@@ -96,6 +99,6 @@ export class PositionSearch implements OnInit {
 
   /** Opens the Game at the position that matched. */
   protected open(result: PositionGame) {
-    this.router.navigate(['/games', result.game.id], { queryParams: { ply: result.ply } });
+    openGameAt(this.router, result.game.id, result.ply);
   }
 }
