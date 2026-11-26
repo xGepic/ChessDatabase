@@ -20,7 +20,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | **Done** |
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | **Done** |
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | **Done** |
-| 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
+| 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | **Done** |
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
 | 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
 | 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | Open |
@@ -258,13 +258,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 12 (Game Analysis of a single Game).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Multiple Games can be queued from the game list; overall and per-Game progress are visible
-- [ ] The queue can be cancelled; completed Engine Assessments are kept
-- [ ] The game list has an "analysed" indicator and can be filtered by it
-- [ ] Re-running replaces the old Engine Assessment; the engine name, version and settings used are visible
-- [ ] API tests with the fake engine cover queue order, cancel and replace
+- [x] Multiple Games can be queued from the game list; overall and per-Game progress are visible
+- [x] The queue can be cancelled; completed Engine Assessments are kept
+- [x] The game list has an "analysed" indicator and can be filtered by it
+- [x] Re-running replaces the old Engine Assessment; the engine name, version and settings used are visible
+- [x] API tests with the fake engine cover queue order, cancel and replace
 
 ---
 

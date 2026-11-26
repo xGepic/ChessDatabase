@@ -19,7 +19,8 @@ public record GameSummaryDto(
     string Result,
     EventDto? Event,
     string? Eco,
-    string? OpeningName);
+    string? OpeningName,
+    bool Analysed);
 
 /// <summary>
 /// A Game with its move tree as a flat node list. <see cref="FirstMoves"/> are the children of the

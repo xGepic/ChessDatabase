@@ -23,6 +23,8 @@ export interface GameSummary {
   event: Named | null;
   eco: string | null;
   openingName: string | null;
+  /** Has an Engine Assessment. */
+  analysed: boolean;
 }
 
 /** An Event or a Tag. */

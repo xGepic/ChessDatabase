@@ -1,11 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { Subject, catchError, combineLatest, map, of, startWith, switchMap, tap } from 'rxjs';
 import { Api, GameSummary, eloLabel, problemMessage, resultLabel } from '../api/api';
+import { AnalysisQueueService } from '../engine/analysis-queue';
 
 /** The filter fields, as they appear in the URL and in the API's query parameters. */
-const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'ecoFrom', 'ecoTo', 'tag', 'timeControl'];
+const FILTER_KEYS = [
+  'opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'ecoFrom', 'ecoTo', 'tag', 'timeControl', 'analysed',
+];
 
 interface Column {
   key: string;
@@ -24,9 +27,21 @@ interface Column {
   templateUrl: './game-list.html',
 })
 export class GameList {
+  constructor() {
+    this.queue.watch();
+    this.queue.finished.pipe(takeUntilDestroyed()).subscribe(() => this.reload.next());
+  }
+
   private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  protected readonly queue = inject(AnalysisQueueService);
+  /** Reloads the list, e.g. when a Game Analysis finishes and the "analysed" mark changes. */
+  private readonly reload = new Subject<void>();
+
+  /** Games ticked for Game Analysis. */
+  protected readonly selected = signal<ReadonlySet<number>>(new Set());
+  protected readonly queueError = signal('');
 
   protected readonly eloLabel = eloLabel;
   protected readonly resultLabel = resultLabel;
@@ -51,8 +66,8 @@ export class GameList {
   /** Why the list could not be loaded, e.g. a date filter that is not a date. */
   protected readonly listError = signal('');
   protected readonly games = toSignal(
-    this.params$.pipe(
-      switchMap((params) =>
+    combineLatest([this.params$, this.reload.pipe(startWith(undefined))]).pipe(
+      switchMap(([params]) =>
         this.api.listGames(params).pipe(
           tap(() => this.listError.set('')),
           catchError((e) => {
@@ -102,6 +117,41 @@ export class GameList {
   protected ariaSort(column: Column): string | null {
     if (this.params()['sort'] !== column.key) return null;
     return this.params()['direction'] === 'desc' ? 'descending' : 'ascending';
+  }
+
+  protected isSelected(id: number): boolean {
+    return this.selected().has(id);
+  }
+
+  protected toggle(id: number) {
+    const next = new Set(this.selected());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selected.set(next);
+  }
+
+  /** Ticks every Game shown, or clears the ticks when all are ticked already. */
+  protected toggleAll(list: GameSummary[]) {
+    const all = list.length > 0 && list.every((g) => this.selected().has(g.id));
+    this.selected.set(all ? new Set() : new Set(list.map((g) => g.id)));
+  }
+
+  protected allSelected(list: GameSummary[]): boolean {
+    return list.length > 0 && list.every((g) => this.selected().has(g.id));
+  }
+
+  /** Queues the ticked Games in list order. */
+  protected analyseSelected(list: GameSummary[]) {
+    const ids = list.filter((g) => this.selected().has(g.id)).map((g) => g.id);
+    if (!ids.length) return;
+    this.queueError.set('');
+    this.api.queueAnalysis(ids).subscribe({
+      next: (status) => {
+        this.queue.set(status);
+        this.selected.set(new Set());
+      },
+      error: (e) => this.queueError.set(problemMessage(e)),
+    });
   }
 
   protected open(game: GameSummary) {

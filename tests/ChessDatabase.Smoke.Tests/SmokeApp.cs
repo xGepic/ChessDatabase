@@ -89,12 +89,13 @@ public sealed class SmokeApp : IAsyncLifetime
     /// Points the Engine at the scripted fake engine. Keys are FENs (first four fields), values the
     /// engine's "info" lines (text after "info ") and its best move; see tests/ChessDatabase.FakeEngine.
     /// </summary>
-    public async Task UseFakeEngineAsync(Dictionary<string, (string[] Infos, string Bestmove)> positions)
+    public async Task UseFakeEngineAsync(Dictionary<string, (string[] Infos, string Bestmove)> positions, int lineDelayMs = 0)
     {
         var script = Path.Combine(_directory, "engine-script.json");
         await File.WriteAllTextAsync(script, JsonSerializer.Serialize(new
         {
             name = "Fake Engine 1.0",
+            lineDelayMs,
             positions = positions.ToDictionary(p => p.Key, p => new { infos = p.Value.Infos, bestmove = p.Value.Bestmove }),
         }));
         using var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };

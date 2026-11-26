@@ -260,6 +260,20 @@ app-eval-bar .eval-bar { flex: 1; }
 .analysis-start .elo { width: 72px; }
 .analysis-start button { margin-left: auto; }
 
+/* ---------- Game Analysis queue: list selection and the strip under the top bar ---------- */
+.game-table .pick { width: 36px; padding-right: 0; }
+.game-table .pick input { cursor: pointer; }
+.game-table tr.picked { background: rgba(232, 207, 160, .35); }
+.game-table .analysed-col { text-align: center; width: 84px; }
+.analysed-mark { color: var(--felt); }
+.analysis-strip {
+  display: flex; align-items: center; gap: 14px; padding: 6px 20px;
+  background: var(--frame-dark); color: var(--cream); font-size: 13px;
+}
+.analysis-strip progress { width: 220px; accent-color: var(--boxwood); }
+.analysis-strip a { color: var(--boxwood); }
+.analysis-strip button { background: transparent; color: var(--boxwood); border-color: var(--frame-light); padding: 3px 10px; }
+
 .board-frame {
   position: relative; padding: 18px; border-radius: 6px;
   background: linear-gradient(145deg, var(--frame-light), var(--frame-dark));

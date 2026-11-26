@@ -395,6 +395,29 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("analyse-game")).ToHaveTextAsync("Analyse again");
     }
 
+    [Fact]
+    public async Task Queue_several_games_for_analysis_from_the_game_list()
+    {
+        await _app.CreateGameAsync("e4", "e5");
+        await _app.CreateGameAsync("d4", "d5");
+        await _app.CreateGameAsync("c4", "c5");
+        await _app.UseFakeEngineAsync([], lineDelayMs: 150);
+        await Page.GotoAsync(_app.BaseUrl);
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(3);
+
+        await Page.GetByTestId("select-game").Nth(0).CheckAsync();
+        await Page.GetByTestId("select-game").Nth(1).CheckAsync();
+        await Page.GetByTestId("analyse-selected").ClickAsync();
+
+        await Expect(Page.GetByTestId("analysis-strip")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("strip-game")).ToContainTextAsync("of 2");
+        await Expect(Page.Locator(".analysed-mark")).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+        await Expect(Page.GetByTestId("analysis-strip")).ToBeHiddenAsync();
+
+        await Page.GetByTestId("filter-analysed").SelectOptionAsync("false");
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

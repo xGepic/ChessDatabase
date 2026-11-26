@@ -21,13 +21,14 @@ public static class GameQueries
         return string.IsNullOrWhiteSpace(name) ? "Owner" : name;
     }
 
-    public static GameSummaryDto ToSummary(GameRecord game, string ownerName)
+    /// <param name="analysed">Whether the Game has an Engine Assessment.</param>
+    public static GameSummaryDto ToSummary(GameRecord game, string ownerName, bool analysed)
     {
         var opponent = new PlayerDto(game.Opponent.Id, game.Opponent.Name);
         var (white, black) = PlayerSides.ToWhiteAndBlack(game.OwnerColour, ownerName, opponent.Name);
         var gameEvent = game.Event is null ? null : new EventDto(game.Event.Id, game.Event.Name);
         return new GameSummaryDto(game.Id, game.Date, game.OwnerColour, opponent, white, black,
-            game.WhiteElo, game.BlackElo, game.Result.ToPgn(), gameEvent, game.Eco, game.OpeningName);
+            game.WhiteElo, game.BlackElo, game.Result.ToPgn(), gameEvent, game.Eco, game.OpeningName, analysed);
     }
 
     public static async Task<GameDto?> LoadGameDtoAsync(CollectionDbContext db, int id)
@@ -35,7 +36,7 @@ public static class GameQueries
         var game = await db.Games.WithDetails(withMoves: true).SingleOrDefaultAsync(g => g.Id == id);
         if (game is null) return null;
 
-        var summary = ToSummary(game, await OwnerNameAsync(db));
+        var summary = ToSummary(game, await OwnerNameAsync(db), await db.EngineAssessments.AnyAsync(a => a.GameId == id));
         var (firstMoves, nodes) = new MoveTree(game.MoveNodes).ToDtos();
         return new GameDto(summary, game, MoveTree.StartPosition.ToFen(), firstMoves, nodes);
     }

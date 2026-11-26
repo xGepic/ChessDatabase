@@ -37,6 +37,7 @@ public enum SortDirection
 /// and they combine. Dates may be partial ("2025", "2025-03"); a Game counts as inside a date range
 /// when its (possibly partial) date overlaps it. ECO bounds may be short: "B" is B00–B99, "B9" is B90–B99.
 /// Result, OwnerColour, Sort and Direction are names of the enums above, in any letter case.
+/// Analysed keeps only Games with (true) or without (false) an Engine Assessment.
 /// </summary>
 public sealed partial record GameListQuery(
     int? OpponentId = null,
@@ -49,6 +50,7 @@ public sealed partial record GameListQuery(
     string? EcoTo = null,
     string? Tag = null,
     string? TimeControl = null,
+    bool? Analysed = null,
     string? Sort = null,
     string? Direction = null)
 {
@@ -78,12 +80,13 @@ public sealed partial record GameListQuery(
         if (Validate().Count > 0) throw new InvalidOperationException("Validate the query before running it.");
         var games = await db.Games.WithDetails(withMoves).ToListAsync();
         var ownerName = await GameQueries.OwnerNameAsync(db);
+        var analysed = (await db.EngineAssessments.Select(a => a.GameId).ToListAsync()).ToHashSet();
 
         // Up to 10,000 Games: filtering and sorting in memory keeps partial dates and names simple.
         var rows = games
-            .Where(Matches)
+            .Where(g => Matches(g) && (Analysed is not { } wanted || analysed.Contains(g.Id) == wanted))
             .OrderByDescending(g => g.Date ?? "").ThenByDescending(g => g.CreatedAt)
-            .Select(g => (Game: g, Row: GameQueries.ToSummary(g, ownerName)))
+            .Select(g => (Game: g, Row: GameQueries.ToSummary(g, ownerName, analysed.Contains(g.Id))))
             .ToList();
         return Sorted(rows);
     }

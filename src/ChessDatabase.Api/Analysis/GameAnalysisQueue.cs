@@ -49,7 +49,7 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
                 added++;
             }
         }
-        _work.Release(added);
+        if (added > 0) _work.Release(added);
         return Publish();
     }
 
