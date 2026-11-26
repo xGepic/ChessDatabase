@@ -1,25 +1,96 @@
-<section class="card list-card">
+<section class="card list-card wide">
   <header class="card-head">
     <h1>Games</h1>
+    @if (games(); as list) { <span class="hint" data-testid="game-count">{{ list.length }} shown</span> }
     <span class="spacer"></span>
-    <a class="button" href="/api/games/pgn" download data-testid="export-all">Export to PGN</a>
+    <a class="button" [href]="exportUrl()" download data-testid="export-all"
+       [title]="filtered() ? 'Exports the Games shown' : 'Exports the whole Collection'">
+      {{ filtered() ? 'Export shown to PGN' : 'Export to PGN' }}</a>
     <a class="button primary" routerLink="/games/new" data-testid="new-game">New Game</a>
   </header>
+
+  <form class="filters" aria-label="Filter the game list" (submit)="$event.preventDefault()">
+    <label>Opponent
+      <select data-testid="filter-opponent" (change)="setFilter('opponentId', $any($event.target).value)">
+        <option value="">Any</option>
+        @for (p of players(); track p.id) { <option [value]="p.id" [selected]="value('opponentId') === '' + p.id">{{ p.name }}</option> }
+      </select>
+    </label>
+    <label>Event
+      <select data-testid="filter-event" (change)="setFilter('eventId', $any($event.target).value)">
+        <option value="">Any</option>
+        @for (e of events(); track e.id) { <option [value]="e.id" [selected]="value('eventId') === '' + e.id">{{ e.name }}</option> }
+      </select>
+    </label>
+    <label>From
+      <input data-testid="filter-from" class="date" placeholder="YYYY[-MM[-DD]]" [value]="value('from')"
+             (change)="setFilter('from', $any($event.target).value)" />
+    </label>
+    <label>To
+      <input data-testid="filter-to" class="date" placeholder="YYYY[-MM[-DD]]" [value]="value('to')"
+             (change)="setFilter('to', $any($event.target).value)" />
+    </label>
+    <label>Result
+      <select data-testid="filter-result" (change)="setFilter('result', $any($event.target).value)">
+        <option value="" [selected]="!value('result')">Any</option>
+        <option value="win" [selected]="value('result') === 'win'">Won</option>
+        <option value="draw" [selected]="value('result') === 'draw'">Drawn</option>
+        <option value="loss" [selected]="value('result') === 'loss'">Lost</option>
+      </select>
+    </label>
+    <label>I played
+      <select data-testid="filter-colour" (change)="setFilter('colour', $any($event.target).value)">
+        <option value="" [selected]="!value('colour')">Either</option>
+        <option value="white" [selected]="value('colour') === 'white'">White</option>
+        <option value="black" [selected]="value('colour') === 'black'">Black</option>
+      </select>
+    </label>
+    <label>ECO
+      <span class="range">
+        <input data-testid="filter-eco-from" class="eco" placeholder="A00" maxlength="3" [value]="value('ecoFrom')"
+               (change)="setFilter('ecoFrom', $any($event.target).value)" />–<input
+               data-testid="filter-eco-to" class="eco" placeholder="E99" maxlength="3" [value]="value('ecoTo')"
+               (change)="setFilter('ecoTo', $any($event.target).value)" />
+      </span>
+    </label>
+    <label>Tag
+      <select data-testid="filter-tag" (change)="setFilter('tag', $any($event.target).value)">
+        <option value="">Any</option>
+        @for (t of tags(); track t.id) { <option [value]="t.name" [selected]="value('tag') === t.name">{{ t.name }}</option> }
+      </select>
+    </label>
+    <label>Time control
+      <input data-testid="filter-time-control" class="short" placeholder="90+30" [value]="value('timeControl')"
+             (change)="setFilter('timeControl', $any($event.target).value)" />
+    </label>
+    @if (filtered()) {
+      <button type="button" class="link-button" data-testid="clear-filters" (click)="clearFilters()">Clear filters</button>
+    }
+  </form>
+  @if (listError()) { <p class="field-error filter-error" role="alert" data-testid="filter-error">{{ listError() }}</p> }
+
   @if (games(); as list) {
     @if (list.length === 0) {
-      <p class="empty" data-testid="empty-game-list">No Games yet. Start with <a routerLink="/games/new">New Game</a>.</p>
+      @if (filtered()) {
+        <p class="empty" data-testid="no-matches">No Games match these filters.</p>
+      } @else {
+        <p class="empty" data-testid="empty-game-list">No Games yet. Start with <a routerLink="/games/new">New Game</a>.</p>
+      }
     } @else {
       <table class="game-table" data-testid="game-list">
         <thead>
           <tr>
-            <th>Date</th><th>White</th><th class="num">Elo</th><th>Black</th><th class="num">Elo</th>
-            <th>Result</th><th>Opponent</th><th>Colour</th><th>Event</th><th>ECO</th>
+            @for (c of columns; track c.key) {
+              <th [class.num]="c.numeric" [attr.aria-sort]="ariaSort(c)">
+                <button type="button" class="sort-button" [attr.data-testid]="'sort-' + c.key" (click)="sortBy(c)">{{ c.label }}{{ sortMark(c) }}</button>
+              </th>
+            }
           </tr>
         </thead>
         <tbody>
           @for (game of list; track game.id) {
             <tr (click)="open(game)" (keydown.enter)="open(game)" tabindex="0" data-testid="game-row">
-              <td class="mono">{{ game.date ?? '' }}</td>
+              <td class="mono" data-testid="game-date">{{ game.date ?? '' }}</td>
               <td [class.owner]="game.ownerColour === 'white'">{{ game.white }}</td>
               <td class="num" [class.unrated]="!game.whiteElo">{{ eloLabel(game.whiteElo) }}</td>
               <td [class.owner]="game.ownerColour === 'black'">{{ game.black }}</td>

@@ -14,13 +14,11 @@ public static partial class GameEndpoints
     {
         var games = app.MapGroup("/api/games");
 
-        games.MapGet("/", async (CollectionDbContext db) =>
+        games.MapGet("/", async ([AsParameters] GameListQuery query, CollectionDbContext db) =>
         {
-            var ownerName = await OwnerNameAsync(db);
-            var list = await db.Games.AsNoTracking().Include(g => g.Opponent).Include(g => g.Event)
-                .OrderByDescending(g => g.Date).ThenByDescending(g => g.CreatedAt)
-                .ToListAsync();
-            return list.Select(g => ToSummary(g, ownerName)).ToList();
+            var errors = query.Validate();
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+            return Results.Ok((await query.RunAsync(db)).Select(r => r.Row));
         });
 
         games.MapGet("/{id:int}", async (int id, CollectionDbContext db) =>

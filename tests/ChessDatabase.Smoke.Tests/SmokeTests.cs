@@ -221,6 +221,59 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Filter_and_sort_the_game_list_then_export_what_is_shown()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        await _app.ImportAsync("""
+            [Date "2025.01.10"]
+            [White "Owner, Smoke"]
+            [Black "Zeller, Zoe"]
+            [Result "0-1"]
+
+            1. e4 0-1
+
+            [Date "2025.02.10"]
+            [White "Adler, Anton"]
+            [Black "Owner, Smoke"]
+            [Result "1-0"]
+
+            1. d4 1-0
+
+            [Date "2025.03.10"]
+            [White "Berger, Anna"]
+            [Black "Owner, Smoke"]
+            [Result "1-0"]
+
+            1. c4 1-0
+            """);
+        await Page.GotoAsync(_app.BaseUrl);
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(3);
+
+        await Page.GetByTestId("filter-colour").SelectOptionAsync("black");
+        await Page.GetByTestId("filter-result").SelectOptionAsync("loss");
+        await Expect(Page.GetByTestId("game-opponent")).ToHaveTextAsync(["Berger, Anna", "Adler, Anton"]);
+
+        await Page.GetByTestId("sort-opponent").ClickAsync();
+        await Expect(Page.GetByTestId("game-opponent")).ToHaveTextAsync(["Adler, Anton", "Berger, Anna"]);
+        await Page.GetByTestId("sort-opponent").ClickAsync();
+        await Expect(Page.GetByTestId("game-opponent")).ToHaveTextAsync(["Berger, Anna", "Adler, Anton"]);
+
+        var download = await Page.RunAndWaitForDownloadAsync(() => Page.GetByTestId("export-all").ClickAsync());
+        var pgn = await File.ReadAllTextAsync((await download.PathAsync())!);
+        Assert.Equal(2, pgn.Split("[Event ").Length - 1);
+        Assert.DoesNotContain("Zeller", pgn);
+
+        // Opening a Game and coming back keeps the filters
+        await Page.GetByTestId("game-row").First.ClickAsync();
+        await Expect(Page.GetByTestId("board")).ToBeVisibleAsync();
+        await Page.GoBackAsync();
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(2);
+
+        await Page.GetByTestId("clear-filters").ClickAsync();
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(3);
+    }
+
+    [Fact]
     public async Task Annotate_a_move_with_a_symbol_and_a_comment()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");

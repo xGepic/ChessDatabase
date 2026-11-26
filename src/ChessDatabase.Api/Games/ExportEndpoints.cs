@@ -20,11 +20,13 @@ public static class ExportEndpoints
             return File(pgn, $"{FileNamePart(game.Date ?? "")} {FileNamePart(game.Opponent.Name)}.pgn".Trim());
         });
 
-        games.MapGet("/pgn", async (CollectionDbContext db) =>
+        // The game list as shown: the same filters and order (no filters = the whole Collection).
+        games.MapGet("/pgn", async ([AsParameters] GameListQuery query, CollectionDbContext db) =>
         {
-            var all = await GamesForExport(db).ToListAsync();
-            var ordered = all.OrderBy(g => g.Date ?? "").ThenBy(g => g.CreatedAt);
-            var pgn = PgnWriter.WriteMany(ordered, await GameEndpoints.OwnerNameAsync(db));
+            var errors = query.Validate();
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+            var rows = await query.RunAsync(db, withMoves: true);
+            var pgn = PgnWriter.WriteMany(rows.Select(r => r.Game), await GameEndpoints.OwnerNameAsync(db));
             return File(pgn, $"Chess Database {DateTime.Now:yyyy-MM-dd}.pgn");
         });
     }

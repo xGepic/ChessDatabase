@@ -143,8 +143,9 @@ export class Api {
   private readonly http = inject(HttpClient);
 
   // Games
-  listGames(): Observable<GameSummary[]> {
-    return this.http.get<GameSummary[]>('/api/games');
+  /** The game list; filters and sort as query parameters (see GameListQuery in the backend). */
+  listGames(filters: Record<string, string> = {}): Observable<GameSummary[]> {
+    return this.http.get<GameSummary[]>('/api/games', { params: filters });
   }
   getGame(id: number): Observable<Game> {
     return this.http.get<Game>(`/api/games/${id}`);

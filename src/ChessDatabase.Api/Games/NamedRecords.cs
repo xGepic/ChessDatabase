@@ -36,14 +36,17 @@ public static class NamedRecords
         return tags;
     }
 
-    /// <summary>Names containing the search text, ignoring case, sorted, for autocomplete.</summary>
+    /// <summary>
+    /// Names containing the search text, ignoring case, sorted. A search returns at most <paramref name="limit"/>
+    /// suggestions; without one, everything is listed (for filter choices).
+    /// </summary>
     public static List<T> Search<T>(IEnumerable<T> all, Func<T, string> name, string? search, int limit = 20)
     {
         var term = search?.Trim() ?? "";
         return all
             .Where(x => term.Length == 0 || name(x).Contains(term, StringComparison.CurrentCultureIgnoreCase))
             .OrderBy(name, StringComparer.CurrentCultureIgnoreCase)
-            .Take(limit)
+            .Take(term.Length == 0 ? int.MaxValue : limit)
             .ToList();
     }
 

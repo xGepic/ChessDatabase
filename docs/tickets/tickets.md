@@ -17,7 +17,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 07 | [Import PGN](#07-import-pgn) | 05, 06 | **Done** |
 | 08 | [Import review list](#08-import-review-list) | 07 | **Done** |
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | **Done** |
-| 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | Open |
+| 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | **Done** |
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | Open |
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
@@ -205,13 +205,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 06 (Game details, Tags and ECO), 09 (Export to PGN).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every column is sortable both ways
-- [ ] Each filter works alone and in combination with the others
-- [ ] Result filter can be expressed from the Owner's point of view (win, draw, loss)
-- [ ] "Export filtered list to PGN" exports exactly the Games shown
-- [ ] API tests cover combined filters against a seeded Collection
+- [x] Every column is sortable both ways
+- [x] Each filter works alone and in combination with the others
+- [x] Result filter can be expressed from the Owner's point of view (win, draw, loss)
+- [x] "Export filtered list to PGN" exports exactly the Games shown
+- [x] API tests cover combined filters against a seeded Collection
 
 ---
 
