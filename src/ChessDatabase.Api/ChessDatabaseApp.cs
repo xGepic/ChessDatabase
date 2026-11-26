@@ -71,6 +71,7 @@ public static class ChessDatabaseApp
         app.MapSettingsEndpoints();
         app.MapPlayerEndpoints();
         app.MapDossierEndpoints();
+        app.MapOwnerStatisticsEndpoints();
         app.MapLookupEndpoints();
         app.MapImportEndpoints();
         app.MapImportReviewEndpoints();

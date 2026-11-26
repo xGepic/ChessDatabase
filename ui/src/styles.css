@@ -307,7 +307,7 @@ app-eval-bar .eval-bar { flex: 1; }
 
 /* time charts: one series, recessive axes */
 .time-chart { position: relative; }
-.time-chart { max-width: 640px; }
+app-time-chart { display: block; }
 .time-chart svg { display: block; width: 100%; height: auto; cursor: crosshair; }
 .chart-grid { stroke: var(--rule); stroke-width: 1; }
 .chart-tick { fill: var(--ink-soft); font-size: 11px; font-family: var(--move-font); }
@@ -326,6 +326,11 @@ app-eval-bar .eval-bar { flex: 1; }
 .chart-table td, .chart-table th { padding: 2px 12px 2px 0; text-align: left; }
 .chart-empty { margin: 0; padding: 8px 0; }
 .dossier-wide { grid-column: 1 / -1; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; align-items: start; }
+.stats-wide { grid-column: 1 / -1; }
+.score-rows { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px 12px; align-items: center; padding: 8px 16px; }
+.stat-tile { display: grid; gap: 2px; padding: 8px 16px 16px; }
+.stat-tile strong { font-size: 24px; }
 .merge-candidates { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
 .merge-summary { margin: 0; padding: 4px 16px 8px; }
 .merge-actions { padding: 0 16px 16px; }

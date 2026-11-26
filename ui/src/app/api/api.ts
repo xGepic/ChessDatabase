@@ -358,6 +358,21 @@ export interface Dossier {
   games: GameSummary[];
 }
 
+/** The Owner's statistics over the Games the filters keep. */
+export interface OwnerStatistics {
+  score: Score;
+  white: Score;
+  black: Score;
+  openings: (OpeningScore & { ownerColour: OwnerColour })[];
+  /** The Owner's own Elo per Game; unrated and undated Games left out. */
+  ratingHistory: RatingPoint[];
+  /** Over rated Opponents only; null when there are none. */
+  averageOpponentElo: number | null;
+  ratedOpponentGames: number;
+  /** Only Games with an Engine Assessment and a date. */
+  accuracy: { date: string; accuracy: number; gameId: number }[];
+}
+
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
@@ -485,6 +500,10 @@ export class Api {
   /** Every Player (matching the search) with the Owner's score against them. */
   playerOverview(search = ''): Observable<PlayerRow[]> {
     return this.http.get<PlayerRow[]>('/api/players/overview', { params: { search } });
+  }
+  /** filters: from, to (partial dates) and timeControl, as in the game list. */
+  ownerStatistics(filters: Record<string, string>): Observable<OwnerStatistics> {
+    return this.http.get<OwnerStatistics>('/api/statistics/owner', { params: filters });
   }
   dossier(playerId: number): Observable<Dossier> {
     return this.http.get<Dossier>(`/api/players/${playerId}/dossier`);

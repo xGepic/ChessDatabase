@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 
 /** A value at a (possibly partial) date: "2024", "2024-03" or "2024-03-05". */
 export interface TimePoint {
@@ -8,7 +8,6 @@ export interface TimePoint {
   id: number;
 }
 
-const WIDTH = 560;
 const HEIGHT = 180;
 const PAD = { top: 12, right: 16, bottom: 24, left: 44 };
 
@@ -69,7 +68,12 @@ function timeOf(date: string): number {
     }
   `,
 })
-export class TimeChart {
+export class TimeChart implements OnDestroy {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private resize: ResizeObserver | undefined;
+  /** Drawn at the width it is shown at, so text keeps its size in any card. */
+  private readonly drawnWidth = signal(560);
+
   readonly points = input.required<TimePoint[]>();
   /** The chart's accessible name, e.g. "Rating history". */
   readonly label = input.required<string>();
@@ -81,8 +85,24 @@ export class TimeChart {
   /** A point was clicked: its id. */
   readonly open = output<number>();
 
-  protected readonly width = WIDTH;
+  protected get width() {
+    return this.drawnWidth();
+  }
   protected readonly height = HEIGHT;
+
+  constructor() {
+    afterNextRender(() => {
+      this.resize = new ResizeObserver(([entry]) => {
+        const width = Math.round(entry.contentRect.width);
+        if (width > 0) this.drawnWidth.set(width);
+      });
+      this.resize.observe(this.host.nativeElement);
+    });
+  }
+
+  ngOnDestroy() {
+    this.resize?.disconnect();
+  }
   protected readonly pad = PAD;
   protected readonly hover = signal<{ x: number; y: number; date: string; value: number; id: number } | null>(null);
 
@@ -100,7 +120,7 @@ export class TimeChart {
 
   protected readonly placed = computed(() => {
     const { t0, t1, lo, hi } = this.domain();
-    const w = WIDTH - PAD.left - PAD.right;
+    const w = this.drawnWidth() - PAD.left - PAD.right;
     const h = HEIGHT - PAD.top - PAD.bottom;
     return this.points().map((p) => ({
       ...p,
@@ -146,7 +166,7 @@ export class TimeChart {
   protected onMove(event: MouseEvent) {
     const svg = event.currentTarget as SVGSVGElement;
     const box = svg.getBoundingClientRect();
-    const x = ((event.clientX - box.left) / box.width) * WIDTH;
+    const x = ((event.clientX - box.left) / box.width) * this.drawnWidth();
     let best = this.placed()[0];
     for (const p of this.placed()) if (Math.abs(p.x - x) < Math.abs(best.x - x)) best = p;
     this.hover.set(best ? { x: best.x, y: best.y, date: best.date, value: best.value, id: best.id } : null);

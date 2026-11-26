@@ -29,7 +29,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | **Done** |
 | 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | **Done** |
 | 21 | [Merge Players](#21-merge-players) | 20 | **Done** |
-| 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | Open |
+| 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | **Done** |
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | Open |
 | 24 | [Deviation check](#24-deviation-check) | 23 | Open |
 | 25 | [Repertoire Training](#25-repertoire-training) | 23 | Open |
@@ -400,13 +400,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 12 (Game Analysis of a single Game), 20 (Opponent Dossier).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Scores by colour and by opening are correct for a seeded Collection
-- [ ] The rating history and average opponent rating leave out unrated values
-- [ ] The Accuracy-over-time chart includes only analysed Games
-- [ ] Date range and time control filters apply to every figure
-- [ ] API tests cover the figures, including the unrated exclusions
+- [x] Scores by colour and by opening are correct for a seeded Collection
+- [x] The rating history and average opponent rating leave out unrated values
+- [x] The Accuracy-over-time chart includes only analysed Games
+- [x] Date range and time control filters apply to every figure
+- [x] API tests cover the figures, including the unrated exclusions
 
 ---
 
