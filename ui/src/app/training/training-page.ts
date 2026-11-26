@@ -1,8 +1,8 @@
 import { Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
-import { Chess } from 'chess.js';
 import { Api, RepertoireTrainingItem, TrainingAnswer, problemMessage } from '../api/api';
-import { numberedLine } from '../engine/scores';
+import { numberedChoices, numberedLine } from '../engine/scores';
 import { Board } from '../review/board';
 import { INITIAL_FEN } from '../shared/chess';
 
@@ -17,7 +17,7 @@ const OPPONENT_DELAY_MS = 450;
 @Component({
   selector: 'app-training-page',
   imports: [Board, RouterLink],
-  host: { '(document:keydown.enter)': 'onEnter()' },
+  host: { '(document:keydown.enter)': 'onEnter($event)' },
   template: `
     <div class="training">
       <div class="board-column">
@@ -75,6 +75,7 @@ export class TrainingPage {
   protected readonly lastMove = signal<string | null>(null);
   private readonly ready = signal(false);
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private request: Subscription | undefined;
 
   protected readonly canAnswer = computed(() => this.ready() && !!this.item() && !this.answer());
   protected readonly dueLabel = computed(() => {
@@ -83,9 +84,7 @@ export class TrainingPage {
   });
   protected readonly lineText = computed(() => numberedLine(1, (this.item()?.line ?? []).map((m) => m.san)));
   private readonly ply = computed(() => (this.item()?.line.length ?? 0) + 1);
-  protected readonly expectedText = computed(() =>
-    (this.answer()?.expected ?? []).map((san) => numberedLine(this.ply(), [san])).join(' or '),
-  );
+  protected readonly expectedText = computed(() => numberedChoices(this.ply(), this.answer()?.expected ?? []));
   /** After a right answer, the other moves the Repertoire also has here. */
   protected readonly alsoText = computed(() => {
     const a = this.answer();
@@ -94,31 +93,34 @@ export class TrainingPage {
   });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
+    inject(DestroyRef).onDestroy(() => {
+      clearTimeout(this.timer);
+      this.request?.unsubscribe();
+    });
     this.next();
   }
 
   /** Loads the next due item and plays the Opponent's move onto the board. */
   protected next() {
     clearTimeout(this.timer);
+    this.request?.unsubscribe(); // only the latest request shows its item
     this.answer.set(null);
     this.ready.set(false);
     this.error.set('');
     this.api.repertoireTrainingSummary().subscribe((s) => this.summary.set(s));
-    this.api.nextRepertoireItem().subscribe({
+    this.request = this.api.nextRepertoireItem().subscribe({
       next: (item) => {
         this.loading.set(false);
         this.item.set(item);
         if (!item) return;
         const line = item.line;
-        if (line.length === 0) {
+        if (!item.fenBefore) {
           this.show(item.fen, null);
           this.ready.set(true);
           return;
         }
-        const before = new Chess();
-        for (const m of line.slice(0, -1)) before.move(uciMove(m.uci));
-        this.show(before.fen(), line.length > 1 ? line[line.length - 2].uci : null);
+        this.show(item.fenBefore, line.length > 1 ? line[line.length - 2].uci : null);
+        clearTimeout(this.timer);
         this.timer = setTimeout(() => {
           this.show(item.fen, line[line.length - 1].uci);
           this.ready.set(true);
@@ -137,11 +139,7 @@ export class TrainingPage {
     this.api.answerRepertoireItem(item.itemId, uci).subscribe({
       next: (answer) => {
         this.answer.set(answer);
-        // Show the move that counts: the Owner's when right, the Repertoire's when wrong.
-        const shown = answer.correct ? uci : answer.expectedUci[0];
-        const after = new Chess(item.fen);
-        after.move(uciMove(shown));
-        this.show(after.fen(), shown);
+        this.show(answer.fenAfter, answer.shown); // the Owner's move when right, the Repertoire's when wrong
       },
       error: (e) => {
         this.error.set(problemMessage(e));
@@ -150,7 +148,9 @@ export class TrainingPage {
     });
   }
 
-  protected onEnter() {
+  /** Enter goes on; on the Next button itself the button's own click does, so it isn't done twice. */
+  protected onEnter(event: Event) {
+    if ((event.target as HTMLElement | null)?.closest('button')) return;
     if (this.answer()) this.next();
   }
 
@@ -158,8 +158,4 @@ export class TrainingPage {
     this.fen.set(fen);
     this.lastMove.set(lastMove);
   }
-}
-
-function uciMove(uci: string) {
-  return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] };
 }

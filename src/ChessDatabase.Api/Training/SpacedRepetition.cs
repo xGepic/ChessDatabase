@@ -46,8 +46,10 @@ public static class SpacedRepetition
     /// <summary>The end of the local day <paramref name="clock"/> is in, in UTC: items due before it are due today.</summary>
     public static DateTime EndOfToday(TimeProvider clock)
     {
-        var local = clock.GetLocalNow();
-        var midnight = new DateTimeOffset(local.Date.AddDays(1), local.Offset);
-        return midnight.UtcDateTime;
+        // Midnight's own offset, not now's: on the day the clocks change they differ.
+        var zone = clock.LocalTimeZone;
+        var midnight = DateTime.SpecifyKind(clock.GetLocalNow().Date.AddDays(1), DateTimeKind.Unspecified);
+        while (zone.IsInvalidTime(midnight)) midnight = midnight.AddMinutes(30); // a zone whose clocks jump at midnight
+        return TimeZoneInfo.ConvertTimeToUtc(midnight, zone);
     }
 }

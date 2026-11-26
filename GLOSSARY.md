@@ -87,7 +87,7 @@ The Owner is not a Player and has no Dossier: the Owner's own figures are **My s
 The opening lines the Owner intends to play, one for White and one for Black, stored as trees of moves.
 
 **Deviation**
-The first move in a Game where either side left the Owner's Repertoire.
+The move with which either side left the Owner's Repertoire for good. The check works by position, so a Game that leaves the Repertoire and later comes back into it by another move order (a transposition) is still in the Repertoire up to there. When the Repertoire simply has no move for a position the Game reached, that is the end of the Repertoire, not a Deviation.
 
 **Repertoire Training**
 Drilling Repertoire lines with spaced repetition.

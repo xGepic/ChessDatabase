@@ -1,13 +1,13 @@
 import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Chess } from 'chess.js';
 import { Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AnalysisLine, Api, BoardMove, Classification, Deviation, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
-import { nextPly, numberedLine } from '../engine/scores';
+import { nextPly, numberedChoices, numberedLine } from '../engine/scores';
 import { continuations, lineEnd, pathTo } from './notation';
 import { openGameAt } from '../shared/chess';
 import { AnalysisQueueService } from '../engine/analysis-queue';
@@ -323,10 +323,23 @@ export class GameReview {
     if (this.mainLineKey() !== null) untracked(() => this.loadDeviation());
   });
 
+  private deviationRequest: Subscription | undefined;
+  /** The Game the shown Deviation belongs to. */
+  private deviationGameId: number | null = null;
+
+  /** Asks again; an answer still on its way (for another Game or an older main line) is dropped. */
   private loadDeviation() {
     const game = this.game();
+    this.deviationRequest?.unsubscribe();
+    if (this.deviation() && this.deviationGameId !== game?.id) this.deviation.set(null);
     if (!game) return;
-    this.api.deviation(game.id).subscribe({ next: (d) => this.deviation.set(d), error: () => this.deviation.set(null) });
+    this.deviationRequest = this.api.deviation(game.id).subscribe({
+      next: (d) => {
+        this.deviationGameId = game.id;
+        this.deviation.set(d);
+      },
+      error: () => this.deviation.set(null),
+    });
   }
 
   /** "You left your Repertoire with 3.Bc4 (your Repertoire: 3.Nf3)" and the like. */
@@ -339,7 +352,7 @@ export class GameReview {
     const played = numberedLine(d.ply!, [d.san!]);
     if (d.status === 'endOfRepertoire')
       return d.ply === 1 ? `Your ${colour} Repertoire has no moves yet.` : `End of your ${colour} Repertoire at ${played}.`;
-    const expected = d.expected.map((san) => numberedLine(d.ply!, [san])).join(' or ');
+    const expected = numberedChoices(d.ply!, d.expected);
     const who = d.by === 'owner' ? 'You' : 'Your Opponent';
     return `${who} left your Repertoire with ${played} (your Repertoire: ${expected}).`;
   });

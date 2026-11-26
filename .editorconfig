@@ -8,3 +8,12 @@ charset = utf-8
 
 [*.{ts,html,css,json}]
 indent_size = 2
+
+# EF Core migrations are generated: analyzers leave them alone.
+[src/ChessDatabase.Api/Collection/Migrations/**.cs]
+generated_code = true
+
+# CA1861 (constant arrays as arguments) is about code that runs often. In tests the arrays are
+# one-off request bodies, which read best inline.
+[tests/**.cs]
+dotnet_diagnostic.CA1861.severity = none

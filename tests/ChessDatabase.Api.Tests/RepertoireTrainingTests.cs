@@ -69,6 +69,22 @@ public class RepertoireTrainingTests
     }
 
     [Fact]
+    public async Task Due_today_ends_at_local_midnight_also_on_the_day_the_clocks_change()
+    {
+        // Vienna: on 29 March 2026 the clocks go forward at 02:00, so that day ends at 22:00 UTC, not 23:00.
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 3, 28, 22, 30, 0, TimeSpan.Zero));
+        clock.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna"));
+        using var factory = new CollectionFactory(clock: clock);
+        var client = factory.CreateClient();
+        await client.AddRepertoireLineAsync("black", null, "e4", "c5");
+        await client.AnswerAsync((await client.NextItemAsync())!.ItemId, "c5"); // due 29 March 22:30 UTC = 00:30 on the 30th in Vienna
+
+        clock.SetUtcNow(new DateTimeOffset(2026, 3, 29, 0, 30, 0, TimeSpan.Zero)); // 01:30 in Vienna, before the change
+
+        Assert.Equal((0, 1), await client.DueAsync());
+    }
+
+    [Fact]
     public async Task Asking_for_the_summary_and_the_next_item_at_once_adds_each_item_once()
     {
         using var factory = new CollectionFactory(clock: new FakeTimeProvider(Morning));

@@ -77,6 +77,8 @@ export interface RepertoireTrainingItem {
   itemId: number;
   side: OwnerColour;
   fen: string;
+  /** The position before the Opponent's last move (null at the start), to show it being played. */
+  fenBefore: string | null;
   line: { uci: string; san: string }[];
   /** Never answered before. */
   new: boolean;
@@ -87,6 +89,9 @@ export interface TrainingAnswer {
   correct: boolean;
   expected: string[];
   expectedUci: string[];
+  /** The move to show: the Owner's when right, the Repertoire's main move when wrong; fenAfter is the position after it. */
+  shown: string;
+  fenAfter: string;
   dueAt: string;
 }
 

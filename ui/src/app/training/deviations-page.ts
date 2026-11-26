@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Api, OwnerDeviation, problemMessage } from '../api/api';
-import { numberedLine } from '../engine/scores';
+import { numberedChoices, numberedLine } from '../engine/scores';
 import { openGameAt } from '../shared/chess';
 
 /**
@@ -79,7 +79,11 @@ export class DeviationsPage {
           this.error.set('');
           this.rows.set(rows);
         },
-        error: (e) => this.error.set(problemMessage(e)),
+        error: (e) => {
+          // Never show the previous filter's rows as if they matched this one.
+          this.rows.set([]);
+          this.error.set(problemMessage(e));
+        },
       });
       onCleanup(() => request.unsubscribe());
     });
@@ -90,7 +94,7 @@ export class DeviationsPage {
   }
 
   protected expected(d: OwnerDeviation): string {
-    return d.expected.map((san) => numberedLine(d.ply, [san])).join(' or ');
+    return numberedChoices(d.ply, d.expected);
   }
 
   protected open(d: OwnerDeviation) {

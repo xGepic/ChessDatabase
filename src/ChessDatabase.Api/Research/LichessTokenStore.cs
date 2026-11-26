@@ -7,7 +7,7 @@ namespace ChessDatabase.Api.Research;
 /// <summary>
 /// The Owner's optional Lichess personal API token. Kept out of the Collection (so backups never
 /// carry it) in a file beside it, encrypted for the current Windows user (DPAPI): another account or
-/// PC cannot read it. Never sent to the UI.
+/// PC cannot read it. Never sent to the UI. The app is Windows-only; elsewhere no token is stored.
 /// </summary>
 public sealed class LichessTokenStore(IConfiguration configuration)
 {
@@ -26,7 +26,7 @@ public sealed class LichessTokenStore(IConfiguration configuration)
     {
         lock (_lock)
         {
-            if (!File.Exists(Path)) return null;
+            if (!OperatingSystem.IsWindows() || !File.Exists(Path)) return null;
             try
             {
                 return Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(Path), Purpose, DataProtectionScope.CurrentUser));
@@ -49,6 +49,7 @@ public sealed class LichessTokenStore(IConfiguration configuration)
                 File.Delete(Path);
                 return;
             }
+            if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("The Lichess token is encrypted for the Windows user; this needs Windows.");
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             File.WriteAllBytes(Path, ProtectedData.Protect(Encoding.UTF8.GetBytes(token), Purpose, DataProtectionScope.CurrentUser));
         }

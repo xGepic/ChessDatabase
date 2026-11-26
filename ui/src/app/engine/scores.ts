@@ -30,3 +30,8 @@ export function numberedLine(firstPly: number, san: string[]): string {
     })
     .join(' ');
 }
+
+/** Alternative moves at one ply, numbered: "2.Nf3 or 2.Nc3". */
+export function numberedChoices(ply: number, san: string[]): string {
+  return san.map((move) => numberedLine(ply, [move])).join(' or ');
+}
