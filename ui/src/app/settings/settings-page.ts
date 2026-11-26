@@ -10,6 +10,8 @@ export class SettingsPage {
   private readonly api = inject(Api);
   protected readonly ownerName = signal('');
   protected readonly aliases = signal<string[]>([]);
+  protected readonly hasLichessToken = signal(false);
+  protected readonly lichessMessage = signal('');
   protected readonly status = signal('');
   protected readonly engine = signal<Engine | null>(null);
   protected readonly engineMessage = signal('');
@@ -23,6 +25,7 @@ export class SettingsPage {
     this.api.getSettings().subscribe((s) => {
       this.ownerName.set(s.ownerName);
       this.aliases.set(s.aliases);
+      this.hasLichessToken.set(s.hasLichessToken);
     });
     this.api.backupStatus().subscribe((b) => this.backup.set(b));
     this.api.getEngines().subscribe((list) => this.engine.set(list.find((e) => e.id === STOCKFISH_ID) ?? null));
@@ -110,6 +113,20 @@ export class SettingsPage {
   protected removeAlias(alias: string) {
     this.aliases.update((list) => list.filter((a) => a !== alias));
     this.save();
+  }
+
+  /** Saves (or with an empty value removes) the Lichess token; the other settings stay as they are. */
+  protected saveLichessToken(input: HTMLInputElement, remove = false) {
+    const token = remove ? '' : input.value.trim();
+    if (!remove && !token) return;
+    this.api.saveSettings({ ownerName: this.ownerName(), aliases: this.aliases(), lichessToken: token }).subscribe({
+      next: (s) => {
+        input.value = '';
+        this.hasLichessToken.set(s.hasLichessToken);
+        this.lichessMessage.set(s.hasLichessToken ? 'Token saved' : 'Token removed');
+      },
+      error: (e) => this.lichessMessage.set(problemMessage(e)),
+    });
   }
 
   protected save() {

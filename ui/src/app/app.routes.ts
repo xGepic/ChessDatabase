@@ -6,6 +6,7 @@ import { ImportPage } from './import/import-page';
 import { ReviewPage } from './import/review-page';
 import { SettingsPage } from './settings/settings-page';
 import { PositionSearch } from './research/position-search';
+import { MasterGamePage } from './research/master-game';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'games' },
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'games/:id', component: GameReview, title: 'Game · Chess Database' },
   { path: 'import', component: ImportPage, title: 'Import · Chess Database' },
   { path: 'import/review', component: ReviewPage, title: 'Review imports · Chess Database' },
+  { path: 'masters/:id', component: MasterGamePage, title: 'Master Game · Chess Database' },
   { path: 'search', component: PositionSearch, title: 'Position Search · Chess Database' },
   { path: 'settings', component: SettingsPage, title: 'Settings · Chess Database' },
   { path: '**', redirectTo: 'games' },

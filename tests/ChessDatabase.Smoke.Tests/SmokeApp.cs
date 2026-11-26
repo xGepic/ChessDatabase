@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
@@ -20,6 +21,13 @@ public sealed class SmokeApp : IAsyncLifetime
     private readonly string _directory =
         Path.Combine(Path.GetTempPath(), "ChessDatabaseSmoke", Guid.NewGuid().ToString("N"));
     private WebApplication? _app;
+    private WebApplication? _lichess;
+
+    /// <summary>The fake Lichess masters explorer's answer by FEN; null (the default) answers 503.</summary>
+    public Func<string, string?> MastersJson { get; set; } = _ => null;
+
+    /// <summary>The fake Lichess's Master Game PGNs by id.</summary>
+    public Dictionary<string, string> MasterPgns { get; } = [];
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
@@ -34,9 +42,10 @@ public sealed class SmokeApp : IAsyncLifetime
 
         Directory.CreateDirectory(_directory);
         var databasePath = Path.Combine(_directory, "collection.db");
+        var lichessUrl = await StartFakeLichessAsync();
         var builder = ChessDatabaseApp.CreateBuilder([], new WebApplicationOptions
         {
-            Args = [$"--Collection:DatabasePath={databasePath}"],
+            Args = [$"--Collection:DatabasePath={databasePath}", $"--Masters:BaseUrl={lichessUrl}"],
             EnvironmentName = "Testing",
             ContentRootPath = _directory,
             WebRootPath = uiRoot,
@@ -109,8 +118,25 @@ public sealed class SmokeApp : IAsyncLifetime
         })).EnsureSuccessStatusCode();
     }
 
+    /// <summary>A stand-in for explorer.lichess.org on a loopback port, so smoke tests never go online.</summary>
+    private async Task<string> StartFakeLichessAsync()
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        _lichess = builder.Build();
+        _lichess.MapGet("/masters", (string fen) => MastersJson(fen) is { } json
+            ? Results.Text(json, "application/json")
+            : Results.StatusCode(503));
+        _lichess.MapGet("/masters/pgn/{id}", (string id) => MasterPgns.TryGetValue(id, out var pgn)
+            ? Results.Text(pgn, "application/x-chess-pgn")
+            : Results.NotFound());
+        await _lichess.StartAsync();
+        return _lichess.Services.GetRequiredService<IServer>().Features.GetRequiredFeature<IServerAddressesFeature>().Addresses.First();
+    }
+
     public async Task DisposeAsync()
     {
+        if (_lichess is not null) await _lichess.DisposeAsync();
         if (_browser is not null) await _browser.DisposeAsync();
         _playwright?.Dispose();
         if (_app is not null) await _app.DisposeAsync();

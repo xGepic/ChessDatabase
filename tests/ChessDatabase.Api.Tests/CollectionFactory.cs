@@ -28,15 +28,23 @@ public sealed class CollectionFactory(string? directory = null, TimeProvider? cl
     /// <summary>Extra configuration, applied after the defaults above.</summary>
     public Dictionary<string, string?> Settings { get; } = [];
 
+    /// <summary>Replaces services for one test, e.g. the HTTP handler behind an online source.</summary>
+    public Action<IServiceCollection>? ConfigureServices { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         System.IO.Directory.CreateDirectory(Directory);
         builder.UseSetting("Collection:DatabasePath", Path.Combine(Directory, "collection.db"));
         builder.UseSetting("Backup:Daily", dailyBackups ? "true" : "false");
+        // Tests never reach Lichess: anything not faked goes to a port nothing listens on.
+        builder.UseSetting("Masters:BaseUrl", "http://127.0.0.1:9/");
         foreach (var (key, value) in Settings) builder.UseSetting(key, value);
         builder.UseEnvironment("Testing");
-        if (clock is not null)
-            builder.ConfigureTestServices(services => services.AddSingleton(clock));
+        builder.ConfigureTestServices(services =>
+        {
+            if (clock is not null) services.AddSingleton(clock);
+            ConfigureServices?.Invoke(services);
+        });
     }
 
     protected override void Dispose(bool disposing)

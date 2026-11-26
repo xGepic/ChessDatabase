@@ -217,6 +217,12 @@ public sealed class SettingsRecord
 
     /// <summary>Where daily backups go; null means "Backups" beside the Collection's file.</summary>
     public string? BackupFolder { get; set; }
+
+    /// <summary>
+    /// A Lichess personal API token, sent to the Masters explorer if set (Lichess documents the
+    /// endpoint as authenticated, though it currently also answers without). Never sent to the UI.
+    /// </summary>
+    public string? LichessToken { get; set; }
 }
 
 /// <summary>

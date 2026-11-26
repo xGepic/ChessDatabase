@@ -32,6 +32,12 @@ public static class ChessDatabaseApp
         builder.Services.AddSingleton<EngineHost>();
         builder.Services.AddSingleton<InteractiveAnalysis>();
         builder.Services.AddSignalR();
+        builder.Services.AddSingleton<MastersState>();
+        builder.Services.AddHttpClient<MastersClient>(http =>
+        {
+            http.Timeout = Timeout.InfiniteTimeSpan; // MastersClient applies its own short timeout
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("ChessDatabase/1.0");
+        });
         builder.Services.AddSingleton<GameAnalyzer>();
         builder.Services.AddSingleton<GameAnalysisQueue>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<GameAnalysisQueue>());
@@ -62,6 +68,7 @@ public static class ChessDatabaseApp
         app.MapAnalysisEndpoints();
         app.MapCopyAssessmentEndpoints();
         app.MapResearchEndpoints();
+        app.MapMastersEndpoints();
         app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.

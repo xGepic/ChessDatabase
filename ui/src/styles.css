@@ -277,7 +277,8 @@ app-eval-bar .eval-bar { flex: 1; }
 .score-bar .won { background: var(--felt); }
 .score-bar .drawn { background: #b8a98f; }
 .score-bar .lost { background: var(--blood); }
-.score { width: 52px; text-align: right; font-size: 12px; }
+.score { width: 52px; text-align: right; font-size: 12px; white-space: nowrap; }
+.result-bar + .score { width: 84px; }
 .tree-subhead { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 10px 12px 2px; }
 .position-games { list-style: none; margin: 0; padding: 0 0 6px; }
 .position-game {
@@ -287,6 +288,18 @@ app-eval-bar .eval-bar { flex: 1; }
 .position-game:hover { background: var(--cream-deep) !important; }
 .position-game.current { font-weight: 600; }
 .tree-more { margin: 0 12px 8px; }
+.tree-sources { margin-left: 12px; }
+.tree-sources button { min-width: 0; padding: 3px 10px; font-size: 12px; }
+.result-bar .white-won { background: #f7efe0; border-right: 1px solid var(--rule); }
+.result-bar .black-won { background: var(--ink); }
+.position-game.master-game { grid-template-columns: 44px 1fr auto; }
+
+/* ---------- a Master Game, replayed read-only ---------- */
+.master-layout { display: grid; grid-template-columns: min(calc(100vh - 150px), 640px) minmax(320px, 420px); gap: 20px; align-items: start; }
+.master-note { margin: 6px 0 0; }
+.master-moves { display: grid; grid-template-columns: 44px 1fr 1fr; padding: 6px 0; }
+.master-moves .move-no { padding: 4px 10px 4px 0; }
+.master-actions { padding: 10px 16px; border-top: 1px solid var(--rule); }
 .search-more { padding: 8px 16px 12px; margin: 0; }
 
 /* exploring: a position shown on the board but not part of the Game */

@@ -511,6 +511,48 @@ owhere\stockfish.exe");
         await Page.Mouse.ClickAsync(box.X + (file + 0.5f) * box.Width / 8, box.Y + (7 - rank + 0.5f) * box.Height / 8);
     }
 
+    [Fact]
+    public async Task See_what_masters_play_and_replay_a_master_game_read_only()
+    {
+        _app.MastersJson = fen => fen.StartsWith("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w") ? """
+            {"white":958331,"draws":1346565,"black":692516,
+             "moves":[{"uci":"e2e4","san":"e4","averageRating":2390,"white":431551,"draws":610338,"black":326236,"game":null},
+                      {"uci":"d2d4","san":"d4","averageRating":2405,"white":342556,"draws":488326,"black":239633,"game":null}],
+             "topGames":[{"uci":"e2e4","id":"dfYKaW8J","winner":null,"white":{"name":"Carlsen, M.","rating":2839},
+                          "black":{"name":"Nakamura, Hi","rating":2816},"year":2025,"month":"2025-10"}],"opening":null}
+            """ : null;
+        _app.MasterPgns["dfYKaW8J"] = """
+            [Event "Clutch Chess: Champions"]
+            [White "Carlsen, M."]
+            [Black "Nakamura, Hi"]
+            [Result "1/2-1/2"]
+
+            1. e4 c5 2. Nf3 g6 1/2-1/2
+            """;
+        var gameId = await _app.CreateGameAsync();
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("tree-source-masters").ClickAsync();
+        await Expect(Page.GetByTestId("masters-move")).ToHaveTextAsync(["e4", "d4"]);
+        await Expect(Page.GetByTestId("masters-percent").First).ToHaveTextAsync("32 · 45 · 24");
+
+        // A Master Game opens read-only and is not added to the Collection.
+        await Page.GetByTestId("master-game").ClickAsync();
+        await Expect(Page.GetByTestId("master-white")).ToHaveTextAsync("Carlsen, M.");
+        await Expect(Page.GetByTestId("master-move")).ToHaveTextAsync(["e4", "c5", "Nf3", "g6"]);
+        await Page.GotoAsync(_app.BaseUrl);
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
+
+        // A position Lichess can't answer: the tab says so, the rest of the view works on.
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Page.GetByTestId("tree-source-masters").ClickAsync();
+        await Page.GetByTestId("masters-move").First.ClickAsync(); // explores 1.e4, nothing saved
+        await Expect(Page.GetByTestId("masters-unavailable")).ToContainTextAsync("Masters unavailable");
+        await Expect(Page.GetByTestId("explore-line")).ToHaveTextAsync("1.e4");
+        await Page.GetByTestId("tree-source-mine").ClickAsync();
+        await Expect(Page.GetByTestId("tree-count")).ToHaveTextAsync("0 Games");
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, PositionGame, TreeMove, eloLabel, problemMessage, resultLabel,
+  AnalysisLine, Api, BoardMove, Classification, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
 import { nextPly, numberedLine } from '../engine/scores';
 import { openGameAt } from '../shared/chess';
@@ -284,7 +284,7 @@ export class GameReview {
    * A move clicked in the Opening Tree: if the Game has it here, step into it; otherwise show
    * it on the board without saving (exploring).
    */
-  protected onTreeMove(move: TreeMove) {
+  protected onTreeMove(move: BoardMove) {
     if (!this.explore().length) {
       const recorded = this.continuations(this.currentId()).find((id) => this.nodes().get(id)?.uci === move.uci);
       if (recorded !== undefined) {

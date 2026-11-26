@@ -33,7 +33,6 @@ public sealed class PgnEntry
     public string? Tag(string name) => Tags.TryGetValue(name, out var value) ? value : null;
 }
 
-/// <summary>A Game that could be read, or the reason it could not.</summary>
 /// <summary>An entry that could be read, or the reason it could not.</summary>
 public sealed record PgnReadResult(int Index, PgnEntry? Entry, string? Error, string Source);
 

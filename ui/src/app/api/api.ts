@@ -78,6 +78,15 @@ export interface Settings {
   ownerName: string;
   /** Other spellings of the Owner's name, used to recognise the Owner on import. */
   aliases: string[];
+  /** Whether a Lichess API token is stored (the token itself is never sent back). */
+  hasLichessToken: boolean;
+}
+
+/** What a settings save sends. lichessToken: leave out to keep, empty to remove. */
+export interface SaveSettings {
+  ownerName: string;
+  aliases: string[];
+  lichessToken?: string;
 }
 
 export interface BackupStatus {
@@ -216,6 +225,57 @@ export interface OpeningTree {
   moves: TreeMove[];
   /** The newest of those Games (at most 50). */
   games: PositionGame[];
+}
+
+/** A move to show on the board: from the Opening Tree (either source). fen is the position after it. */
+export interface BoardMove {
+  uci: string;
+  san: string;
+  fen: string;
+}
+
+/** A move played from the position in Master Games (Lichess masters explorer). */
+export interface MastersMove extends BoardMove {
+  gameCount: number;
+  whitePercent: number;
+  drawPercent: number;
+  blackPercent: number;
+  averageRating: number | null;
+}
+
+/** A top Master Game for a position. Never stored in the Collection. */
+export interface MasterGameRef {
+  id: string;
+  white: string;
+  whiteRating: number | null;
+  black: string;
+  blackRating: number | null;
+  year: number | null;
+  result: GameResult;
+}
+
+/** The Masters source for a position; when not available, message says why. */
+export interface Masters {
+  available: boolean;
+  message: string | null;
+  gameCount: number;
+  moves: MastersMove[];
+  topGames: MasterGameRef[];
+}
+
+/** A Master Game to replay read-only. ply: where the asked position occurs, if it does. */
+export interface MasterGame {
+  id: string;
+  white: string;
+  whiteElo: number | null;
+  black: string;
+  blackElo: number | null;
+  result: string;
+  event: string | null;
+  site: string | null;
+  date: string | null;
+  moves: { san: string; uci: string; fen: string }[];
+  ply: number | null;
 }
 
 export interface PositionSearchResult {
@@ -385,11 +445,20 @@ export class Api {
     return this.http.get<PositionSearchResult>('/api/research/search', { params: { fen } });
   }
 
+  /** The Masters source (Lichess) for a position. Unavailability comes back as data, not an error. */
+  masters(fen: string): Observable<Masters> {
+    return this.http.get<Masters>('/api/research/masters', { params: { fen } });
+  }
+  /** A Master Game from Lichess; with a FEN, ply says where that position occurs in it. */
+  masterGame(id: string, fen?: string): Observable<MasterGame> {
+    return this.http.get<MasterGame>(`/api/research/masters/games/${encodeURIComponent(id)}`, { params: fen ? { fen } : {} });
+  }
+
   // Settings
   getSettings(): Observable<Settings> {
     return this.http.get<Settings>('/api/settings');
   }
-  saveSettings(settings: Settings): Observable<Settings> {
+  saveSettings(settings: SaveSettings): Observable<Settings> {
     return this.http.put<Settings>('/api/settings', settings);
   }
 

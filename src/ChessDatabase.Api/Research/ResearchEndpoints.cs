@@ -70,7 +70,7 @@ public static class ResearchEndpoints
     }
 
     /// <summary>Reads the FEN. Returns a 400 problem when it is not a position that can occur, otherwise null.</summary>
-    private static IResult? ReadPosition(string? fen, out Position position)
+    public static IResult? ReadPosition(string? fen, out Position position)
     {
         position = Position.Initial;
         try

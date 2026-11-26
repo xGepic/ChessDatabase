@@ -76,6 +76,24 @@
 </section>
 
 <section class="card narrow-card">
+  <header class="card-head"><h2>Lichess</h2></header>
+  <div class="form-grid">
+    <label for="lichess-token">API token</label>
+    <div>
+      <div class="backup-row">
+        <input #token id="lichess-token" data-testid="lichess-token" type="password" autocomplete="off"
+               [placeholder]="hasLichessToken() ? 'A token is saved' : 'Optional'" (keydown.enter)="saveLichessToken(token)" />
+        <button type="button" data-testid="lichess-token-save" (click)="saveLichessToken(token)">Save</button>
+        @if (hasLichessToken()) { <button type="button" class="link-button" (click)="saveLichessToken(token, true)">Remove</button> }
+      </div>
+      <p class="hint">The Masters source in the Opening Tree asks the Lichess masters explorer. It works without a token today;
+        if Lichess asks for one, create a personal token at lichess.org/account/oauth/token (no permissions needed) and paste it here.
+        @if (lichessMessage()) { <span class="status" data-testid="lichess-status">{{ lichessMessage() }}</span> }</p>
+    </div>
+  </div>
+</section>
+
+<section class="card narrow-card">
   <header class="card-head"><h2>Backups</h2></header>
   @if (backup(); as b) {
     <div class="form-grid">

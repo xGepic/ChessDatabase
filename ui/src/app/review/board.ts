@@ -45,6 +45,8 @@ export class Board implements OnDestroy {
   readonly fen = input.required<string>();
   readonly orientation = input<'white' | 'black'>('white');
   readonly lastMove = input<string | null>(null);
+  /** No moves can be made (e.g. a Master Game, which is only replayed). */
+  readonly viewOnly = input(false);
   readonly move = output<string>();
 
   protected readonly promotionPieces: { role: Promotion; name: string }[] = [
@@ -75,6 +77,7 @@ export class Board implements OnDestroy {
       this.fen();
       this.orientation();
       this.lastMove();
+      this.viewOnly();
       this.sync();
     });
   }
@@ -106,7 +109,8 @@ export class Board implements OnDestroy {
       turnColor: turn,
       check: chess.inCheck(),
       lastMove: last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined,
-      movable: { color: turn, dests },
+      movable: { color: this.viewOnly() ? undefined : turn, dests },
+      viewOnly: this.viewOnly(),
     });
   }
 
