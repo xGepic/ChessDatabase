@@ -96,7 +96,7 @@ public sealed partial record GameListQuery(
         if (OpponentId is { } opponentId && game.OpponentId != opponentId) return false;
         if (EventId is { } eventId && game.EventId != eventId) return false;
         if (_ownerColour is { } colour && game.OwnerColour != colour) return false;
-        if (_result is { } result && ResultForOwner(game) != result) return false;
+        if (_result is { } result && game.ResultForOwner() != result) return false;
         if (TimeControl is not null && !Names.Same(game.TimeControl, TimeControl)) return false;
         if (Tag is not null && !game.Tags.Any(t => Names.Same(t.Name, Tag))) return false;
         if (EcoFrom is not null && (game.Eco is null || string.CompareOrdinal(game.Eco, PadEco(EcoFrom, '0')) < 0)) return false;
@@ -144,13 +144,6 @@ public sealed partial record GameListQuery(
         errors[field] = [$"Use one of: {string.Join(", ", Enum.GetNames<T>().Select(n => char.ToLowerInvariant(n[0]) + n[1..]))}."];
         return null;
     }
-
-    private static OwnerResult ResultForOwner(GameRecord game) => game.Result switch
-    {
-        GameResult.Draw => OwnerResult.Draw,
-        GameResult.WhiteWins => game.OwnerColour == Collection.OwnerColour.White ? OwnerResult.Win : OwnerResult.Loss,
-        _ => game.OwnerColour == Collection.OwnerColour.Black ? OwnerResult.Win : OwnerResult.Loss,
-    };
 
     /// <summary>"b" → "B00" (lower bound) or "B99" (upper bound); "B9" → "B90" / "B99".</summary>
     private static string PadEco(string bound, char fill) => bound.ToUpperInvariant().PadRight(3, fill);

@@ -209,6 +209,7 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
             OpeningName = opening?.Name,
             CreatedAt = DateTime.UtcNow,
             MoveNodes = tree.Nodes,
+            Positions = Research.PositionIndex.Rows(tree.MainLineUcis),
         };
         db.Games.Add(game);
         await db.SaveChangesAsync();

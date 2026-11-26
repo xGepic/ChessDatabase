@@ -10,6 +10,14 @@ public enum GameResult
 
 public static class GameResults
 {
+    /// <summary>The Game's result seen from the Owner's side.</summary>
+    public static OwnerResult ResultForOwner(this Collection.GameRecord game) => game.Result switch
+    {
+        GameResult.Draw => OwnerResult.Draw,
+        GameResult.WhiteWins => game.OwnerColour == Collection.OwnerColour.White ? OwnerResult.Win : OwnerResult.Loss,
+        _ => game.OwnerColour == Collection.OwnerColour.Black ? OwnerResult.Win : OwnerResult.Loss,
+    };
+
     /// <summary>The PGN text of a result: "1-0", "0-1" or "1/2-1/2". This is also how the API writes it.</summary>
     public static string ToPgn(this GameResult result) => result switch
     {

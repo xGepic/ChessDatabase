@@ -25,7 +25,7 @@ public static class GameEndpoints
             var errors = await ValidateAsync(body, db);
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
-            var game = new GameRecord { CreatedAt = DateTime.UtcNow };
+            var game = new GameRecord { CreatedAt = DateTime.UtcNow, Positions = Research.PositionIndex.Rows([]) };
             await ApplyAsync(body, game, db);
             db.Games.Add(game);
             await db.SaveChangesAsync();

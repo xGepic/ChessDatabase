@@ -189,6 +189,32 @@ export interface AnalysisFinished {
   error: string | null;
 }
 
+/** A move played from a position in the Owner's Games. score: the Owner's, in percent. */
+export interface TreeMove {
+  uci: string;
+  san: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  score: number;
+}
+
+/** A Game whose main line reached a position: ply is when it first did (0 = the start). */
+export interface PositionGame {
+  game: GameSummary;
+  ply: number;
+  /** The number of the move played next from the position. */
+  moveNumber: number;
+}
+
+export interface OpeningTree {
+  /** Games that reached the position. */
+  games: number;
+  moves: TreeMove[];
+  gameList: PositionGame[];
+}
+
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
@@ -338,6 +364,15 @@ export class Api {
     const form = new FormData();
     form.append('file', file, file.name);
     return this.http.post<ImportSummary>('/api/import/file', form);
+  }
+
+  // Research
+  openingTree(fen: string): Observable<OpeningTree> {
+    return this.http.get<OpeningTree>('/api/research/tree', { params: { fen } });
+  }
+  /** Games whose main line reached the position. */
+  searchPosition(fen: string): Observable<PositionGame[]> {
+    return this.http.get<PositionGame[]>('/api/research/search', { params: { fen } });
   }
 
   // Settings

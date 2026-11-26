@@ -6,7 +6,7 @@ namespace ChessDatabase.Api.Games;
 
 /// <summary>
 /// Everything derived from a Game's main line. Called after every change to the move tree, so
-/// derived data (the ECO code and opening name) always follows the main line.
+/// derived data (the ECO code and opening name, the position index) always follows the main line.
 /// </summary>
 public static class MainLine
 {
@@ -17,6 +17,7 @@ public static class MainLine
         var opening = openings.Classify(tree.MainLine().Select(n => tree.PositionAfter(n.Id)));
         game.Eco = opening?.Eco;
         game.OpeningName = opening?.Name;
+        await Research.PositionIndex.RebuildAsync(db, gameId, tree);
         await db.SaveChangesAsync();
     }
 }

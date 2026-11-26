@@ -425,6 +425,28 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
     }
 
+    [Fact]
+    public async Task Walk_the_opening_tree_and_open_another_game_at_the_shared_position()
+    {
+        var first = await _app.CreateGameAsync("e4", "e5", "Nf3");
+        var second = await _app.CreateGameAsync("e4", "c5");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{first}?ply=0");
+
+        await Expect(Page.GetByTestId("tree-move")).ToHaveTextAsync(["e4"]);
+        await Expect(Page.GetByTestId("tree-games")).ToHaveTextAsync(["2"]);
+
+        await Page.GetByTestId("tree-move").First.ClickAsync(); // plays 1.e4 on the board
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("e4");
+        await Expect(Page.GetByTestId("tree-move")).ToHaveTextAsync(["c5", "e5"]);
+
+        // Both Games reached 1.e4; the newest (the second) is listed first. Opening it lands on 1.e4.
+        await Expect(Page.GetByTestId("tree-game")).ToHaveCountAsync(2);
+        await Page.GetByTestId("tree-game").First.ClickAsync();
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex($@"/games/{second}\?ply=1$"));
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("e4");
+        await Expect(Page.GetByTestId("move")).ToHaveTextAsync(["e4", "c5"]);
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

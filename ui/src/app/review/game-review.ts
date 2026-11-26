@@ -3,9 +3,12 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
+import {
+  AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
+} from '../api/api';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 import { AssessmentCard } from '../engine/assessment-card';
+import { OpeningTreePanel } from '../research/opening-tree';
 import { EnginePanel } from '../engine/engine-panel';
 import { EngineSession } from '../engine/engine-session';
 import { EvalBar } from '../engine/eval-bar';
@@ -17,7 +20,7 @@ import { Scoresheet, TreeAction } from './scoresheet';
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },
@@ -30,6 +33,8 @@ export class GameReview {
 
   /** Route parameter. */
   readonly id = input.required<string>();
+  /** Query parameter: open the Game at this main-line ply (0 = the start) instead of its end. */
+  readonly ply = input<string | undefined>();
 
   protected readonly game = signal<Game | null>(null);
   /** The move the board shows the position after; null is the starting position. */
@@ -98,10 +103,11 @@ export class GameReview {
 
     effect(() => {
       const id = Number(this.id());
+      this.ply(); // opening the same Game at another position reloads it there
       this.api.getGame(id).subscribe({
         next: (game) => {
           this.game.set(game);
-          this.currentId.set(this.lineEnd(null));
+          this.currentId.set(this.startNode());
           this.loadAssessment(game.id);
         },
         error: () => this.router.navigate(['/games']),
@@ -220,6 +226,24 @@ export class GameReview {
     const game = this.game();
     if (!game) return [];
     return id === null ? game.firstMoves : (this.nodes().get(id)?.children ?? []);
+  }
+
+  /** Where a Game opens: the main-line move at the requested ply, otherwise the end of the main line. */
+  private startNode(): number | null {
+    const ply = Number(this.ply());
+    if (this.ply() === undefined || !Number.isInteger(ply) || ply < 0) return this.lineEnd(null);
+    let id: number | null = null;
+    for (let i = 0; i < ply; i++) {
+      const next: number | undefined = this.continuations(id)[0];
+      if (next === undefined) break;
+      id = next;
+    }
+    return id;
+  }
+
+  /** Opens a Game from the Opening Tree at the position it shares with the board. */
+  protected onOpenAtPosition(entry: PositionGame) {
+    this.router.navigate(['/games', entry.game.id], { queryParams: { ply: entry.ply } });
   }
 
   /** Follows first continuations from a node to the end of its line. */

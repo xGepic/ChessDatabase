@@ -265,6 +265,29 @@ app-eval-bar .eval-bar { flex: 1; }
 .analysis-start .elo { width: 72px; }
 .analysis-start button { margin-left: auto; }
 
+/* ---------- Opening Tree ---------- */
+.tree-card .card-head { padding-bottom: 8px; }
+.tree-table { width: 100%; border-collapse: collapse; }
+.tree-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 4px 12px; border-bottom: 1px solid var(--rule); }
+.tree-table td { padding: 2px 12px; border-bottom: 1px solid var(--cream-deep); vertical-align: middle; }
+.tree-table td:last-child { display: flex; align-items: center; gap: 8px; }
+.tree-move { background: transparent; border: none; padding: 3px 4px; font-weight: 600; color: var(--ink); }
+.tree-move:hover { background: var(--cream-deep) !important; }
+.score-bar { display: flex; flex: 1; height: 8px; border-radius: 4px; overflow: hidden; background: var(--rule); min-width: 60px; }
+.score-bar .won { background: var(--felt); }
+.score-bar .drawn { background: #b8a98f; }
+.score-bar .lost { background: var(--blood); }
+.score { width: 52px; text-align: right; font-size: 12px; }
+.tree-subhead { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 10px 12px 2px; }
+.position-games { list-style: none; margin: 0; padding: 0 0 6px; }
+.position-game {
+  display: grid; grid-template-columns: 86px 1fr auto 60px; gap: 8px; align-items: baseline; width: 100%; text-align: left;
+  background: transparent; border: none; border-radius: 0; padding: 4px 12px; color: var(--ink); font-size: 13px;
+}
+.position-game:hover { background: var(--cream-deep) !important; }
+.position-game.current { font-weight: 600; }
+.tree-more { margin: 0 12px 8px; }
+
 /* ---------- Game Analysis queue: list selection and the strip under the top bar ---------- */
 .game-table .pick { width: 36px; padding-right: 0; }
 .game-table .pick input { cursor: pointer; }

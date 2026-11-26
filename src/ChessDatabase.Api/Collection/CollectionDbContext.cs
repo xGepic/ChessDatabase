@@ -15,6 +15,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<ImportReviewItemRecord> ImportReviewItems => Set<ImportReviewItemRecord>();
     public DbSet<EngineRecord> Engines => Set<EngineRecord>();
     public DbSet<EngineAssessmentRecord> EngineAssessments => Set<EngineAssessmentRecord>();
+    public DbSet<PositionIndexRecord> PositionIndex => Set<PositionIndexRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -38,6 +39,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             game.HasMany(g => g.Tags).WithMany();
             game.HasOne(g => g.Opponent).WithMany().HasForeignKey(g => g.OpponentId).OnDelete(DeleteBehavior.Restrict);
             game.HasMany(g => g.MoveNodes).WithOne().HasForeignKey(n => n.GameId).OnDelete(DeleteBehavior.Cascade);
+            game.HasMany(g => g.Positions).WithOne().HasForeignKey(p => p.GameId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<EngineRecord>(engine =>
@@ -47,6 +49,13 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             engine.Property(e => e.Arguments).HasMaxLength(2000);
             engine.Property(e => e.ReportedName).HasMaxLength(200);
             engine.HasData(EngineRecord.Stockfish());
+        });
+
+        model.Entity<PositionIndexRecord>(position =>
+        {
+            position.Property(p => p.Uci).HasMaxLength(5);
+            position.HasIndex(p => p.Hash);
+            position.HasIndex(p => new { p.GameId, p.Ply }).IsUnique();
         });
 
         model.Entity<EngineAssessmentRecord>(assessment =>
@@ -114,6 +123,29 @@ public sealed class GameRecord
     public DateTime CreatedAt { get; set; }
     public List<MoveNodeRecord> MoveNodes { get; set; } = [];
     public List<TagRecord> Tags { get; set; } = [];
+
+    /// <summary>The Game's main-line positions, kept in step with the move tree (see <see cref="PositionIndexRecord"/>).</summary>
+    public List<PositionIndexRecord> Positions { get; set; } = [];
+}
+
+/// <summary>
+/// The position index: one row per main-line position of a Game, the starting position and the
+/// final one included. Variations are never indexed. It drives the Opening Tree and Position Search,
+/// and is rebuilt whenever a Game's main line changes.
+/// </summary>
+public sealed class PositionIndexRecord
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+
+    /// <summary>Half-moves played to reach the position: 0 is the starting position.</summary>
+    public int Ply { get; set; }
+
+    /// <summary>The position's Zobrist hash (Chess Rules), stored as a signed 64-bit number.</summary>
+    public long Hash { get; set; }
+
+    /// <summary>The move played from the position in UCI; null at the end of the main line.</summary>
+    public string? Uci { get; set; }
 }
 
 /// <summary>The tournament, league, match or occasion a Game was played in.</summary>

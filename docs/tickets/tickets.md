@@ -23,7 +23,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | **Done** |
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | **Done** |
 | 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
-| 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | Open |
+| 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | **Done** |
 | 17 | [Position Search](#17-position-search) | 16 | Open |
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | Open |
 | 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | Open |
@@ -306,14 +306,14 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 04 (Replay a Game and branch into Variations).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Opening Tree shows moves, Game counts and the Owner's score for the current position
-- [ ] Positions reached by different move orders are counted together
-- [ ] Clicking a move plays it; the Game list for the position opens Games at that position
-- [ ] Promoting a Variation or editing the main line updates the tree immediately
-- [ ] Variation moves never appear in the tree
-- [ ] API tests over a seeded Collection cover counts, scores and transpositions
+- [x] The Opening Tree shows moves, Game counts and the Owner's score for the current position
+- [x] Positions reached by different move orders are counted together
+- [x] Clicking a move plays it; the Game list for the position opens Games at that position
+- [x] Promoting a Variation or editing the main line updates the tree immediately
+- [x] Variation moves never appear in the tree
+- [x] API tests over a seeded Collection cover counts, scores and transpositions
 
 ---
 
