@@ -38,6 +38,7 @@ public sealed class CollectionFactory(string? directory = null, TimeProvider? cl
         builder.UseSetting("Backup:Daily", dailyBackups ? "true" : "false");
         // Tests never reach Lichess: anything not faked goes to a port nothing listens on.
         builder.UseSetting("Masters:BaseUrl", "http://127.0.0.1:9/");
+        builder.UseSetting("Tablebase:BaseUrl", "http://127.0.0.1:9/");
         foreach (var (key, value) in Settings) builder.UseSetting(key, value);
         builder.UseEnvironment("Testing");
         builder.ConfigureTestServices(services =>

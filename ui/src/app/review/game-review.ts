@@ -12,6 +12,7 @@ import { openGameAt } from '../shared/chess';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 import { AssessmentCard } from '../engine/assessment-card';
 import { OpeningTreePanel } from '../research/opening-tree';
+import { TablebasePanel } from '../research/tablebase-panel';
 import { EnginePanel } from '../engine/engine-panel';
 import { EngineSession } from '../engine/engine-session';
 import { EvalBar } from '../engine/eval-bar';
@@ -31,7 +32,7 @@ interface ExploreStep {
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, RouterLink],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, RouterLink],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },

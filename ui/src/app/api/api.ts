@@ -286,6 +286,27 @@ export interface MasterGame {
   ply: number | null;
 }
 
+/** A move with its Tablebase verdict, from the side that plays it. Distances are in half-moves, positive when winning. */
+export interface TablebaseMove extends BoardMove {
+  category: string;
+  dtz: number | null;
+  dtm: number | null;
+  zeroing: boolean;
+}
+
+/** The Tablebase verdict for a position (category for the side to move); applicable only with up to 7 pieces. */
+export interface Tablebase {
+  applicable: boolean;
+  available: boolean;
+  message: string | null;
+  category: string | null;
+  outcome: string | null;
+  dtz: number | null;
+  dtm: number | null;
+  /** Best first. */
+  moves: TablebaseMove[];
+}
+
 export interface PositionSearchResult {
   /** Games that reached the position. */
   gameCount: number;
@@ -456,6 +477,10 @@ export class Api {
   /** The Masters source (Lichess) for a position. Unavailability comes back as data, not an error. */
   masters(fen: string): Observable<Masters> {
     return this.http.get<Masters>('/api/research/masters', { params: { fen } });
+  }
+  /** The Tablebase verdict for a position (Lichess). Unavailability comes back as data, not an error. */
+  tablebase(fen: string): Observable<Tablebase> {
+    return this.http.get<Tablebase>('/api/research/tablebase', { params: { fen } });
   }
   /** A Master Game from Lichess; with a FEN, ply says where that position occurs in it. */
   masterGame(id: string, fen?: string): Observable<MasterGame> {

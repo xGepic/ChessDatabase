@@ -295,6 +295,15 @@ app-eval-bar .eval-bar { flex: 1; }
 .position-game.master-game { grid-template-columns: 44px 1fr auto; }
 .tree-table .other-moves td { font-size: 12px; }
 
+/* ---------- Tablebase ---------- */
+.tablebase-card { padding: 0; }
+.tablebase-verdict { font-weight: 600; }
+[data-category="win"], [data-category="cursed-win"], [data-category="maybe-win"] { --verdict: var(--felt); }
+[data-category="draw"], [data-category="unknown"] { --verdict: var(--ink-soft); }
+[data-category="loss"], [data-category="blessed-loss"], [data-category="maybe-loss"] { --verdict: var(--blood); }
+.tablebase-verdict, .tablebase-move .tablebase-move-verdict { color: var(--verdict, var(--ink)); }
+.tablebase-move { grid-template-columns: 72px 1fr; }
+
 /* ---------- a Master Game, replayed read-only ---------- */
 .master-layout { display: grid; grid-template-columns: min(calc(100vh - 150px), 640px) minmax(320px, 420px); gap: 20px; align-items: start; }
 .master-note { margin: 6px 0 0; }

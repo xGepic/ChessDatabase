@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Api, PositionGame, PositionSearchResult, problemMessage, resultLabel } from '../api/api';
 import { INITIAL_FEN, openGameAt } from '../shared/chess';
 import { PositionEditor } from './position-editor';
+import { TablebasePanel } from './tablebase-panel';
 
 /**
  * Position Search: find every Game whose main line reached a position. The position comes from
@@ -11,12 +12,13 @@ import { PositionEditor } from './position-editor';
  */
 @Component({
   selector: 'app-position-search',
-  imports: [PositionEditor],
+  imports: [PositionEditor, TablebasePanel],
   template: `
     <div class="search-layout">
       <section class="card search-editor-card">
         <header class="card-head"><h1>Position Search</h1></header>
         <app-position-editor [initialFen]="startFen()" (fenChange)="current.set($event)" />
+        <app-tablebase-panel [fen]="current()" (play)="startFen.set($event.fen)" />
         <div class="search-actions">
           <button type="button" class="primary" data-testid="search-position" (click)="search()">Search my Games</button>
           @if (error()) { <span class="field-error" role="alert" data-testid="search-error">{{ error() }}</span> }

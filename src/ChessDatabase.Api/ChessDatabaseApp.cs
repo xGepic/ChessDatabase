@@ -40,6 +40,13 @@ public static class ChessDatabaseApp
             http.DefaultRequestHeaders.UserAgent.ParseAdd("ChessDatabase/1.0");
         });
         builder.Services.AddTransient<IMastersSource>(services => services.GetRequiredService<MastersClient>());
+        builder.Services.AddSingleton<TablebaseState>();
+        builder.Services.AddHttpClient<TablebaseClient>(http =>
+        {
+            http.Timeout = Timeout.InfiniteTimeSpan; // LichessFetch applies its own short timeout
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("ChessDatabase/1.0");
+        });
+        builder.Services.AddTransient<ITablebaseSource>(services => services.GetRequiredService<TablebaseClient>());
         builder.Services.AddSingleton<GameAnalyzer>();
         builder.Services.AddSingleton<GameAnalysisQueue>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<GameAnalysisQueue>());
@@ -71,6 +78,7 @@ public static class ChessDatabaseApp
         app.MapCopyAssessmentEndpoints();
         app.MapResearchEndpoints();
         app.MapMastersEndpoints();
+        app.MapTablebaseEndpoints();
         app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.

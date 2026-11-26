@@ -26,6 +26,7 @@
       }
       <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
                         (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
+      <app-tablebase-panel [fen]="fen()" (play)="onTreeMove($event)" />
       <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)" />
     </div>
 

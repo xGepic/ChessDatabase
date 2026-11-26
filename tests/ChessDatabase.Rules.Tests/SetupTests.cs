@@ -25,4 +25,12 @@ public class SetupTests
     {
         Assert.Contains(reason, Position.FromFen(fen).SetupProblem());
     }
+
+    [Theory]
+    [InlineData(Position.InitialFen, 32)]
+    [InlineData("4k3/6KP/8/8/8/8/7p/8 w - - 0 1", 4)]
+    public void Pieces_are_counted_with_kings_and_pawns(string fen, int count)
+    {
+        Assert.Equal(count, Position.FromFen(fen).PieceCount);
+    }
 }

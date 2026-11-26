@@ -28,6 +28,9 @@ public sealed class SmokeApp : IAsyncLifetime
 
     /// <summary>The fake Lichess's Master Game PGNs by id.</summary>
     public Dictionary<string, string> MasterPgns { get; } = [];
+
+    /// <summary>The fake Lichess tablebase's answer by FEN; null (the default) answers 503.</summary>
+    public Func<string, string?> TablebaseJson { get; set; } = _ => null;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
@@ -45,7 +48,7 @@ public sealed class SmokeApp : IAsyncLifetime
         var lichessUrl = await StartFakeLichessAsync();
         var builder = ChessDatabaseApp.CreateBuilder([], new WebApplicationOptions
         {
-            Args = [$"--Collection:DatabasePath={databasePath}", $"--Masters:BaseUrl={lichessUrl}"],
+            Args = [$"--Collection:DatabasePath={databasePath}", $"--Masters:BaseUrl={lichessUrl}", $"--Tablebase:BaseUrl={lichessUrl}"],
             EnvironmentName = "Testing",
             ContentRootPath = _directory,
             WebRootPath = uiRoot,
@@ -125,6 +128,9 @@ public sealed class SmokeApp : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         _lichess = builder.Build();
         _lichess.MapGet("/masters", (string fen) => MastersJson(fen) is { } json
+            ? Results.Text(json, "application/json")
+            : Results.StatusCode(503));
+        _lichess.MapGet("/standard", (string fen) => TablebaseJson(fen) is { } json
             ? Results.Text(json, "application/json")
             : Results.StatusCode(503));
         _lichess.MapGet("/masters/pgn/{id}", (string id) => MasterPgns.TryGetValue(id, out var pgn)

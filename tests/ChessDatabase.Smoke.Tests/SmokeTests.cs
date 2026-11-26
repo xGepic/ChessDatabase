@@ -553,6 +553,33 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("tree-count")).ToHaveTextAsync("0 Games");
     }
 
+    [Fact]
+    public async Task An_endgame_shows_the_tablebase_verdict_and_ranked_moves()
+    {
+        _app.TablebaseJson = _ => """
+            {"dtz":1,"dtm":17,"category":"win","moves":[
+              {"uci":"h7h8q","category":"loss","dtz":-2,"dtm":-16,"zeroing":true},
+              {"uci":"g7g8","category":"draw","dtz":0,"dtm":0,"zeroing":false}]}
+            """;
+        var gameId = await _app.CreateGameAsync("e4");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Expect(Page.GetByTestId("engine-toggle")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("tablebase")).ToHaveCountAsync(0); // 32 pieces: nothing to look up
+
+        await Page.GotoAsync($"{_app.BaseUrl}/search?fen={Uri.EscapeDataString("4k3/6KP/8/8/8/8/7p/8 w - - 0 1")}");
+        await Expect(Page.GetByTestId("tablebase-verdict")).ToHaveTextAsync("White wins");
+        await Expect(Page.GetByTestId("tablebase-move")).ToHaveCountAsync(2);
+        await Expect(Page.GetByTestId("tablebase-move").First).ToContainTextAsync("h8=Q+");
+        await Expect(Page.GetByTestId("tablebase-move").First).ToContainTextAsync("Win");
+
+        // Lichess unreachable for the next position: said quietly, the page carries on.
+        _app.TablebaseJson = _ => null;
+        await Page.GetByTestId("tablebase-move").First.ClickAsync();
+        await Expect(Page.GetByTestId("tablebase-unavailable")).ToContainTextAsync("Tablebase unavailable");
+        await Page.GetByTestId("search-position").ClickAsync();
+        await Expect(Page.GetByTestId("search-empty")).ToBeVisibleAsync();
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

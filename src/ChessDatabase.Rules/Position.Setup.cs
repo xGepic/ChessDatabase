@@ -2,6 +2,9 @@ namespace ChessDatabase.Rules;
 
 public sealed partial class Position
 {
+    /// <summary>All pieces on the board, kings and pawns included.</summary>
+    public int PieceCount => _board.Count(code => code != 0);
+
     /// <summary>
     /// Why a set-up position (from a FEN or the position editor) could not occur in a game, or
     /// null when it can be used. FEN parsing already ensures one king per side.

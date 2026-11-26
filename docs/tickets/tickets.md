@@ -26,7 +26,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | **Done** |
 | 17 | [Position Search](#17-position-search) | 16 | **Done** |
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | **Done** |
-| 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | Open |
+| 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | **Done** |
 | 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | Open |
 | 21 | [Merge Players](#21-merge-players) | 20 | Open |
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | Open |
@@ -355,12 +355,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 04 (Replay a Game and branch into Variations).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Positions with 7 or fewer pieces show the Tablebase verdict and a ranked move list
-- [ ] Positions with more pieces show nothing and make no call
-- [ ] Offline or API errors show a subtle "Tablebase unavailable" and nothing breaks
-- [ ] Tests use a fake HTTP handler for success, timeout and error responses
+- [x] Positions with 7 or fewer pieces show the Tablebase verdict and a ranked move list
+- [x] Positions with more pieces show nothing and make no call
+- [x] Offline or API errors show a subtle "Tablebase unavailable" and nothing breaks
+- [x] Tests use a fake HTTP handler for success, timeout and error responses
 
 ---
 
