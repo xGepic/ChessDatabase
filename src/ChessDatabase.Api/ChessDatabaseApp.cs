@@ -33,11 +33,13 @@ public static class ChessDatabaseApp
         builder.Services.AddSingleton<InteractiveAnalysis>();
         builder.Services.AddSignalR();
         builder.Services.AddSingleton<MastersState>();
+        builder.Services.AddSingleton<LichessTokenStore>();
         builder.Services.AddHttpClient<MastersClient>(http =>
         {
             http.Timeout = Timeout.InfiniteTimeSpan; // MastersClient applies its own short timeout
             http.DefaultRequestHeaders.UserAgent.ParseAdd("ChessDatabase/1.0");
         });
+        builder.Services.AddTransient<IMastersSource>(services => services.GetRequiredService<MastersClient>());
         builder.Services.AddSingleton<GameAnalyzer>();
         builder.Services.AddSingleton<GameAnalysisQueue>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<GameAnalysisQueue>());

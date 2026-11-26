@@ -1,5 +1,7 @@
 import { Location } from '@angular/common';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { catchError, combineLatest, map, of, switchMap } from 'rxjs';
 import { Api, MasterGame, problemMessage } from '../api/api';
 import { Board } from '../review/board';
 import { INITIAL_FEN } from '../shared/chess';
@@ -27,10 +29,10 @@ import { INITIAL_FEN } from '../shared/chess';
         </div>
         <section class="card scoresheet-card" data-testid="master-game-view">
           <header class="sheet-head">
-            <div class="sheet-player"><span class="colour-dot"></span><span class="name" data-testid="master-white">{{ g.white }}</span>
-              <span class="elo">{{ g.whiteElo ?? '' }}</span></div>
-            <div class="sheet-player"><span class="colour-dot black"></span><span class="name">{{ g.black }}</span>
-              <span class="elo">{{ g.blackElo ?? '' }}</span></div>
+            <div class="sheet-player"><span class="colour-dot"></span><span class="name" data-testid="master-white">{{ g.white.name }}</span>
+              <span class="elo">{{ g.white.elo ?? '' }}</span></div>
+            <div class="sheet-player"><span class="colour-dot black"></span><span class="name">{{ g.black.name }}</span>
+              <span class="elo">{{ g.black.elo ?? '' }}</span></div>
             <div class="sheet-meta"><span>{{ meta() }}</span><span class="sheet-result">{{ g.result }}</span></div>
             <p class="hint master-note">Master Game from Lichess, shown read-only. It is not part of your Collection.</p>
           </header>
@@ -76,17 +78,24 @@ export class MasterGamePage {
   });
 
   constructor() {
-    effect(() => {
-      const id = this.id();
-      const fen = this.fen();
-      this.api.masterGame(id, fen).subscribe({
-        next: (game) => {
-          this.game.set(game);
-          this.ply.set(game.ply ?? 0);
-        },
-        error: (e) => this.error.set(problemMessage(e)),
+    // A new id or position replaces the game; only the latest request's answer is shown.
+    combineLatest([toObservable(this.id), toObservable(this.fen)])
+      .pipe(
+        switchMap(([id, fen]) => {
+          this.game.set(null);
+          this.error.set('');
+          return this.api.masterGame(id, fen).pipe(
+            map((game) => ({ game, error: '' })),
+            catchError((e) => of({ game: null, error: problemMessage(e) })),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ game, error }) => {
+        this.game.set(game);
+        this.error.set(error);
+        this.ply.set(game?.ply ?? 0);
       });
-    });
   }
 
   protected step(delta: number) {

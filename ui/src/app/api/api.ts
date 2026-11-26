@@ -82,11 +82,9 @@ export interface Settings {
   hasLichessToken: boolean;
 }
 
-/** What a settings save sends. lichessToken: leave out to keep, empty to remove. */
 export interface SaveSettings {
   ownerName: string;
   aliases: string[];
-  lichessToken?: string;
 }
 
 export interface BackupStatus {
@@ -234,22 +232,31 @@ export interface BoardMove {
   fen: string;
 }
 
+/** A player of a Master Game, with the Elo Lichess has for them. */
+export interface MasterPlayer {
+  name: string;
+  elo: number | null;
+}
+
+/** How games ended, in percent: White won, drawn, Black won. */
+export interface ResultShare {
+  white: number;
+  draw: number;
+  black: number;
+}
+
 /** A move played from the position in Master Games (Lichess masters explorer). */
 export interface MastersMove extends BoardMove {
   gameCount: number;
-  whitePercent: number;
-  drawPercent: number;
-  blackPercent: number;
-  averageRating: number | null;
+  results: ResultShare;
+  averageElo: number | null;
 }
 
 /** A top Master Game for a position. Never stored in the Collection. */
 export interface MasterGameRef {
   id: string;
-  white: string;
-  whiteRating: number | null;
-  black: string;
-  blackRating: number | null;
+  white: MasterPlayer;
+  black: MasterPlayer;
   year: number | null;
   result: GameResult;
 }
@@ -259,17 +266,18 @@ export interface Masters {
   available: boolean;
   message: string | null;
   gameCount: number;
+  /** The most played moves (at most 12). */
   moves: MastersMove[];
+  /** Master Games that went on with a move not listed. */
+  otherMovesGameCount: number;
   topGames: MasterGameRef[];
 }
 
 /** A Master Game to replay read-only. ply: where the asked position occurs, if it does. */
 export interface MasterGame {
   id: string;
-  white: string;
-  whiteElo: number | null;
-  black: string;
-  blackElo: number | null;
+  white: MasterPlayer;
+  black: MasterPlayer;
   result: string;
   event: string | null;
   site: string | null;
@@ -460,6 +468,10 @@ export class Api {
   }
   saveSettings(settings: SaveSettings): Observable<Settings> {
     return this.http.put<Settings>('/api/settings', settings);
+  }
+  /** Stores the Lichess token (encrypted, outside the Collection); an empty one removes it. */
+  saveLichessToken(token: string): Observable<{ hasLichessToken: boolean }> {
+    return this.http.put<{ hasLichessToken: boolean }>('/api/settings/lichess-token', { token });
   }
 
   // Engines

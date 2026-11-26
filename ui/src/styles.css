@@ -293,6 +293,7 @@ app-eval-bar .eval-bar { flex: 1; }
 .result-bar .white-won { background: #f7efe0; border-right: 1px solid var(--rule); }
 .result-bar .black-won { background: var(--ink); }
 .position-game.master-game { grid-template-columns: 44px 1fr auto; }
+.tree-table .other-moves td { font-size: 12px; }
 
 /* ---------- a Master Game, replayed read-only ---------- */
 .master-layout { display: grid; grid-template-columns: min(calc(100vh - 150px), 640px) minmax(320px, 420px); gap: 20px; align-items: start; }

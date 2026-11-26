@@ -251,7 +251,7 @@ Delivery happens in five phases. Each phase leaves the app usable:
 ## Further Notes
 
 - **Phase order** is a delivery sequence, not a priority ranking between later phases. Each phase should end with the app usable for the stories delivered so far.
-- **Lichess APIs:** check the current terms and authentication requirements of the masters opening explorer and tablebase endpoints at phase 2. If they require a personal API token, store it in Settings. If availability is unreliable, the Masters source degrades to "unavailable" without affecting anything else.
+- **Lichess APIs:** check the current terms and authentication requirements of the masters opening explorer and tablebase endpoints at phase 2. If they require a personal API token, the Owner enters it in Settings; it is stored encrypted for the Windows user outside the Collection, so backups never carry it. (Checked at phase 2: the masters explorer is documented as authenticated but currently answers without a token, so the token is optional.) If availability is unreliable, the Masters source degrades to "unavailable" without affecting anything else.
 - **Lc0** needs a network weights file and a GPU backend (CUDA). Setting it up is a phase 5 task. The Engine Host's multi-engine support from phase 1 should mean no redesign is needed.
 - **ADR 0003** (Engine Assessment kept separate) is up for review by the Owner once phase 1 is in use.
 - **Scale assumption:** fewer than 10,000 Games. Simple indexed SQLite queries are sufficient, so there's no need for specialised position-search structures.

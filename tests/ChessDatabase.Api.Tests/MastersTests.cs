@@ -50,12 +50,13 @@ public class MastersTests
         Assert.True(masters.Available);
         Assert.Equal(2_997_412, masters.GameCount);
         var e4 = masters.Moves[0];
-        Assert.Equal(("e2e4", "e4", 1_368_125, 2390), (e4.Uci, e4.San, e4.GameCount, e4.AverageRating));
-        Assert.Equal((31.5, 44.6, 23.8), (e4.WhitePercent, e4.DrawPercent, e4.BlackPercent));
+        Assert.Equal(("e2e4", "e4", 1_368_125, 2390), (e4.Uci, e4.San, e4.GameCount, e4.AverageElo));
+        Assert.Equal(new ResultShareDto(31.5, 44.6, 23.8), e4.Results);
         Assert.Equal(ResearchTestExtensions.Fen("e4"), e4.Fen);
         Assert.Equal(["e4", "d4"], masters.Moves.Select(m => m.San));
         var request = Assert.Single(lichess.Requests);
-        Assert.Contains("fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR%20w%20KQkq%20-%200%201", request.RequestUri!.Query);
+        Assert.Contains("fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR%20w%20KQkq%20-&", request.RequestUri!.Query);
+        Assert.Equal(2_997_412 - 1_368_125 - 1_070_515, masters.OtherMovesGameCount); // moves beyond the ones listed
         Assert.Null(request.Headers.Authorization);
     }
 
@@ -69,7 +70,7 @@ public class MastersTests
 
         Assert.Equal(
             [("dfYKaW8J", "Carlsen, M.", 2839, "Nakamura, Hi", 2816, 2025, "1/2-1/2"), ("aAbqI4ey", "Kasparov, G.", 2851, "Karpov, A.", 2730, 1990, "1-0")],
-            masters.TopGames.Select(g => (g.Id, g.White, g.WhiteRating, g.Black, g.BlackRating, g.Year, g.Result)));
+            masters.TopGames.Select(g => (g.Id, g.White.Name, g.White.Elo, g.Black.Name, g.Black.Elo, g.Year, g.Result)));
     }
 
     [Fact]
@@ -82,7 +83,7 @@ public class MastersTests
         var game = (await client.GetFromJsonAsync<MasterGameDto>(
             $"/api/research/masters/games/dfYKaW8J?fen={Uri.EscapeDataString(ResearchTestExtensions.Fen("e4", "c5"))}"))!;
 
-        Assert.Equal(("Carlsen, M.", 2839, "Nakamura, Hi", 2816, "1/2-1/2"), (game.White, game.WhiteElo, game.Black, game.BlackElo, game.Result));
+        Assert.Equal(("Carlsen, M.", 2839, "Nakamura, Hi", 2816, "1/2-1/2"), (game.White.Name, game.White.Elo, game.Black.Name, game.Black.Elo, game.Result));
         Assert.Equal(("Clutch Chess: Champions", "Saint Louis USA", "2025-10-29"), (game.Event, game.Site, game.Date));
         Assert.Equal(["e4", "c5", "Nf3", "g6", "d4", "cxd4"], game.Moves.Select(m => m.San));
         Assert.Equal(ResearchTestExtensions.Fen("e4", "c5", "Nf3", "g6", "d4", "cxd4"), game.Moves[^1].Fen);
@@ -103,6 +104,54 @@ public class MastersTests
         await client.GetAsync("/api/research/masters/games/dfYKaW8J");
 
         Assert.Equal(2, lichess.Requests.Count);
+    }
+
+    [Fact]
+    public async Task The_same_position_at_another_move_number_comes_from_the_cache()
+    {
+        var lichess = new FakeLichess().Json("/masters", StartJson);
+        using var factory = MastersFactory(lichess);
+        var client = factory.CreateClient();
+        // 1.Nf3 Nf6 2.Ng1 Ng8 brings back the starting position, at move 3 with a halfmove clock of 4.
+        var again = ResearchTestExtensions.Fen("Nf3", "Nf6", "Ng1", "Ng8");
+
+        await client.MastersAsync(ResearchTestExtensions.Fen());
+        var cached = await client.MastersAsync(again);
+
+        Assert.True(cached.Available);
+        Assert.Single(lichess.Requests);
+    }
+
+    [Fact]
+    public async Task An_empty_answer_is_unavailable_and_not_kept()
+    {
+        var lichess = new FakeLichess().Json("/masters", "null");
+        using var factory = MastersFactory(lichess);
+        var client = factory.CreateClient();
+
+        var first = await client.MastersAsync(ResearchTestExtensions.Fen());
+        await client.MastersAsync(ResearchTestExtensions.Fen());
+
+        Assert.False(first.Available);
+        Assert.Contains("unexpected", first.Message);
+        Assert.Equal(2, lichess.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Waiting_behind_a_slow_request_is_not_blamed_on_Lichess()
+    {
+        var lichess = new FakeLichess { Delay = TimeSpan.FromSeconds(3) }.Json("/masters", StartJson);
+        using var factory = MastersFactory(lichess, timeoutSeconds: "10");
+        factory.Settings["Masters:QueueSeconds"] = "1";
+        var client = factory.CreateClient();
+
+        var slow = client.MastersAsync(ResearchTestExtensions.Fen());
+        await Task.Delay(300);
+        var queued = await client.MastersAsync(ResearchTestExtensions.Fen("e4"));
+
+        Assert.False(queued.Available);
+        Assert.Contains("busy with earlier requests", queued.Message);
+        Assert.True((await slow).Available);
     }
 
     [Fact]
@@ -166,25 +215,39 @@ public class MastersTests
     }
 
     [Fact]
-    public async Task A_Lichess_token_from_Settings_is_sent_and_never_shown_again()
+    public async Task A_Lichess_token_is_sent_but_never_shown_and_never_stored_in_the_Collection()
     {
         var lichess = new FakeLichess().Json("/masters", StartJson);
         using var factory = MastersFactory(lichess);
         var client = factory.CreateClient();
+        await client.SetOwnerNameAsync("Max Mustermann");
 
-        (await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max", lichessToken = "lip_secret" })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync("/api/settings/lichess-token", new { token = " lip_secret " })).EnsureSuccessStatusCode();
         await client.MastersAsync(ResearchTestExtensions.Fen());
 
         Assert.Equal("Bearer lip_secret", Assert.Single(lichess.Requests).Headers.Authorization?.ToString());
         var settings = await client.GetStringAsync("/api/settings");
         Assert.DoesNotContain("lip_secret", settings);
         Assert.Contains("\"hasLichessToken\":true", settings);
+        Assert.Contains("Max Mustermann", settings); // saving the token left the other settings alone
 
-        // Saving other settings keeps the token; an empty one removes it.
-        (await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max M." })).EnsureSuccessStatusCode();
-        Assert.Contains("\"hasLichessToken\":true", await client.GetStringAsync("/api/settings"));
-        (await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max M.", lichessToken = "" })).EnsureSuccessStatusCode();
+        // Kept outside the Collection, encrypted: neither the database nor a backup holds it.
+        var backup = await client.BackUpNowAsync();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        foreach (var file in Directory.GetFiles(factory.Directory, "*", SearchOption.AllDirectories))
+            Assert.DoesNotContain("lip_secret", Encoding.UTF8.GetString(await ReadSharedAsync(file)));
+        Assert.Single(Directory.GetFiles(backup.Folder, "*.db"));
+
+        (await client.PutAsJsonAsync("/api/settings/lichess-token", new { token = "" })).EnsureSuccessStatusCode();
         Assert.Contains("\"hasLichessToken\":false", await client.GetStringAsync("/api/settings"));
+    }
+
+    private static async Task<byte[]> ReadSharedAsync(string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        return memory.ToArray();
     }
 
     [Fact]
@@ -244,17 +307,21 @@ public sealed class FakeLichess : HttpMessageHandler
     }
 }
 
-public sealed record MastersMoveDto(
-    string Uci, string San, string Fen, long GameCount, double WhitePercent, double DrawPercent, double BlackPercent, int? AverageRating);
+public sealed record MasterPlayerDto(string Name, int? Elo);
 
-public sealed record MasterGameRefDto(string Id, string White, int? WhiteRating, string Black, int? BlackRating, int? Year, string Result);
+public sealed record ResultShareDto(double White, double Draw, double Black);
 
-public sealed record MastersDto(bool Available, string? Message, long GameCount, List<MastersMoveDto> Moves, List<MasterGameRefDto> TopGames);
+public sealed record MastersMoveDto(string Uci, string San, string Fen, long GameCount, ResultShareDto Results, int? AverageElo);
+
+public sealed record MasterGameRefDto(string Id, MasterPlayerDto White, MasterPlayerDto Black, int? Year, string Result);
+
+public sealed record MastersDto(
+    bool Available, string? Message, long GameCount, List<MastersMoveDto> Moves, long OtherMovesGameCount, List<MasterGameRefDto> TopGames);
 
 public sealed record MasterMoveDto(string San, string Uci, string Fen);
 
 public sealed record MasterGameDto(
-    string Id, string White, int? WhiteElo, string Black, int? BlackElo, string Result, string? Event, string? Site, string? Date,
+    string Id, MasterPlayerDto White, MasterPlayerDto Black, string Result, string? Event, string? Site, string? Date,
     List<MasterMoveDto> Moves, int? Ply);
 
 public static class MastersTestExtensions

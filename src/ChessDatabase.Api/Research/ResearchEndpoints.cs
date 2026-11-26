@@ -2,7 +2,6 @@ using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
-using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Research;
 
@@ -48,7 +47,7 @@ public static class ResearchEndpoints
 
         research.MapGet("/tree", async (string? fen, CollectionDbContext db) =>
         {
-            if (ReadPosition(fen, out var position) is { } problem) return problem;
+            if (PositionInput.Read(fen, out var position) is { } problem) return problem;
             var hits = await HitsAsync(db, position);
             var moves = hits
                 .Where(h => h.Uci is not null)
@@ -63,25 +62,10 @@ public static class ResearchEndpoints
 
         research.MapGet("/search", async (string? fen, CollectionDbContext db) =>
         {
-            if (ReadPosition(fen, out var position) is { } problem) return problem;
+            if (PositionInput.Read(fen, out var position) is { } problem) return problem;
             var (count, games) = await NewestGamesAsync(db, await HitsAsync(db, position), SearchGameLimit);
             return Results.Ok(new PositionSearchDto(count, games));
         });
-    }
-
-    /// <summary>Reads the FEN. Returns a 400 problem when it is not a position that can occur, otherwise null.</summary>
-    public static IResult? ReadPosition(string? fen, out Position position)
-    {
-        position = Position.Initial;
-        try
-        {
-            position = Position.FromFen(fen ?? "");
-        }
-        catch (FormatException e)
-        {
-            return Invalid("fen", e.Message);
-        }
-        return position.SetupProblem() is { } reason ? Invalid("fen", reason) : null;
     }
 
     /// <summary>Every index row for the position, joined to its Game's result, colour and date. No full Games are loaded.</summary>

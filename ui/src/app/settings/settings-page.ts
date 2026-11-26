@@ -115,11 +115,11 @@ export class SettingsPage {
     this.save();
   }
 
-  /** Saves (or with an empty value removes) the Lichess token; the other settings stay as they are. */
+  /** Saves (or with an empty value removes) the Lichess token. It has its own call, so the other settings are untouched. */
   protected saveLichessToken(input: HTMLInputElement, remove = false) {
     const token = remove ? '' : input.value.trim();
     if (!remove && !token) return;
-    this.api.saveSettings({ ownerName: this.ownerName(), aliases: this.aliases(), lichessToken: token }).subscribe({
+    this.api.saveLichessToken(token).subscribe({
       next: (s) => {
         input.value = '';
         this.hasLichessToken.set(s.hasLichessToken);

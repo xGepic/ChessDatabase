@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
+import { EMPTY, Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
 import { Api, BoardMove, Game, MasterGameRef, Masters, OpeningTree, PositionGame, problemMessage, resultLabel } from '../api/api';
 
 /**
@@ -40,19 +40,22 @@ import { Api, BoardMove, Game, MasterGameRef, Masters, OpeningTree, PositionGame
                 @for (mv of m.moves; track mv.uci) {
                   <tr>
                     <td><button type="button" class="tree-move mono" data-testid="masters-move" (click)="play.emit(mv)"
-                                [title]="'Show ' + mv.san + (mv.averageRating ? ' (average rating ' + mv.averageRating + ')' : '')">{{ mv.san }}</button></td>
+                                [title]="'Show ' + mv.san + (mv.averageElo ? ' (average Elo ' + mv.averageElo + ')' : '')">{{ mv.san }}</button></td>
                     <td class="num" data-testid="masters-games">{{ mv.gameCount.toLocaleString() }}</td>
                     <td>
                       <div class="score-cell">
-                        <div class="score-bar result-bar" [title]="mv.whitePercent + '% White, ' + mv.drawPercent + '% draws, ' + mv.blackPercent + '% Black'">
-                          <span class="white-won" [style.flex-grow]="mv.whitePercent"></span>
-                          <span class="drawn" [style.flex-grow]="mv.drawPercent"></span>
-                          <span class="black-won" [style.flex-grow]="mv.blackPercent"></span>
+                        <div class="score-bar result-bar" [title]="mv.results.white + '% White, ' + mv.results.draw + '% draws, ' + mv.results.black + '% Black'">
+                          <span class="white-won" [style.flex-grow]="mv.results.white"></span>
+                          <span class="drawn" [style.flex-grow]="mv.results.draw"></span>
+                          <span class="black-won" [style.flex-grow]="mv.results.black"></span>
                         </div>
-                        <span class="score mono" data-testid="masters-percent">{{ round(mv.whitePercent) }} · {{ round(mv.drawPercent) }} · {{ round(mv.blackPercent) }}</span>
+                        <span class="score mono" data-testid="masters-percent">{{ round(mv.results.white) }} · {{ round(mv.results.draw) }} · {{ round(mv.results.black) }}</span>
                       </div>
                     </td>
                   </tr>
+                }
+                @if (m.otherMovesGameCount > 0) {
+                  <tr class="other-moves"><td class="hint">Others</td><td class="num hint">{{ m.otherMovesGameCount.toLocaleString() }}</td><td></td></tr>
                 }
               </tbody>
             </table>
@@ -65,7 +68,7 @@ import { Api, BoardMove, Game, MasterGameRef, Masters, OpeningTree, PositionGame
                   <button type="button" class="position-game master-game" data-testid="master-game" (click)="openMaster(g)"
                           title="Replay this Master Game (it is not added to your Collection)">
                     <span class="mono">{{ g.year ?? '' }}</span>
-                    <span>{{ g.white }} <span class="hint">{{ g.whiteRating ?? '' }}</span> – {{ g.black }} <span class="hint">{{ g.blackRating ?? '' }}</span></span>
+                    <span>{{ g.white.name }} <span class="hint">{{ g.white.elo ?? '' }}</span> – {{ g.black.name }} <span class="hint">{{ g.black.elo ?? '' }}</span></span>
                     <span class="mono">{{ resultLabel(g.result) }}</span>
                   </button>
                 </li>
@@ -184,7 +187,8 @@ export class OpeningTreePanel {
     this.mastersRequests
       .pipe(
         debounceTime(250),
-        switchMap((fen) => this.api.masters(fen).pipe(catchError((e) => of(unavailable(problemMessage(e)))))),
+        // null: the tab was left, so a request still waiting for its debounce is dropped.
+        switchMap((fen) => (fen === null ? EMPTY : this.api.masters(fen).pipe(catchError((e) => of(unavailable(problemMessage(e))))))),
         takeUntilDestroyed(),
       )
       .subscribe((masters) => this.masters.set(masters));
@@ -194,13 +198,16 @@ export class OpeningTreePanel {
       this.requests.next(this.fen());
     });
     effect(() => {
-      if (this.source() !== 'masters') return;
+      if (this.source() !== 'masters') {
+        this.mastersRequests.next(null);
+        return;
+      }
       this.masters.set(null);
       this.mastersRequests.next(this.fen());
     });
   }
 
-  private readonly mastersRequests = new Subject<string>();
+  private readonly mastersRequests = new Subject<string | null>();
 
   /** Replays a Master Game read-only, at the board's position. */
   protected openMaster(game: MasterGameRef) {
@@ -209,5 +216,5 @@ export class OpeningTreePanel {
 }
 
 function unavailable(message: string): Masters {
-  return { available: false, message: `Masters unavailable: ${message}`, gameCount: 0, moves: [], topGames: [] };
+  return { available: false, message: `Masters unavailable: ${message}`, gameCount: 0, moves: [], otherMovesGameCount: 0, topGames: [] };
 }
