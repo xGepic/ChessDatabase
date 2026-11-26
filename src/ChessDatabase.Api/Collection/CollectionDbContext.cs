@@ -159,6 +159,9 @@ public sealed class SettingsRecord
 
     /// <summary>Other spellings of the Owner's name (stored as a JSON array).</summary>
     public List<string> Aliases { get; set; } = [];
+
+    /// <summary>Where daily backups go; null means "Backups" beside the Collection's file.</summary>
+    public string? BackupFolder { get; set; }
 }
 
 /// <summary>

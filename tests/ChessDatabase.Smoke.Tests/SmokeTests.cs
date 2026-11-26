@@ -292,4 +292,15 @@ public class SmokeTests : IAsyncLifetime
         await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Qh5" })).ToHaveTextAsync("Qh5?!");
         await Expect(Page.GetByTestId("comment")).ToHaveTextAsync("Too early with the queen.");
     }
+
+    [Fact]
+    public async Task Back_up_the_collection_from_settings()
+    {
+        await Page.GotoAsync($"{_app.BaseUrl}/settings");
+
+        await Page.GetByTestId("back-up-now").ClickAsync();
+
+        await Expect(Page.GetByTestId("backup-status")).ToHaveTextAsync("Backed up");
+        await Expect(Page.GetByTestId("last-backup")).Not.ToHaveTextAsync("none yet");
+    }
 }

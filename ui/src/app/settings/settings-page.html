@@ -26,3 +26,25 @@
     </div>
   </div>
 </section>
+
+<section class="card narrow-card">
+  <header class="card-head"><h2>Backups</h2></header>
+  @if (backup(); as b) {
+    <div class="form-grid">
+      <label for="backup-folder">Folder</label>
+      <div>
+        <input id="backup-folder" data-testid="backup-folder" [value]="b.isDefault ? '' : b.folder" [placeholder]="b.isDefault ? b.folder : 'Default folder'"
+               (keydown.enter)="setBackupFolder($any($event.target).value)" (blur)="setBackupFolder($any($event.target).value)" />
+        <p class="hint">The Collection is copied here once a day, and the 10 newest copies are kept. Leave empty for the default
+          beside the Collection. Another drive is safer.</p>
+      </div>
+
+      <span class="label">Last backup</span>
+      <div class="backup-row">
+        <span data-testid="last-backup">{{ lastBackup(b) }}</span>
+        <button type="button" data-testid="back-up-now" [disabled]="backingUp()" (click)="backUpNow()">Back up now</button>
+        @if (backupMessage()) { <span class="status" data-testid="backup-status">{{ backupMessage() }}</span> }
+      </div>
+    </div>
+  }
+</section>

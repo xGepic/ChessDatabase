@@ -78,6 +78,13 @@ export interface Settings {
   aliases: string[];
 }
 
+export interface BackupStatus {
+  folder: string;
+  /** True when no folder is set and backups go to "Backups" beside the Collection. */
+  isDefault: boolean;
+  lastBackupAt: string | null;
+}
+
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
@@ -231,5 +238,17 @@ export class Api {
   }
   saveSettings(settings: Settings): Observable<Settings> {
     return this.http.put<Settings>('/api/settings', settings);
+  }
+
+  // Backups
+  backupStatus(): Observable<BackupStatus> {
+    return this.http.get<BackupStatus>('/api/backups');
+  }
+  /** An empty folder means the default. */
+  setBackupFolder(folder: string): Observable<BackupStatus> {
+    return this.http.put<BackupStatus>('/api/backups/folder', { folder });
+  }
+  backUpNow(): Observable<BackupStatus> {
+    return this.http.post<BackupStatus>('/api/backups', null);
   }
 }

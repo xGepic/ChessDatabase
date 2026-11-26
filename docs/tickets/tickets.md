@@ -22,7 +22,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
-| 15 | [Daily backups](#15-daily-backups) | 01 | Open |
+| 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
 | 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | Open |
 | 17 | [Position Search](#17-position-search) | 16 | Open |
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | Open |
@@ -290,13 +290,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 01 (Walking skeleton).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A backup is created on the first start of each day and every 24 hours while running
-- [ ] Only the 10 newest backups remain; older ones are deleted
-- [ ] Backup folder is configurable; the last backup time is shown; "Back up now" works
-- [ ] A backup file opens as a valid database containing the same Games
-- [ ] Tests cover rotation (with a controllable clock) and the integrity of the copy
+- [x] A backup is created on the first start of each day and every 24 hours while running
+- [x] Only the 10 newest backups remain; older ones are deleted
+- [x] Backup folder is configurable; the last backup time is shown; "Back up now" works
+- [x] A backup file opens as a valid database containing the same Games
+- [x] Tests cover rotation (with a controllable clock) and the integrity of the copy
 
 ---
 
