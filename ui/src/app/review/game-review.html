@@ -4,6 +4,10 @@
       <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="current()?.uci ?? null"
                  (move)="onBoardMove($event)" />
       <div class="board-tools">
+        <button type="button" (click)="goTo(null)" title="Start (Home)" aria-label="Start">⏮</button>
+        <button type="button" (click)="goTo(current()?.parentId ?? null)" title="Back (←)" aria-label="Back">◀</button>
+        <button type="button" (click)="forward()" title="Forward (→)" aria-label="Forward">▶</button>
+        <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
         <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
       </div>
@@ -26,7 +30,7 @@
           <span class="sheet-result" data-testid="sheet-result">{{ resultLabel(g.result) }}</span>
         </div>
       </header>
-      <app-scoresheet [game]="g" [currentId]="currentId()" (select)="currentId.set($event)" />
+      <app-scoresheet [game]="g" [currentId]="currentId()" (select)="currentId.set($event)" (action)="onTreeAction($event)" />
     </section>
 
     <div class="side-column">

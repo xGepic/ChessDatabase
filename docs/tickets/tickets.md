@@ -11,7 +11,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 01 | [Walking skeleton](#01-walking-skeleton) | – | **Done** |
 | 02 | [Chess Rules core](#02-chess-rules-core) | 01 | **Done** |
 | 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | **Done** |
-| 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | Open |
+| 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | **Done** |
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | Open |
 | 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | Open |
 | 07 | [Import PGN](#07-import-pgn) | 05, 06 | Open |
@@ -104,14 +104,14 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 03 (Enter a Game and see it in the game list).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Arrow keys (back, forward, start, end) and clicking in the notation navigate the Game
-- [ ] Playing a different move at any position creates a new Variation and leaves the existing line intact
-- [ ] Variations within Variations work to any depth and render nested in the notation
-- [ ] Promote to main line, delete Variation and delete from here work and save immediately
-- [ ] Promoting a Variation makes it the main line used everywhere else (result unchanged)
-- [ ] API tests cover adding a differing move (a Variation appears), nesting, promotion and both deletes
+- [x] Arrow keys (back, forward, start, end) and clicking in the notation navigate the Game
+- [x] Playing a different move at any position creates a new Variation and leaves the existing line intact
+- [x] Variations within Variations work to any depth and render nested in the notation
+- [x] Promote to main line, delete Variation and delete from here work and save immediately
+- [x] Promoting a Variation makes it the main line used everywhere else (result unchanged)
+- [x] API tests cover adding a differing move (a Variation appears), nesting, promotion and both deletes
 
 ---
 

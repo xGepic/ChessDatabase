@@ -46,6 +46,52 @@ public sealed class MoveTree
 
     public int PlyOf(int? nodeId) => nodeId is null ? 0 : _after[nodeId.Value].Ply;
 
+    /// <summary>The node and every move after it, in any line.</summary>
+    public IReadOnlyList<int> Subtree(int nodeId)
+    {
+        var ids = new List<int>();
+        var stack = new Stack<int>([nodeId]);
+        while (stack.TryPop(out var id))
+        {
+            ids.Add(id);
+            foreach (var child in ChildrenOf(id)) stack.Push(child.Id);
+        }
+        return ids;
+    }
+
+    /// <summary>
+    /// The first move of the innermost Variation containing the node, or null when the node is on
+    /// the main line.
+    /// </summary>
+    public int? VariationStart(int nodeId)
+    {
+        for (int? id = nodeId; id is { } current; id = _nodes[current].ParentId)
+            if (ChildrenOf(_nodes[current].ParentId)[0].Id != current) return current;
+        return null;
+    }
+
+    /// <summary>
+    /// Makes the node's line the main line: the node and each of its ancestors become the first
+    /// continuation among their siblings, the others keep their order. Returns the nodes whose order changed.
+    /// </summary>
+    public IReadOnlyList<MoveNodeRecord> PromoteToMainLine(int nodeId)
+    {
+        var changed = new List<MoveNodeRecord>();
+        for (int? id = nodeId; id is { } current; id = _nodes[current].ParentId)
+        {
+            var siblings = ChildrenOf(_nodes[current].ParentId);
+            if (siblings[0].Id == current) continue;
+            var reordered = siblings.OrderBy(n => n.Id == current ? 0 : 1).ThenBy(n => n.Order).ToList();
+            for (var i = 0; i < reordered.Count; i++)
+            {
+                if (reordered[i].Order == i) continue;
+                reordered[i].Order = i;
+                changed.Add(reordered[i]);
+            }
+        }
+        return changed;
+    }
+
     public (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos()
     {
         var dtos = new List<MoveNodeDto>(_nodes.Count);

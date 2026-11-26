@@ -41,6 +41,45 @@ public static class MoveTreeEndpoints
 
             return Results.Ok(new AddMoveResponse(node.Id, (await GameEndpoints.LoadGameDtoAsync(db, id))!));
         });
+
+        games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db) =>
+        {
+            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
+            tree.PromoteToMainLine(nodeId);
+            await db.SaveChangesAsync();
+            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+        });
+
+        games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", async (int id, int nodeId, CollectionDbContext db) =>
+        {
+            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
+            if (tree.VariationStart(nodeId) is not { } start)
+                return Invalid("nodeId", "That move is on the main line, not in a Variation.");
+            await DeleteSubtreeAsync(db, tree, start);
+            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+        });
+
+        // Delete from here: the move and everything after it.
+        games.MapDelete("/{id:int}/moves/{nodeId:int}", async (int id, int nodeId, CollectionDbContext db) =>
+        {
+            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
+            await DeleteSubtreeAsync(db, tree, nodeId);
+            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+        });
+    }
+
+    /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>
+    private static async Task<MoveTree?> LoadTreeAsync(CollectionDbContext db, int gameId, int nodeId)
+    {
+        var nodes = await db.MoveNodes.Where(n => n.GameId == gameId).ToListAsync();
+        var tree = new MoveTree(nodes);
+        return tree.Contains(nodeId) ? tree : null;
+    }
+
+    private static async Task DeleteSubtreeAsync(CollectionDbContext db, MoveTree tree, int nodeId)
+    {
+        var ids = tree.Subtree(nodeId);
+        await db.MoveNodes.Where(n => ids.Contains(n.Id)).ExecuteDeleteAsync();
     }
 
     private static bool TryReadMove(Position position, string? text, out Move move)

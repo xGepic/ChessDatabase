@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using ChessDatabase.Api;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -49,6 +51,26 @@ public sealed class SmokeApp : IAsyncLifetime
         _browser = await _playwright.Chromium.LaunchAsync(new() { Headless = true, Channel = "msedge" });
         Page = await _browser.NewPageAsync(new() { ViewportSize = new() { Width = 1440, Height = 900 } });
         Page.SetDefaultTimeout(10_000);
+    }
+
+    /// <summary>Creates a Game with the given main line straight through the API, to start a test mid-story.</summary>
+    public async Task<int> CreateGameAsync(params string[] moves)
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        var player = await (await http.PostAsJsonAsync("/api/players", new { name = "Fixture Opponent" }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var game = await (await http.PostAsJsonAsync("/api/games",
+                new { ownerColor = "white", opponentId = player.GetProperty("id").GetInt32(), result = "1-0" }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var gameId = game.GetProperty("id").GetInt32();
+        int? parentId = null;
+        foreach (var move in moves)
+        {
+            var response = await http.PostAsJsonAsync($"/api/games/{gameId}/moves", new { parentId, move });
+            response.EnsureSuccessStatusCode();
+            parentId = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("nodeId").GetInt32();
+        }
+        return gameId;
     }
 
     public async Task DisposeAsync()

@@ -11,6 +11,7 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 - The desktop window opens on the game list. The Collection is created and migrated automatically on first start.
 - Chess Rules (`src/ChessDatabase.Rules`): legal move generation (passes the standard perft suite), check, checkmate and stalemate, FEN, SAN (German piece letters K D T L S are accepted, English letters are always written) and Zobrist position hashes.
 - Entering a Game: set your name under Settings, then New Game: your colour, the Opponent (autocompleted, or created on the spot), both Elos (empty or 0 = unrated) and the result. Play the moves on the board by drag or click. Everything saves as you go. Games show up in the game list and can be deleted from the Game view.
+- Replaying and Variations: step through a Game with the arrow keys (← back, → forward, Home/↑ start, End/↓ end of the line) or by clicking moves. F flips the board. Playing a different move from the recorded one starts a Variation, and Variations can nest. Right-click a move to promote it to the main line, delete its Variation, or delete from there on.
 
 ## Prerequisites
 

@@ -219,3 +219,20 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .sheet-end { text-align: center; font-weight: 700; padding: 10px; }
 
 .side-column { display: flex; flex-direction: column; gap: 20px; }
+
+/* ---------- variations and the move menu ---------- */
+.variations { padding: 4px 12px 6px 44px; border-bottom: 1px solid var(--cream-deep); background: rgba(232, 207, 160, .18); }
+.variation { line-height: 1.75; font-size: 13px; color: var(--ink-soft); padding-left: 10px; border-left: 2px solid var(--rule); margin: 2px 0; }
+.variation .move { font-size: 13px; padding: 1px 3px; color: var(--ink); }
+.variation .paren { color: var(--ink-soft); }
+
+.context-menu {
+  position: fixed; z-index: 50; min-width: 200px; padding: 4px 0;
+  background: #fffaf0; border: 1px solid var(--rule); border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0,0,0,.3);
+  display: flex; flex-direction: column;
+}
+.context-menu button { border: none; border-radius: 0; background: transparent; text-align: left; padding: 7px 14px; }
+.context-menu button:hover:not(:disabled) { background: var(--boxwood); }
+
+.board-tools button[aria-label] { min-width: 40px; }

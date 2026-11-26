@@ -105,6 +105,15 @@ export class Api {
   addMove(gameId: number, parentId: number | null, move: string): Observable<{ nodeId: number; game: Game }> {
     return this.http.post<{ nodeId: number; game: Game }>(`/api/games/${gameId}/moves`, { parentId, move });
   }
+  promote(gameId: number, nodeId: number): Observable<Game> {
+    return this.http.post<Game>(`/api/games/${gameId}/moves/${nodeId}/promote`, null);
+  }
+  deleteVariation(gameId: number, nodeId: number): Observable<Game> {
+    return this.http.delete<Game>(`/api/games/${gameId}/moves/${nodeId}/variation`);
+  }
+  deleteFromHere(gameId: number, nodeId: number): Observable<Game> {
+    return this.http.delete<Game>(`/api/games/${gameId}/moves/${nodeId}`);
+  }
 
   // Players
   searchPlayers(search: string): Observable<Player[]> {
