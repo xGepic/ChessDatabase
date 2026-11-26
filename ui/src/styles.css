@@ -1,0 +1,103 @@
+/* Tournament Hall: a wooden club set on a walnut tournament table (.impeccable/surfaces/review.md). */
+:root {
+  --walnut: #3b2416;
+  --walnut-dark: #2c1a0f;
+  --wood-active: #7a4a2b;
+  --frame-light: #8a5634;
+  --frame-dark: #6a3f24;
+  --boxwood: #e8cfa0;
+  --rosewood: #a8693d;
+  --cream: #f4ecdc;
+  --cream-deep: #eadfc8;
+  --rule: #d8c8a8;
+  --ink: #2a1c12;
+  --ink-soft: #6b5440;
+  --felt: #2f5d3a;
+  --amber: #c28a1e;
+  --rust: #b0532a;
+  --blood: #9a2f1e;
+  --radius: 4px;
+  --ui-font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --move-font: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--ui-font);
+  font-size: 14px;
+  color: var(--ink);
+  background-color: var(--walnut);
+  /* faint vertical grain, under 2% contrast */
+  background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 3px, rgba(0,0,0,.012) 3px 7px, transparent 7px 13px);
+}
+
+app-root { display: flex; flex-direction: column; min-height: 100%; }
+
+.topbar {
+  height: 52px; flex: none;
+  display: flex; align-items: center; gap: 28px;
+  padding: 0 20px;
+  background: var(--walnut-dark);
+  color: var(--cream);
+  border-bottom: 1px solid #1d1109;
+}
+.brand { font-weight: 600; letter-spacing: .02em; }
+.tabs { display: flex; gap: 4px; height: 100%; align-items: center; }
+.tabs a {
+  color: var(--boxwood); text-decoration: none;
+  padding: 7px 14px; border-radius: var(--radius);
+}
+.tabs a:hover { background: rgba(232, 207, 160, .08); }
+.tabs a.active { background: var(--wood-active); color: var(--cream); }
+
+.page { flex: 1; padding: 20px; min-height: 0; }
+
+.card {
+  background: var(--cream);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 6px 18px rgba(0,0,0,.35);
+}
+.card-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--rule);
+}
+.card-head h1, .card-head h2 { font-size: 16px; margin: 0; font-weight: 600; }
+.card-head .spacer { flex: 1; }
+
+.list-card { max-width: 1100px; margin: 0 auto; }
+.empty { padding: 24px 16px; margin: 0; color: var(--ink-soft); }
+
+button, .button {
+  font: inherit; cursor: pointer;
+  border: 1px solid var(--frame-dark);
+  background: var(--cream-deep); color: var(--ink);
+  padding: 5px 12px; border-radius: var(--radius);
+}
+button:hover:not(:disabled) { background: var(--boxwood); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--wood-active); color: var(--cream); border-color: var(--frame-dark); }
+button.primary:hover:not(:disabled) { background: var(--frame-light); }
+button.danger { color: var(--blood); }
+
+input, select, textarea {
+  font: inherit; color: var(--ink);
+  background: #fffaf0;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 5px 8px;
+}
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--felt); outline-offset: 1px;
+}
+
+.game-table { width: 100%; border-collapse: collapse; }
+.game-table th {
+  text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--ink-soft);
+  padding: 8px 16px; border-bottom: 1px solid var(--rule);
+}
+.game-table td { padding: 8px 16px; border-bottom: 1px solid var(--cream-deep); }
+.game-table tbody tr { cursor: pointer; }
+.game-table tbody tr:hover { background: var(--cream-deep); }

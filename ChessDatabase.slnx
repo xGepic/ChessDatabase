@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ChessDatabase.Api/ChessDatabase.Api.csproj" />
+    <Project Path="src/ChessDatabase.Desktop/ChessDatabase.Desktop.csproj" />
+    <Project Path="src/ChessDatabase.Rules/ChessDatabase.Rules.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ChessDatabase.Api.Tests/ChessDatabase.Api.Tests.csproj" />
+    <Project Path="tests/ChessDatabase.Rules.Tests/ChessDatabase.Rules.Tests.csproj" />
+    <Project Path="tests/ChessDatabase.Smoke.Tests/ChessDatabase.Smoke.Tests.csproj" />
+  </Folder>
+</Solution>

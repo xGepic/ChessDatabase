@@ -1,0 +1,20 @@
+<section class="card list-card">
+  <header class="card-head">
+    <h1>Games</h1>
+  </header>
+  @if (games(); as list) {
+    @if (list.length === 0) {
+      <p class="empty" data-testid="empty-game-list">No Games yet.</p>
+    } @else {
+      <table class="game-table" data-testid="game-list">
+        <tbody>
+          @for (game of list; track game.id) {
+            <tr><td>{{ game.id }}</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  } @else {
+    <p class="empty">Loading…</p>
+  }
+</section>

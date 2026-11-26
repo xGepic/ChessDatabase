@@ -8,7 +8,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 
 | # | Ticket | Blocked by | Status |
 |---|---|---|---|
-| 01 | [Walking skeleton](#01-walking-skeleton) | – | Open |
+| 01 | [Walking skeleton](#01-walking-skeleton) | – | **Done** |
 | 02 | [Chess Rules core](#02-chess-rules-core) | 01 | Open |
 | 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | Open |
 | 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | Open |
@@ -49,15 +49,15 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Starting the app opens a desktop window showing an (empty) game list fetched from the API
-- [ ] The same UI runs in a normal browser against the backend in development mode
-- [ ] The SQLite database is created and migrated automatically on first start in a per-user app data folder
-- [ ] An API integration test calls the game list endpoint against a fresh temporary database and gets an empty list
-- [ ] A Playwright smoke test opens the app and sees the empty game list
-- [ ] One command builds and runs all tests
-- [ ] README.md exists with what the app is, prerequisites, how to run it (desktop and browser), how to run the tests, the project layout, and links to the glossary, spec, ADRs and tickets
+- [x] Starting the app opens a desktop window showing an (empty) game list fetched from the API
+- [x] The same UI runs in a normal browser against the backend in development mode
+- [x] The SQLite database is created and migrated automatically on first start in a per-user app data folder
+- [x] An API integration test calls the game list endpoint against a fresh temporary database and gets an empty list
+- [x] A Playwright smoke test opens the app and sees the empty game list
+- [x] One command builds and runs all tests
+- [x] README.md exists with what the app is, prerequisites, how to run it (desktop and browser), how to run the tests, the project layout, and links to the glossary, spec, ADRs and tickets
 
 ---
 

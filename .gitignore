@@ -1,0 +1,12 @@
+bin/
+obj/
+*.user
+.vs/
+.vscode/*
+!.vscode/extensions.json
+TestResults/
+
+# Angular
+ui/node_modules/
+ui/dist/
+ui/.angular/
