@@ -34,7 +34,7 @@ public sealed class MastersState
     public LichessService Service { get; } =
         new("Masters", "Masters", "https://explorer.lichess.org/", new OnlineSourceState());
 
-    /// <summary>Answers by position; move counters don't matter (see <see cref="Positions.Key"/>).</summary>
+    /// <summary>Answers by position; move counters don't matter (see <see cref="LichessPosition.Key"/>).</summary>
     public ConcurrentDictionary<string, LichessMasters> Positions { get; } = new();
 
     /// <summary>Master Game PGNs by Lichess id.</summary>
@@ -54,7 +54,7 @@ public sealed class MastersClient(
 
     public Task<OnlineAnswer<LichessMasters>> PositionAsync(Position position)
     {
-        var key = Positions.Key(position);
+        var key = LichessPosition.Key(position);
         return fetch.GetAsync(state.Service, state.Positions, key,
             $"masters?fen={Uri.EscapeDataString(key)}&moves={MovesShown}&topGames={TopGamesShown}", tokens.Read(),
             LichessFetch.ReadJsonAsync<LichessMasters>);
@@ -65,8 +65,8 @@ public sealed class MastersClient(
             async content => await content.ReadAsStringAsync());
 }
 
-/// <summary>Positions as online sources see them.</summary>
-public static class Positions
+/// <summary>Positions as Lichess's sources see them.</summary>
+public static class LichessPosition
 {
     /// <summary>Placement, side to move, castling and en passant: what Lichess's statistics depend on (no move counters).</summary>
     public static string Key(Position position) => string.Join(' ', position.ToFen().Split(' ').Take(4));

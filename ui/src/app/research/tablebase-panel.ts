@@ -1,20 +1,18 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
-import { Api, BoardMove, Tablebase, TablebaseMove, problemMessage } from '../api/api';
+import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
+import { Api, BoardMove, Tablebase, TablebaseVerdict, problemMessage } from '../api/api';
 
-/** The largest endgame the tablebase covers, kings included. */
-const MAX_PIECES = 7;
-
-const VERDICTS: Record<string, string> = {
-  win: 'wins',
-  loss: 'loses',
-  draw: 'Draw',
-  'cursed-win': 'wins, but only after the 50-move rule',
-  'blessed-loss': 'loses, but the 50-move rule saves',
-  'maybe-win': 'probably wins',
-  'maybe-loss': 'probably loses',
-  unknown: 'Unknown',
+/** How each verdict reads: for the position (after "White"/"Black", except draws) and for a move. */
+const VERDICTS: Record<TablebaseVerdict, { position: string; move: string }> = {
+  win: { position: 'wins', move: 'Win' },
+  cursedWin: { position: 'wins, but only after the 50-move rule', move: 'Win (50-move rule)' },
+  maybeWin: { position: 'probably wins', move: 'Win?' },
+  draw: { position: 'Draw', move: 'Draw' },
+  unknown: { position: 'Unknown', move: 'Unknown' },
+  maybeLoss: { position: 'probably loses', move: 'Loss?' },
+  blessedLoss: { position: 'loses, but the 50-move rule saves', move: 'Loss (50-move rule)' },
+  loss: { position: 'loses', move: 'Loss' },
 };
 
 /**
@@ -45,7 +43,7 @@ const VERDICTS: Record<string, string> = {
                   <button type="button" class="engine-line tablebase-move" data-testid="tablebase-move" [attr.data-category]="m.category"
                           (click)="play.emit(m)" [title]="'Show ' + m.san">
                     <span class="mono">{{ m.san }}</span>
-                    <span class="tablebase-move-verdict">{{ moveVerdict(m) }} <span class="hint">{{ distances(m.dtz, m.dtm) }}</span></span>
+                    <span class="tablebase-move-verdict">{{ verdicts[m.category].move }} <span class="hint">{{ distances(m.dtz, m.dtm) }}</span></span>
                   </button>
                 </li>
               }
@@ -66,40 +64,39 @@ export class TablebasePanel {
   /** A move from the list: the Game view steps into it, or shows it without saving. */
   readonly play = output<BoardMove>();
 
+  protected readonly verdicts = VERDICTS;
   protected readonly result = signal<Tablebase | null>(null);
-  /** Only endgames with few enough pieces are looked up; counted from the FEN's board. */
-  protected readonly applies = computed(() => (this.fen().split(' ')[0].match(/[a-z]/gi) ?? []).length <= MAX_PIECES);
-  private readonly requests = new Subject<string | null>();
+  /**
+   * Whether the position is a Tablebase endgame: the backend decides (Chess Rules count the
+   * pieces) and asks Lichess only then. Kept while the next answer loads, so the card doesn't flicker.
+   */
+  protected readonly applies = signal(false);
+  private readonly requests = new Subject<string>();
 
   constructor() {
     this.requests
       .pipe(
         debounceTime(150),
-        switchMap((fen) =>
-          fen === null
-            ? EMPTY
-            : this.api.tablebase(fen).pipe(catchError((e) => of(unavailable(problemMessage(e))))),
-        ),
+        switchMap((fen) => this.api.tablebase(fen).pipe(catchError((e) => of(unavailable(problemMessage(e)))))),
         takeUntilDestroyed(),
       )
-      .subscribe((r) => this.result.set(r));
+      .subscribe((r) => {
+        this.applies.set(r.applicable);
+        this.result.set(r);
+      });
     effect(() => {
       const fen = this.fen();
       this.result.set(null);
-      this.requests.next(this.applies() ? fen : null);
+      this.requests.next(fen);
     });
   }
 
   /** "White wins", "Draw", ... for the side to move. */
   protected verdict(r: Tablebase): string {
     const side = this.fen().split(' ')[1] === 'b' ? 'Black' : 'White';
-    const text = VERDICTS[r.category ?? 'unknown'] ?? 'Unknown';
-    return r.category === 'draw' || r.category === 'unknown' || !r.category ? text : `${side} ${text}`;
-  }
-
-  protected moveVerdict(m: TablebaseMove): string {
-    return { win: 'Win', loss: 'Loss', draw: 'Draw', 'cursed-win': 'Win (50-move rule)', 'blessed-loss': 'Loss (50-move rule)',
-      'maybe-win': 'Win?', 'maybe-loss': 'Loss?' }[m.category] ?? 'Unknown';
+    const category = r.category ?? 'unknown';
+    const text = VERDICTS[category].position;
+    return category === 'draw' || category === 'unknown' ? text : `${side} ${text}`;
   }
 
   /** "DTZ 3 · DTM 17": distances in half-moves, without signs. */

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Chess } from 'chess.js';
 import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -310,6 +310,11 @@ export class GameReview {
   // ---------------------------------------------------------------- Repertoire
 
   protected readonly repertoireMessage = signal('');
+  /** The note is about the position it was added at; it goes when the board shows another. */
+  private readonly clearRepertoireMessage = effect(() => {
+    this.path();
+    untracked(() => this.repertoireMessage.set(''));
+  });
 
   /** Adds the line up to the board position (explored moves included) to the Repertoire of the colour the Owner had. */
   protected addToRepertoire() {

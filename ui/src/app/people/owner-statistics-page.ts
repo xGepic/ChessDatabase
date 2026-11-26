@@ -3,13 +3,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, switchMap } from 'rxjs';
 import { Api, OwnerStatistics, problemMessage } from '../api/api';
-import { TimeChart } from '../shared/time-chart';
+import { TimeChart, accuracyPoints, ratingPoints } from '../shared/time-chart';
 import { ScoreBar } from './score-bar';
 
 const FILTERS = ['from', 'to', 'timeControl'] as const;
 
 /**
- * The Owner's own Dossier: score overall, by colour and by opening, rating history, average
+ * My statistics, the Owner's own figures: score overall, by colour and by opening, rating history, average
  * opponent rating and Accuracy over time. One date range and time control apply to every figure.
  */
 @Component({
@@ -99,8 +99,8 @@ export class OwnerStatisticsPage {
   protected readonly error = signal('');
   private readonly params = signal<Record<string, string>>({});
   protected readonly filtered = computed(() => FILTERS.some((k) => this.params()[k]));
-  protected readonly rating = computed(() => (this.stats()?.ratingHistory ?? []).map((p) => ({ date: p.date, value: p.elo, id: p.gameId })));
-  protected readonly accuracy = computed(() => (this.stats()?.accuracy ?? []).map((p) => ({ date: p.date, value: p.accuracy, id: p.gameId })));
+  protected readonly rating = computed(() => ratingPoints(this.stats()?.ratingHistory));
+  protected readonly accuracy = computed(() => accuracyPoints(this.stats()?.accuracy));
 
   constructor() {
     this.route.queryParamMap

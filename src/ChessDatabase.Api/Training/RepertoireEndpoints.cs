@@ -1,6 +1,5 @@
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
-using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
 
@@ -50,19 +49,12 @@ public static class RepertoireEndpoints
                 return Invalid("parentId", "That move is not part of this Repertoire.");
             var moves = body.Moves ?? [];
             if (moves.Count == 0) return Invalid("moves", "Give at least one move.");
+            if (MoveTreeEndpoints.ReadLine(tree.PositionAfter(body.ParentId), moves, out var line) is { } illegal)
+                return Invalid("moves", $"'{illegal}' is not a legal move here.");
 
-            var position = tree.PositionAfter(body.ParentId);
-            var line = new List<(string Uci, string San)>();
-            foreach (var text in moves)
+            var (last, added) = tree.AddLine(body.ParentId, line, m =>
             {
-                if (!MoveTreeEndpoints.TryReadMove(position, text, out var move)) return Invalid("moves", $"'{text}' is not a legal move here.");
-                line.Add((move.ToUci(), position.ToSan(move)));
-                position = position.Play(move);
-            }
-
-            var (last, added) = tree.AddLine(body.ParentId, line, (existingParent, newParent, order, uci, san) =>
-            {
-                var node = new RepertoireNodeRecord { Side = colour, ParentId = existingParent, Parent = newParent, Order = order, Uci = uci, San = san };
+                var node = new RepertoireNodeRecord { Side = colour, ParentId = m.ParentId, Parent = m.Parent, Order = m.Order, Uci = m.Uci, San = m.San };
                 db.RepertoireNodes.Add(node);
                 return node;
             });
@@ -71,46 +63,51 @@ public static class RepertoireEndpoints
         });
 
         // Delete from here: the move and everything after it.
-        repertoire.MapDelete("/nodes/{nodeId:int}", async (string side, int nodeId, CollectionDbContext db) =>
-        {
-            if (ReadSide(side) is not { } colour) return Results.NotFound();
-            var tree = await LoadAsync(db, colour);
-            if (!tree.Contains(nodeId)) return Results.NotFound();
-            await DeleteAsync(db, tree, nodeId);
-            return Results.Ok((await LoadAsync(db, colour)).ToDto());
-        });
+        repertoire.MapDelete("/nodes/{nodeId:int}", (string side, int nodeId, CollectionDbContext db) =>
+            EditNodeAsync(db, side, nodeId, async tree =>
+            {
+                await DeleteAsync(db, tree, nodeId);
+                return null;
+            }));
 
-        repertoire.MapDelete("/nodes/{nodeId:int}/variation", async (string side, int nodeId, CollectionDbContext db) =>
-        {
-            if (ReadSide(side) is not { } colour) return Results.NotFound();
-            var tree = await LoadAsync(db, colour);
-            if (!tree.Contains(nodeId)) return Results.NotFound();
-            if (tree.VariationStart(nodeId) is not { } start) return Invalid("nodeId", "That move is on the main line, not in a Variation.");
-            await DeleteAsync(db, tree, start);
-            return Results.Ok((await LoadAsync(db, colour)).ToDto());
-        });
+        repertoire.MapDelete("/nodes/{nodeId:int}/variation", (string side, int nodeId, CollectionDbContext db) =>
+            EditNodeAsync(db, side, nodeId, async tree =>
+            {
+                if (tree.VariationStart(nodeId) is not { } start) return Invalid("nodeId", "That move is on the main line, not in a Variation.");
+                await DeleteAsync(db, tree, start);
+                return null;
+            }));
 
-        repertoire.MapPost("/nodes/{nodeId:int}/promote", async (string side, int nodeId, CollectionDbContext db) =>
-        {
-            if (ReadSide(side) is not { } colour) return Results.NotFound();
-            var tree = await LoadAsync(db, colour);
-            if (!tree.Contains(nodeId)) return Results.NotFound();
-            tree.PromoteToMainLine(nodeId);
-            await db.SaveChangesAsync();
-            return Results.Ok((await LoadAsync(db, colour)).ToDto());
-        });
+        repertoire.MapPost("/nodes/{nodeId:int}/promote", (string side, int nodeId, CollectionDbContext db) =>
+            EditNodeAsync(db, side, nodeId, async tree =>
+            {
+                tree.PromoteToMainLine(nodeId);
+                await db.SaveChangesAsync();
+                return null;
+            }));
 
-        repertoire.MapPut("/nodes/{nodeId:int}/comment", async (string side, int nodeId, RepertoireCommentRequest body, CollectionDbContext db) =>
-        {
-            if (ReadSide(side) is not { } colour) return Results.NotFound();
-            var node = await db.RepertoireNodes.SingleOrDefaultAsync(n => n.Id == nodeId && n.Side == colour);
-            if (node is null) return Results.NotFound();
-            var text = body.Text?.Trim() ?? "";
-            if (text.Length > GameDetailLimits.Notes) return Invalid("text", $"A comment can be at most {GameDetailLimits.Notes} characters.");
-            node.Comment = text.Length > 0 ? text : null;
-            await db.SaveChangesAsync();
-            return Results.Ok((await LoadAsync(db, colour)).ToDto());
-        });
+        repertoire.MapPut("/nodes/{nodeId:int}/comment", (string side, int nodeId, RepertoireCommentRequest body, CollectionDbContext db) =>
+            EditNodeAsync(db, side, nodeId, async tree =>
+            {
+                var text = body.Text?.Trim() ?? "";
+                if (text.Length > GameDetailLimits.Notes) return Invalid("text", $"A comment can be at most {GameDetailLimits.Notes} characters.");
+                tree.Node(nodeId).Comment = text.Length > 0 ? text : null;
+                await db.SaveChangesAsync();
+                return null;
+            }));
+    }
+
+    /// <summary>
+    /// Runs a change to one node of a side's Repertoire: 404 for an unknown side or a node not in
+    /// that Repertoire, the change's own problem if it has one, else the Repertoire after the change.
+    /// </summary>
+    private static async Task<IResult> EditNodeAsync(CollectionDbContext db, string side, int nodeId, Func<RepertoireTree, Task<IResult?>> change)
+    {
+        if (ReadSide(side) is not { } colour) return Results.NotFound();
+        var tree = await LoadAsync(db, colour);
+        if (!tree.Contains(nodeId)) return Results.NotFound();
+        if (await change(tree) is { } problem) return problem;
+        return Results.Ok((await LoadAsync(db, colour)).ToDto());
     }
 
     private static OwnerColour? ReadSide(string side) => side.ToLowerInvariant() switch

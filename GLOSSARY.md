@@ -79,6 +79,7 @@ A solved database of endgames with few pieces, giving the exact result and best 
 
 **Dossier**
 The summary page for a Player: head-to-head score against the Owner, rating history, the openings they played and the Games against them.
+The Owner is not a Player and has no Dossier: the Owner's own figures are **My statistics**.
 
 ## Training
 

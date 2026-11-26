@@ -63,15 +63,8 @@ public static class MoveTreeEndpoints
             return Invalid("parentId", "That move is not part of this Game.");
         if (moves.Count == 0) return Invalid(field, "Give at least one move.");
 
-        var position = tree.PositionAfter(parentId);
-        var line = new List<(string Uci, string San)>();
-        foreach (var text in moves)
-        {
-            if (!TryReadMove(position, text, out var move))
-                return Invalid(field, $"'{text}' is not a legal move here.");
-            line.Add((move.ToUci(), position.ToSan(move)));
-            position = position.Play(move);
-        }
+        if (ReadLine(tree.PositionAfter(parentId), moves, out var line) is { } illegal)
+            return Invalid(field, $"'{illegal}' is not a legal move here.");
 
         var (last, added) = AddLine(game, tree, parentId, line);
 
@@ -86,9 +79,9 @@ public static class MoveTreeEndpoints
     /// <summary>Adds checked moves to a Game's tracked nodes through <see cref="MoveTree{TNode}.AddLine"/>. Nothing is saved.</summary>
     public static (MoveNodeRecord Last, bool Added) AddLine(
         GameRecord game, MoveTree tree, int? parentId, IReadOnlyList<(string Uci, string San)> line) =>
-        tree.AddLine(parentId, line, (existingParent, newParent, order, uci, san) =>
+        tree.AddLine(parentId, line, m =>
         {
-            var node = new MoveNodeRecord { GameId = game.Id, ParentId = existingParent, Parent = newParent, Order = order, Uci = uci, San = san };
+            var node = new MoveNodeRecord { GameId = game.Id, ParentId = m.ParentId, Parent = m.Parent, Order = m.Order, Uci = m.Uci, San = m.San };
             game.MoveNodes.Add(node);
             return node;
         });
@@ -106,6 +99,22 @@ public static class MoveTreeEndpoints
     {
         db.MoveNodes.RemoveRange(tree.Subtree(nodeId).Select(id => tree.Node(id)));
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Reads moves typed or sent one after another from a position into checked (UCI, SAN) pairs.
+    /// Returns the first move that is not legal where it is played, or null when all are.
+    /// </summary>
+    public static string? ReadLine(Position position, IReadOnlyList<string?> moves, out List<(string Uci, string San)> line)
+    {
+        line = [];
+        foreach (var text in moves)
+        {
+            if (!TryReadMove(position, text, out var move)) return text ?? "";
+            line.Add((move.ToUci(), position.ToSan(move)));
+            position = position.Play(move);
+        }
+        return null;
     }
 
     /// <summary>A move typed or sent as UCI or SAN (German piece letters too), if it is legal here.</summary>

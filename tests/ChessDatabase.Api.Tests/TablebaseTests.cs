@@ -40,6 +40,30 @@ public class TablebaseTests
     }
 
     [Fact]
+    public async Task Every_Lichess_verdict_is_understood_including_syzygy_and_the_50_move_rule()
+    {
+        // syzygy-win/-loss: decided by Syzygy alone (no DTM); cursed and blessed: the 50-move rule turns them into draws.
+        var lichess = new FakeLichess().Json("/standard", """
+            {"dtz":3,"dtm":null,"category":"syzygy-win",
+             "moves":[
+               {"uci":"g7g8","zeroing":false,"dtz":0,"dtm":null,"category":"draw"},
+               {"uci":"g7f6","zeroing":false,"dtz":120,"dtm":null,"category":"blessed-loss"},
+               {"uci":"h7h8q","zeroing":true,"dtz":-2,"dtm":null,"category":"syzygy-loss"},
+               {"uci":"g7g6","zeroing":false,"dtz":-110,"dtm":null,"category":"cursed-win"},
+               {"uci":"g7h6","zeroing":false,"dtz":null,"dtm":null,"category":"something-new"}]}
+            """);
+        using var factory = TablebaseFactory(lichess);
+        var client = factory.CreateClient();
+
+        var tablebase = await client.TablebaseAsync(Fen);
+
+        Assert.Equal(("win", "1-0"), (tablebase.Category, tablebase.Outcome));
+        Assert.Equal(
+            [("h8=Q+", "win"), ("Kf6", "cursedWin"), ("Kg8", "draw"), ("Kh6", "unknown"), ("Kg6", "blessedLoss")],
+            tablebase.Moves.Select(m => (m.San, m.Category)));
+    }
+
+    [Fact]
     public async Task A_position_with_more_than_seven_pieces_shows_nothing_and_asks_nobody()
     {
         var lichess = new FakeLichess().Json("/standard", Answer);

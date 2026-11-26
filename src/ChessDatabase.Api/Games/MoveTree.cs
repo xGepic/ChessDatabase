@@ -63,15 +63,6 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
     /// <summary>The half-move number of a node: 1 for White's first move.</summary>
     public int PlyOf(int nodeId) => _positionAfter[nodeId].Ply;
 
-    /// <summary>The first continuations from the start: the moves actually played in a Game.</summary>
-    public IReadOnlyList<TNode> MainLine()
-    {
-        var line = new List<TNode>();
-        for (var next = ChildrenOf(null).FirstOrDefault(); next is not null; next = ChildrenOf(next.Id).FirstOrDefault())
-            line.Add(next);
-        return line;
-    }
-
     /// <summary>The node and every move after it, in any line.</summary>
     public IReadOnlyList<int> Subtree(int nodeId)
     {
@@ -114,12 +105,10 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
     /// <summary>
     /// Plays checked moves (UCI and SAN) one after another from the parent. A move already in the
     /// tree there is followed; the first new one starts a new line after the existing continuations.
-    /// <paramref name="create"/> makes each new node from (existing parent id, new parent node,
-    /// order, UCI, SAN) and adds it wherever the caller keeps nodes; nothing is saved here. Returns
-    /// the line's last node and whether anything is new.
+    /// <paramref name="create"/> makes each new node and adds it wherever the caller keeps nodes;
+    /// nothing is saved here. Returns the line's last node and whether anything is new.
     /// </summary>
-    public (TNode Last, bool Added) AddLine(
-        int? parentId, IReadOnlyList<(string Uci, string San)> line, Func<int?, TNode?, int, string, string, TNode> create)
+    public (TNode Last, bool Added) AddLine(int? parentId, IReadOnlyList<(string Uci, string San)> line, Func<NewMove<TNode>, TNode> create)
     {
         if (line.Count == 0) throw new ArgumentException("A line has at least one move.", nameof(line));
         int? at = parentId;
@@ -135,9 +124,9 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
             if (firstNew is null)
             {
                 var siblings = ChildrenOf(at);
-                last = firstNew = create(at, null, siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1, uci, san);
+                last = firstNew = create(new NewMove<TNode>(at, null, siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1, uci, san));
             }
-            else last = create(null, last, 0, uci, san);
+            else last = create(new NewMove<TNode>(null, last, 0, uci, san));
         }
         return (last!, firstNew is not null);
     }
@@ -164,9 +153,25 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
         Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
 }
 
+/// <summary>
+/// A node <see cref="MoveTree{TNode}.AddLine"/> asks the caller to create: under a stored parent
+/// (<paramref name="ParentId"/>, null for the start) or, further along a new line, under a node
+/// created just before (<paramref name="Parent"/>).
+/// </summary>
+public sealed record NewMove<TNode>(int? ParentId, TNode? Parent, int Order, string Uci, string San) where TNode : class;
+
 /// <summary>A Game's move tree.</summary>
 public sealed class MoveTree(IEnumerable<MoveNodeRecord> nodes) : MoveTree<MoveNodeRecord>(nodes)
 {
+    /// <summary>The first continuations from the start: the moves actually played.</summary>
+    public IReadOnlyList<MoveNodeRecord> MainLine()
+    {
+        var line = new List<MoveNodeRecord>();
+        for (var next = ChildrenOf(null).FirstOrDefault(); next is not null; next = ChildrenOf(next.Id).FirstOrDefault())
+            line.Add(next);
+        return line;
+    }
+
     public (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos() =>
         ToDtos(n => (n.CommentBefore, n.CommentAfter, n.Nags));
 }

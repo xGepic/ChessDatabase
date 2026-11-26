@@ -702,6 +702,15 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("move")).ToHaveCountAsync(0);
         await Page.GetByTestId("repertoire-white").ClickAsync();
         await Expect(Page.GetByTestId("move")).ToHaveCountAsync(4);
+
+        // A comment typed just before moving on (by keyboard, before the typing pause) is kept.
+        await Page.GetByTestId("move").Filter(new() { HasText = "Nf3" }).ClickAsync();
+        await Page.GetByTestId("repertoire-comment").FillAsync("The main line.");
+        await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
+        await Expect(Page.GetByTestId("repertoire-comment")).ToHaveValueAsync("");
+        await Page.ReloadAsync();
+        await Page.GetByTestId("move").Filter(new() { HasText = "Nf3" }).ClickAsync();
+        await Expect(Page.GetByTestId("repertoire-comment")).ToHaveValueAsync("The main line.");
     }
 
     private static string Key(params string[] san)

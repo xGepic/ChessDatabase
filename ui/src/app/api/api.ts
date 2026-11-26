@@ -297,9 +297,15 @@ export interface MasterGame {
   ply: number | null;
 }
 
+/**
+ * A Tablebase verdict for one side, best first. A cursed win and a blessed loss are draws with the
+ * 50-move rule; the "maybe" verdicts are wins or losses the tablebase can't time exactly.
+ */
+export type TablebaseVerdict = 'win' | 'cursedWin' | 'maybeWin' | 'draw' | 'unknown' | 'maybeLoss' | 'blessedLoss' | 'loss';
+
 /** A move with its Tablebase verdict, from the side that plays it. Distances are in half-moves, positive when winning. */
 export interface TablebaseMove extends BoardMove {
-  category: string;
+  category: TablebaseVerdict;
   dtz: number | null;
   dtm: number | null;
   zeroing: boolean;
@@ -310,7 +316,7 @@ export interface Tablebase {
   applicable: boolean;
   available: boolean;
   message: string | null;
-  category: string | null;
+  category: TablebaseVerdict | null;
   outcome: string | null;
   dtz: number | null;
   dtm: number | null;
@@ -348,6 +354,13 @@ export interface PlayerRow extends PlayerDetails {
 }
 
 /** A rating at a (possibly partial) date, from one Game. */
+/** The Owner's Accuracy in one analysed Game. */
+export interface AccuracyPoint {
+  date: string;
+  accuracy: number;
+  gameId: number;
+}
+
 export interface RatingPoint {
   date: string;
   elo: number;
@@ -381,7 +394,7 @@ export interface OwnerStatistics {
   averageOpponentElo: number | null;
   ratedOpponentGames: number;
   /** Only Games with an Engine Assessment and a date. */
-  accuracy: { date: string; accuracy: number; gameId: number }[];
+  accuracy: AccuracyPoint[];
 }
 
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';

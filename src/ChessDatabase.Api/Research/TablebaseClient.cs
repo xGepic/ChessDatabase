@@ -5,7 +5,7 @@ namespace ChessDatabase.Api.Research;
 
 /// <summary>
 /// The Lichess tablebase's answer for a position, in its own JSON shape. Category is from the
-/// side to move: win, loss, draw, cursed-win, blessed-loss, maybe-win, maybe-loss, unknown.
+/// side to move, as Lichess writes it (read by <see cref="TablebaseVerdicts.Parse"/>).
 /// </summary>
 public sealed record LichessTablebase(string Category, int? Dtz, int? Dtm, List<LichessTablebaseMove> Moves);
 
@@ -40,7 +40,7 @@ public sealed class TablebaseClient(HttpClient http, TablebaseState state, IConf
 
     public Task<OnlineAnswer<LichessTablebase>> LookUpAsync(Position position)
     {
-        var key = Positions.Key(position);
+        var key = LichessPosition.Key(position);
         return fetch.GetAsync(state.Service, state.Answers, key, $"standard?fen={Uri.EscapeDataString(key)}", token: null,
             LichessFetch.ReadJsonAsync<LichessTablebase>);
     }

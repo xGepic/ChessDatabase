@@ -1,4 +1,4 @@
-using ChessDatabase.Api.Assessment;
+using ChessDatabase.Api.Analysis;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Engines;
 using ChessDatabase.Api.Games;
@@ -12,7 +12,7 @@ public sealed record OwnerOpeningScoreDto(string? Eco, string? Name, OwnerColour
 /// <summary>The Owner's Accuracy in one analysed Game.</summary>
 public sealed record AccuracyPointDto(string Date, double Accuracy, int GameId);
 
-/// <summary>The Owner's own Dossier, over the Games the filters keep.</summary>
+/// <summary>The Owner's statistics ("My statistics"), over the Games the filters keep.</summary>
 /// <param name="Openings">By ECO and the Owner's colour, most played first.</param>
 /// <param name="RatingHistory">The Owner's Elo as recorded in each Game (unrated and undated Games left out).</param>
 /// <param name="AverageOpponentElo">Over rated Opponents only; null when there are none.</param>
@@ -32,30 +32,25 @@ public static class OwnerStatisticsEndpoints
     {
         app.MapGet("/api/statistics/owner", async (string? from, string? to, string? timeControl, CollectionDbContext db) =>
         {
-            var query = new GameListQuery(From: Empty(from), To: Empty(to), TimeControl: Empty(timeControl));
+            var query = new GameListQuery(From: GameValues.OptionalText(from), To: GameValues.OptionalText(to), TimeControl: GameValues.OptionalText(timeControl));
             if (query.Validate() is { Count: > 0 } errors) return Results.ValidationProblem(errors);
             var games = (await query.RunAsync(db)).Select(r => r.Game).ToList();
 
-            var openings = games
-                .GroupBy(g => (g.Eco, g.OwnerColour))
-                .Select(g => new OwnerOpeningScoreDto(g.Key.Eco, g.Select(x => x.OpeningName).FirstOrDefault(n => n is not null), g.Key.OwnerColour, ScoreDto.Of(g)))
-                .OrderByDescending(o => o.Score.Games).ThenBy(o => o.Eco ?? "~", StringComparer.Ordinal).ThenBy(o => o.OwnerColour)
-                .ToList();
-            var opponentElos = games.Select(Figures.OpponentElo).OfType<int>().ToList();
+            var openings = Figures.ByOpening(games, g => (g.Eco, g.OwnerColour),
+                (key, name, score) => new OwnerOpeningScoreDto(key.Eco, name, key.OwnerColour, score));
+            var opponentElos = games.Select(g => g.OpponentElo()).OfType<int>().ToList();
 
             return Results.Ok(new OwnerStatisticsDto(
                 ScoreDto.Of(games),
                 ScoreDto.Of(games.Where(g => g.OwnerColour == OwnerColour.White)),
                 ScoreDto.Of(games.Where(g => g.OwnerColour == OwnerColour.Black)),
                 openings,
-                Figures.RatingHistory(games, Figures.OwnerElo),
+                Figures.RatingHistory(games, g => g.OwnerElo()),
                 opponentElos.Count > 0 ? Math.Round(opponentElos.Average(), 1) : null,
                 opponentElos.Count,
                 await AccuracyAsync(db, games)));
         });
     }
-
-    private static string? Empty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     /// <summary>The Owner's Accuracy in each dated, analysed Game, worked out from the stored evaluations.</summary>
     private static async Task<List<AccuracyPointDto>> AccuracyAsync(CollectionDbContext db, List<GameRecord> games)
@@ -67,8 +62,7 @@ public static class OwnerStatisticsEndpoints
         foreach (var record in assessments)
         {
             var game = dated[record.GameId];
-            var assessment = Assessor.Assess(
-                [.. record.Positions.Select(p => new PositionEvaluation(new EngineScore(p.Cp, p.Mate), p.Line))], record.MainLine);
+            var assessment = AssessmentQueries.Assess(record);
             var accuracy = game.OwnerColour == OwnerColour.White ? assessment.WhiteAccuracy : assessment.BlackAccuracy;
             if (accuracy is { } value) points.Add(new AccuracyPointDto(game.Date!, Math.Round(value, 1), game.Id));
         }

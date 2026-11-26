@@ -3,7 +3,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { Subject, catchError, combineLatest, of, startWith, switchMap } from 'rxjs';
 import { Api, Dossier, problemMessage, resultLabel } from '../api/api';
-import { TimeChart } from '../shared/time-chart';
+import { TimeChart, ratingPoints } from '../shared/time-chart';
 import { MergePanel } from './merge-panel';
 import { ScoreBar } from './score-bar';
 
@@ -111,17 +111,22 @@ export class DossierPage {
   protected readonly error = signal('');
   protected readonly status = signal('');
   protected readonly resultLabel = resultLabel;
-  protected readonly rating = computed(() =>
-    (this.dossier()?.ratingHistory ?? []).map((p) => ({ date: p.date, value: p.elo, id: p.gameId })),
-  );
+  protected readonly rating = computed(() => ratingPoints(this.dossier()?.ratingHistory));
 
   constructor() {
     combineLatest([toObservable(this.id), this.reload.pipe(startWith(undefined))])
       .pipe(
-        switchMap(([id]) => this.api.dossier(Number(id)).pipe(catchError((e) => {
+        switchMap(([id]) => {
+          if (this.dossier()?.player.id !== Number(id)) {
+            this.dossier.set(null);
+            this.status.set('');
+          }
+          this.error.set('');
+          return this.api.dossier(Number(id)).pipe(catchError((e) => {
           this.error.set(problemMessage(e));
           return of(null);
-        }))),
+          }));
+        }),
         takeUntilDestroyed(),
       )
       .subscribe((d) => this.dossier.set(d));

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, MoveNode, OwnerColour, Repertoire, problemMessage } from '../api/api';
 import { Board } from '../review/board';
@@ -53,7 +53,7 @@ import { INITIAL_FEN } from '../shared/chess';
           @if (current(); as c) {
             <div class="card-body">
               <textarea class="comment-input" data-testid="repertoire-comment" rows="4" placeholder="Why this move, what to remember…"
-                        [value]="c.commentAfter ?? ''" (input)="onComment($any($event.target).value)"></textarea>
+                        [value]="draft()" (input)="onComment($any($event.target).value)" (blur)="saveComment()"></textarea>
               @if (commentStatus()) { <p class="hint"><span class="status" data-testid="repertoire-comment-status">{{ commentStatus() }}</span></p> }
             </div>
           } @else {
@@ -76,6 +76,12 @@ export class RepertoirePage {
   protected readonly currentId = signal<number | null>(null);
   protected readonly error = signal('');
   protected readonly commentStatus = signal('');
+  /**
+   * The comment box's text. It changes only when another move is shown, never from a save, so
+   * typing is never interrupted; a comment still waiting to be saved is saved before moving on.
+   */
+  protected readonly draft = signal('');
+  private pendingComment: { side: OwnerColour; nodeId: number; text: string } | null = null;
   private commentTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly nodes = computed(() => new Map((this.repertoire()?.nodes ?? []).map((n) => [n.id, n])));
@@ -86,12 +92,25 @@ export class RepertoirePage {
   protected readonly fen = computed(() => this.current()?.fen ?? INITIAL_FEN);
 
   constructor() {
-    effect(() => {
+    effect((onCleanup) => {
       const side = this.side();
-      this.repertoire.set(null);
-      this.currentId.set(null);
-      this.api.repertoire(side).subscribe((r) => this.repertoire.set(r));
+      untracked(() => {
+        this.saveComment();
+        this.repertoire.set(null);
+        this.show(null);
+      });
+      // A slow answer for the side shown before must not replace this one.
+      const request = this.api.repertoire(side).subscribe((r) => this.repertoire.set(r));
+      onCleanup(() => request.unsubscribe());
     });
+    inject(DestroyRef).onDestroy(() => this.saveComment());
+  }
+
+  /** Shows a move (null: the start) with its comment. */
+  private show(id: number | null) {
+    this.commentStatus.set('');
+    this.currentId.set(id);
+    this.draft.set(id === null ? '' : (this.nodes().get(id)?.commentAfter ?? ''));
   }
 
   protected next(id: number | null): number | undefined {
@@ -103,9 +122,8 @@ export class RepertoirePage {
   }
 
   protected goTo(id: number | null) {
-    clearTimeout(this.commentTimer);
-    this.commentStatus.set('');
-    this.currentId.set(id);
+    this.saveComment();
+    this.show(id);
   }
 
   protected onKey(event: KeyboardEvent) {
@@ -127,12 +145,16 @@ export class RepertoirePage {
   /** A move played on the board is added to the Repertoire there (followed if it is already in it). */
   protected onBoardMove(uci: string) {
     this.error.set('');
-    this.api.addRepertoireLine(this.side(), this.currentId(), [uci]).subscribe({
+    this.saveComment();
+    const side = this.side();
+    this.api.addRepertoireLine(side, this.currentId(), [uci]).subscribe({
       next: ({ nodeId, repertoire }) => {
+        if (this.side() !== side) return;
         this.repertoire.set(repertoire);
-        this.currentId.set(nodeId);
+        this.show(nodeId);
       },
       error: (e) => {
+        if (this.side() !== side) return;
         this.error.set(problemMessage(e));
         this.board()?.reset();
       },
@@ -147,33 +169,51 @@ export class RepertoirePage {
       'delete-from-here': () => this.api.deleteRepertoireFrom(side, node.id),
     }[action];
     this.error.set('');
+    this.saveComment();
     call().subscribe({
       next: (repertoire) => {
+        if (this.side() !== side) return;
         const before = this.nodes();
         this.repertoire.set(repertoire);
         // If the move on the board was deleted, step back to the last one that still exists.
         let id = this.currentId();
         while (id !== null && !this.nodes().has(id)) id = before.get(id)?.parentId ?? null;
-        this.currentId.set(id);
+        if (id !== this.currentId()) this.show(id);
       },
-      error: (e) => this.error.set(problemMessage(e)),
+      error: (e) => {
+        if (this.side() === side) this.error.set(problemMessage(e));
+      },
     });
   }
 
-  /** Comments save shortly after typing stops. */
+  /** Comments save shortly after typing stops, when the box loses focus, or before anything else happens. */
   protected onComment(text: string) {
-    const node = this.current();
-    if (!node) return;
-    clearTimeout(this.commentTimer);
+    const nodeId = this.currentId();
+    if (nodeId === null) return;
+    this.draft.set(text);
+    this.pendingComment = { side: this.side(), nodeId, text };
     this.commentStatus.set('');
-    this.commentTimer = setTimeout(() => {
-      this.api.setRepertoireComment(this.side(), node.id, text).subscribe({
-        next: (repertoire) => {
-          this.repertoire.set(repertoire);
-          this.commentStatus.set('Saved');
-        },
-        error: (e) => this.commentStatus.set(problemMessage(e)),
-      });
-    }, 500);
+    clearTimeout(this.commentTimer);
+    this.commentTimer = setTimeout(() => this.saveComment(), 500);
+  }
+
+  /** Saves the comment still waiting, if any. */
+  protected saveComment() {
+    clearTimeout(this.commentTimer);
+    const pending = this.pendingComment;
+    if (!pending) return;
+    this.pendingComment = null;
+    this.api.setRepertoireComment(pending.side, pending.nodeId, pending.text).subscribe({
+      next: (saved) => {
+        if (this.side() !== pending.side) return;
+        // Only this comment is taken from the answer: other changes may have been answered since.
+        const comment = saved.nodes.find((n) => n.id === pending.nodeId)?.commentAfter ?? null;
+        this.repertoire.update((r) => r && { ...r, nodes: r.nodes.map((n) => (n.id === pending.nodeId ? { ...n, commentAfter: comment } : n)) });
+        if (this.currentId() === pending.nodeId) this.commentStatus.set('Saved');
+      },
+      error: (e) => {
+        if (this.side() === pending.side && this.currentId() === pending.nodeId) this.commentStatus.set(problemMessage(e));
+      },
+    });
   }
 }

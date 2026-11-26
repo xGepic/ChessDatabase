@@ -142,6 +142,12 @@ public sealed class GameRecord
 
     /// <summary>The Game's main-line positions, kept in step with the move tree (see <see cref="PositionIndexRecord"/>).</summary>
     public List<PositionIndexRecord> Positions { get; set; } = [];
+
+    /// <summary>The Owner's own Elo in this Game (null when unrated).</summary>
+    public int? OwnerElo() => OwnerColour == OwnerColour.White ? WhiteElo : BlackElo;
+
+    /// <summary>The Opponent's Elo in this Game (null when unrated).</summary>
+    public int? OpponentElo() => OwnerColour == OwnerColour.White ? BlackElo : WhiteElo;
 }
 
 /// <summary>

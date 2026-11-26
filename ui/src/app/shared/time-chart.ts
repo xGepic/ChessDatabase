@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnDestroy, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { AccuracyPoint, RatingPoint } from '../api/api';
 
 /** A value at a (possibly partial) date: "2024", "2024-03" or "2024-03-05". */
 export interface TimePoint {
@@ -6,6 +7,16 @@ export interface TimePoint {
   value: number;
   /** What a click on the point opens (a Game id). */
   id: number;
+}
+
+/** A rating history as chart points (a click opens the Game the Elo comes from). */
+export function ratingPoints(history: RatingPoint[] | undefined): TimePoint[] {
+  return (history ?? []).map((p) => ({ date: p.date, value: p.elo, id: p.gameId }));
+}
+
+/** Accuracy per Game as chart points. */
+export function accuracyPoints(points: AccuracyPoint[] | undefined): TimePoint[] {
+  return (points ?? []).map((p) => ({ date: p.date, value: p.accuracy, id: p.gameId }));
 }
 
 const HEIGHT = 180;
@@ -31,8 +42,9 @@ function timeOf(date: string): number {
       <p class="hint chart-empty">{{ emptyText() }}</p>
     } @else {
       <div class="time-chart" (mouseleave)="hover.set(null)">
-        <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" [attr.aria-label]="label()" data-testid="time-chart"
-             (mousemove)="onMove($event)" (click)="onClick()">
+        <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" data-testid="time-chart" tabindex="0"
+             [attr.aria-label]="label() + ': arrow keys step through the points, Enter opens the Game'"
+             (mousemove)="onMove($event)" (click)="onClick()" (keydown)="onKey($event)" (blur)="hover.set(null)">
           @for (t of yTicks(); track t.value) {
             <line class="chart-grid" [attr.x1]="pad.left" [attr.x2]="width - pad.right" [attr.y1]="t.y" [attr.y2]="t.y" />
             <text class="chart-tick" [attr.x]="pad.left - 6" [attr.y]="t.y + 4" text-anchor="end">{{ t.value }}</text>
@@ -175,6 +187,27 @@ export class TimeChart implements OnDestroy {
   protected onClick() {
     const h = this.hover();
     if (h) this.open.emit(h.id);
+  }
+
+  /** Arrow keys step from point to point (Home and End jump to the first and last), Enter opens it. */
+  protected onKey(event: KeyboardEvent) {
+    const placed = this.placed();
+    const h = this.hover();
+    const at = h ? placed.findIndex((p) => p.id === h.id && p.date === h.date) : -1;
+    const last = placed.length - 1;
+    const to = ({
+      ArrowRight: at < 0 ? 0 : Math.min(at + 1, last),
+      ArrowLeft: at < 0 ? last : Math.max(at - 1, 0),
+      Home: 0,
+      End: last,
+    } as Record<string, number>)[event.key];
+    if (to !== undefined) {
+      const p = placed[to];
+      this.hover.set({ x: p.x, y: p.y, date: p.date, value: p.value, id: p.id });
+    } else if (event.key === 'Enter' && h) {
+      this.open.emit(h.id);
+    } else return;
+    event.preventDefault();
   }
 }
 

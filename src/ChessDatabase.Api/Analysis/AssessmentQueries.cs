@@ -25,6 +25,10 @@ public sealed record EngineAssessmentDto(
 /// <summary>Reading a Game's Engine Assessment the way the API shows it.</summary>
 public static class AssessmentQueries
 {
+    /// <summary>Classifications and Accuracy worked out from the stored evaluations.</summary>
+    public static GameAssessment Assess(EngineAssessmentRecord record) =>
+        Assessor.Assess([.. record.Positions.Select(p => new PositionEvaluation(new EngineScore(p.Cp, p.Mate), p.Line))], record.MainLine);
+
     /// <summary>
     /// The Game's Engine Assessment, worked out from the stored evaluations and matched to the
     /// Game's current main line, or null if it has none.
@@ -36,8 +40,7 @@ public static class AssessmentQueries
         var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == gameId).ToListAsync();
         var current = new MoveTree(nodes).MainLine();
 
-        var assessment = Assessor.Assess(
-            [.. record.Positions.Select(p => new PositionEvaluation(new EngineScore(p.Cp, p.Mate), p.Line))], record.MainLine);
+        var assessment = Assess(record);
 
         var positions = new List<AssessedPositionDto>();
         var moves = new List<AssessedMoveDto>();

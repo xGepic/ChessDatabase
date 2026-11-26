@@ -54,8 +54,8 @@ public static class DossierEndpoints
             return Results.Ok(new DossierDto(
                 PlayerDetailsDto.Of(player),
                 ScoreDto.Of(games),
-                Figures.RatingHistory(games, Figures.OpponentElo),
-                Figures.ByOpening(games),
+                Figures.RatingHistory(games, g => g.OpponentElo()),
+                Figures.ByOpening(games, g => g.Eco, (eco, name, score) => new OpeningScoreDto(eco, name, score)),
                 [.. Figures.NewestFirst(games).Select(g => GameQueries.ToSummary(g, ownerName, analysed.Contains(g.Id)))]));
         });
     }

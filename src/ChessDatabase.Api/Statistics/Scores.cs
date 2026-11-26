@@ -31,7 +31,7 @@ public sealed record RatingPointDto(string Date, int Elo, int GameId);
 /// <summary>The Owner's score with one opening (by ECO); Name is the opening's name from the Owner's Games.</summary>
 public sealed record OpeningScoreDto(string? Eco, string? Name, ScoreDto Score);
 
-/// <summary>Figures shared by the Dossiers.</summary>
+/// <summary>Figures shared by the Dossier and the Owner's statistics.</summary>
 public static class Figures
 {
     /// <summary>
@@ -44,18 +44,17 @@ public static class Figures
             .OrderBy(g => g.Date, StringComparer.Ordinal).ThenBy(g => g.CreatedAt)
             .Select(g => new RatingPointDto(g.Date!, elo(g)!.Value, g.Id))];
 
-    /// <summary>The Owner's score per opening (ECO), most played first; unclassified Games together under no ECO.</summary>
-    public static List<OpeningScoreDto> ByOpening(IEnumerable<GameRecord> games) =>
+    /// <summary>
+    /// The Owner's score per opening, grouped by <paramref name="key"/> (the ECO, perhaps with
+    /// more), most played first, then by ECO; unclassified Games together under no ECO.
+    /// <paramref name="row"/> makes a row from the key, the opening's name in those Games and the score.
+    /// </summary>
+    public static List<T> ByOpening<TKey, T>(IEnumerable<GameRecord> games, Func<GameRecord, TKey> key, Func<TKey, string?, ScoreDto, T> row) =>
         [.. games
-            .GroupBy(g => g.Eco)
-            .Select(g => new OpeningScoreDto(g.Key, g.Select(x => x.OpeningName).FirstOrDefault(n => n is not null), ScoreDto.Of(g)))
-            .OrderByDescending(o => o.Score.Games).ThenBy(o => o.Eco ?? "~", StringComparer.Ordinal)];
-
-    /// <summary>The Opponent's Elo in a Game (null when unrated).</summary>
-    public static int? OpponentElo(GameRecord game) => game.OwnerColour == OwnerColour.White ? game.BlackElo : game.WhiteElo;
-
-    /// <summary>The Owner's own Elo in a Game (null when unrated).</summary>
-    public static int? OwnerElo(GameRecord game) => game.OwnerColour == OwnerColour.White ? game.WhiteElo : game.BlackElo;
+            .GroupBy(key)
+            .Select(g => (g.Key, g.First().Eco, Name: g.Select(x => x.OpeningName).FirstOrDefault(n => n is not null), Score: ScoreDto.Of(g)))
+            .OrderByDescending(o => o.Score.Games).ThenBy(o => o.Eco ?? "~", StringComparer.Ordinal).ThenBy(o => o.Key)
+            .Select(o => row(o.Key, o.Name, o.Score))];
 
     /// <summary>Newest first; Games without a date last.</summary>
     public static IOrderedEnumerable<GameRecord> NewestFirst(IEnumerable<GameRecord> games) =>

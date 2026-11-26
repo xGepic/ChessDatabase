@@ -9,6 +9,7 @@
   --rosewood: #a8693d;
   --cream: #f4ecdc;
   --cream-deep: #eadfc8;
+  --paper: #fffaf0;
   --rule: #d8c8a8;
   --ink: #2a1c12;
   --ink-soft: #6b5440;
@@ -84,7 +85,7 @@ button.danger { color: var(--blood); }
 
 input, select, textarea {
   font: inherit; color: var(--ink);
-  background: #fffaf0;
+  background: var(--paper);
   border: 1px solid var(--rule); border-radius: var(--radius);
   padding: 5px 8px;
 }
@@ -117,7 +118,7 @@ a { color: var(--wood-active); }
 
 .colour-dot {
   display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-  border: 1px solid var(--ink); background: #fffaf0; margin-right: 6px; vertical-align: -1px;
+  border: 1px solid var(--ink); background: var(--paper); margin-right: 6px; vertical-align: -1px;
 }
 .colour-dot.black { background: var(--ink); }
 
@@ -145,7 +146,7 @@ a { color: var(--wood-active); }
 .picker-list {
   position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 2px);
   margin: 0; padding: 4px 0; list-style: none;
-  background: #fffaf0; border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
   box-shadow: 0 6px 16px rgba(0,0,0,.2);
 }
 .picker-list li { padding: 6px 10px; cursor: pointer; }
@@ -209,7 +210,7 @@ app-eval-bar .eval-bar { flex: 1; }
 }
 .engine-switch .knob {
   position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
-  background: #fffaf0; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s ease-out;
+  background: var(--paper); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s ease-out;
 }
 .engine-switch.on { background: var(--felt); border-color: var(--felt); }
 .engine-switch.on .knob { left: 16px; }
@@ -315,6 +316,7 @@ app-eval-bar .eval-bar { flex: 1; }
 .time-chart { position: relative; }
 app-time-chart { display: block; }
 .time-chart svg { display: block; width: 100%; height: auto; cursor: crosshair; }
+.time-chart svg:focus-visible { outline: 2px solid var(--wood-active); outline-offset: 2px; }
 .chart-grid { stroke: var(--rule); stroke-width: 1; }
 .chart-tick { fill: var(--ink-soft); font-size: 11px; font-family: var(--move-font); }
 .chart-line { fill: none; stroke: var(--wood-active); stroke-width: 2; stroke-linejoin: round; }
@@ -323,7 +325,7 @@ app-time-chart { display: block; }
 .chart-crosshair { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 3; }
 .chart-tooltip {
   position: absolute; transform: translate(-50%, calc(-100% - 10px)); pointer-events: none; white-space: nowrap;
-  background: #fffaf0; border: 1px solid var(--rule); border-radius: var(--radius); padding: 3px 8px; font-size: 12px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 3px 8px; font-size: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,.15);
 }
 .chart-table { margin-top: 6px; font-size: 12px; }
@@ -345,9 +347,9 @@ app-time-chart { display: block; }
 /* ---------- Tablebase ---------- */
 .tablebase-card { padding: 0; }
 .tablebase-verdict { font-weight: 600; }
-[data-category="win"], [data-category="cursed-win"], [data-category="maybe-win"] { --verdict: var(--felt); }
+[data-category="win"], [data-category="cursedWin"], [data-category="maybeWin"] { --verdict: var(--felt); }
 [data-category="draw"], [data-category="unknown"] { --verdict: var(--ink-soft); }
-[data-category="loss"], [data-category="blessed-loss"], [data-category="maybe-loss"] { --verdict: var(--blood); }
+[data-category="loss"], [data-category="blessedLoss"], [data-category="maybeLoss"] { --verdict: var(--blood); }
 .tablebase-verdict, .tablebase-move .tablebase-move-verdict { color: var(--verdict, var(--ink)); }
 .tablebase-move { grid-template-columns: 72px 1fr; }
 
@@ -454,7 +456,7 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 
 .context-menu {
   position: fixed; z-index: 50; min-width: 200px; padding: 4px 0;
-  background: #fffaf0; border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
   box-shadow: 0 8px 20px rgba(0,0,0,.3);
   display: flex; flex-direction: column;
 }
