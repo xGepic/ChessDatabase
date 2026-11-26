@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { Game, MoveNode, resultLabel } from '../api/api';
-import { buildSheet, isOnMainLine } from './notation';
+import { annotatedSan, buildSheet, isOnMainLine } from './notation';
 
 export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
 
@@ -22,16 +22,18 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
           <div class="sheet-row">
             <span class="move-no">{{ item.number }}.</span>
             @if (item.white; as w) {
-              <ng-container *ngTemplateOutlet="moveButton; context: { $implicit: w, label: w.san }" />
+              <ng-container *ngTemplateOutlet="moveButton; context: { $implicit: w, label: annotatedSan(w) }" />
             } @else {
               <span class="move ellipsis">…</span>
             }
             @if (item.black; as b) {
-              <ng-container *ngTemplateOutlet="moveButton; context: { $implicit: b, label: b.san }" />
+              <ng-container *ngTemplateOutlet="moveButton; context: { $implicit: b, label: annotatedSan(b) }" />
             } @else {
               <span class="move"></span>
             }
           </div>
+        } @else if (item.kind === 'comment') {
+          <p class="sheet-comment" data-testid="comment">{{ item.text }}</p>
         } @else {
           <div class="variations">
             @for (line of item.lines; track $index) {
@@ -42,6 +44,7 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
                     @case ('move') {
                       <ng-container *ngTemplateOutlet="moveButton; context: { $implicit: token.node, label: token.label }" />
                     }
+                    @case ('comment') { <span class="inline-comment" data-testid="comment">{{ token.text }}</span> }
                     @case ('open') { <span class="paren">(</span> }
                     @case ('close') { <span class="paren">)</span> }
                   }
@@ -86,6 +89,7 @@ export class Scoresheet {
   readonly action = output<{ action: TreeAction; node: MoveNode }>();
 
   protected readonly resultLabel = resultLabel;
+  protected readonly annotatedSan = annotatedSan;
   protected readonly items = computed(() => buildSheet(this.game()));
   protected readonly menu = signal<{ x: number; y: number; node: MoveNode; onMainLine: boolean } | null>(null);
 

@@ -114,6 +114,12 @@ export class Api {
   deleteFromHere(gameId: number, nodeId: number): Observable<Game> {
     return this.http.delete<Game>(`/api/games/${gameId}/moves/${nodeId}`);
   }
+  setComment(gameId: number, nodeId: number, text: string): Observable<Game> {
+    return this.http.put<Game>(`/api/games/${gameId}/moves/${nodeId}/comment`, { text });
+  }
+  setNags(gameId: number, nodeId: number, nags: number[]): Observable<Game> {
+    return this.http.put<Game>(`/api/games/${gameId}/moves/${nodeId}/nags`, { nags });
+  }
 
   // Players
   searchPlayers(search: string): Observable<Player[]> {

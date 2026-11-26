@@ -107,4 +107,24 @@ public class SmokeTests : IAsyncLifetime
         await Expect(Page.GetByTestId("variation")).ToHaveCountAsync(0);
         await Expect(Page.GetByTestId("move")).ToHaveTextAsync(["e4", "e5", "Bc4", "Nf6"]);
     }
+
+    [Fact]
+    public async Task Annotate_a_move_with_a_symbol_and_a_comment()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("move").Filter(new() { HasText = "Qh5" }).ClickAsync();
+        await Page.GetByTestId("nag-6").ClickAsync();
+        await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Qh5" })).ToHaveTextAsync("Qh5?!");
+
+        await Page.GetByTestId("comment-input").FillAsync("Too early with the queen.");
+        await Expect(Page.GetByTestId("comment-status")).ToHaveTextAsync("Saved");
+        await Expect(Page.GetByTestId("comment")).ToHaveTextAsync("Too early with the queen.");
+
+        // Persisted: reload and find both again
+        await Page.ReloadAsync();
+        await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Qh5" })).ToHaveTextAsync("Qh5?!");
+        await Expect(Page.GetByTestId("comment")).ToHaveTextAsync("Too early with the queen.");
+    }
 }

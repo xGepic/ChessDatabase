@@ -236,3 +236,18 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .context-menu button:hover:not(:disabled) { background: var(--boxwood); }
 
 .board-tools button[aria-label] { min-width: 40px; }
+
+/* ---------- annotations ---------- */
+.sheet-comment {
+  margin: 0; padding: 6px 16px 8px 54px;
+  font-family: var(--ui-font); font-size: 13px; font-style: italic; color: var(--ink);
+  border-bottom: 1px solid var(--cream-deep); white-space: pre-wrap;
+}
+.inline-comment { font-family: var(--ui-font); font-style: italic; color: var(--ink); white-space: pre-wrap; }
+.annotation-body { padding: 12px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
+.annotation-body textarea { width: 100%; resize: vertical; min-height: 84px; }
+.symbol-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.symbol { min-width: 38px; padding: 4px 8px; font-family: var(--move-font); font-weight: 700; }
+.symbol.on { background: var(--wood-active); color: var(--cream); }
+.current-move { color: var(--ink-soft); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

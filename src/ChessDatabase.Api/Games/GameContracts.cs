@@ -59,3 +59,15 @@ public sealed record GameDetailsRequest(
 public sealed record AddMoveRequest(int? ParentId, string? Move);
 
 public sealed record AddMoveResponse(int NodeId, GameDto Game);
+
+public enum CommentPlacement
+{
+    After,
+    Before,
+}
+
+/// <summary>Sets a move's comment; empty text removes it. Placement defaults to after the move.</summary>
+public sealed record SetCommentRequest(string? Text, CommentPlacement Placement = CommentPlacement.After);
+
+/// <summary>Replaces a move's symbols (NAGs), e.g. [1, 14] for "!" and "⩲". An empty list clears them.</summary>
+public sealed record SetNagsRequest(IReadOnlyList<int>? Nags);

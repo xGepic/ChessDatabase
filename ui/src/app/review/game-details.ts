@@ -86,11 +86,14 @@ export class GameDetailsCard {
   });
 
   constructor() {
-    effect(() => {
-      this.whiteElo.set(this.game().whiteElo ? String(this.game().whiteElo) : '');
-      this.blackElo.set(this.game().blackElo ? String(this.game().blackElo) : '');
-    });
+    // Only a change of the saved Elos resets the fields, so other saves (e.g. a comment) never
+    // overwrite an Elo the Owner is typing.
+    effect(() => this.whiteElo.set(this.savedWhiteElo() ? String(this.savedWhiteElo()) : ''));
+    effect(() => this.blackElo.set(this.savedBlackElo() ? String(this.savedBlackElo()) : ''));
   }
+
+  private readonly savedWhiteElo = computed(() => this.game().whiteElo);
+  private readonly savedBlackElo = computed(() => this.game().blackElo);
 
   protected setColour(ownerColor: OwnerColor) {
     if (ownerColor !== this.game().ownerColor) this.save({ ownerColor });

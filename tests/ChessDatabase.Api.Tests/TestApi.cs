@@ -68,6 +68,12 @@ public static class MoveTreeTestExtensions
         return game;
     }
 
+    public static async Task SetCommentAsync(this HttpClient client, int gameId, int nodeId, string text) =>
+        (await client.PutAsJsonAsync($"/api/games/{gameId}/moves/{nodeId}/comment", new { text })).EnsureSuccessStatusCode();
+
+    public static async Task SetNagsAsync(this HttpClient client, int gameId, int nodeId, params int[] nags) =>
+        (await client.PutAsJsonAsync($"/api/games/{gameId}/moves/{nodeId}/nags", new { nags })).EnsureSuccessStatusCode();
+
     public static MoveNodeDto Node(this GameDto game, int id) => game.Nodes.Single(n => n.Id == id);
 
     /// <summary>Follows first children from the starting position.</summary>

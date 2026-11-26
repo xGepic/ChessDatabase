@@ -68,6 +68,43 @@ public static class MoveTreeEndpoints
         });
     }
 
+    public const int MaxCommentLength = 10_000;
+
+    /// <summary>Annotations: a text comment after (or before) a move, and symbols as NAGs.</summary>
+    public static void MapAnnotationEndpoints(this RouteGroupBuilder games)
+    {
+        games.MapPut("/{id:int}/moves/{nodeId:int}/comment", async (int id, int nodeId, SetCommentRequest body, CollectionDbContext db) =>
+        {
+            var node = await db.MoveNodes.SingleOrDefaultAsync(n => n.Id == nodeId && n.GameId == id);
+            if (node is null) return Results.NotFound();
+            var text = body.Text?.Trim();
+            if (text?.Length > MaxCommentLength)
+                return Invalid("text", $"A comment can be at most {MaxCommentLength} characters long.");
+
+            var value = string.IsNullOrEmpty(text) ? null : text;
+            switch (body.Placement)
+            {
+                case CommentPlacement.Before: node.CommentBefore = value; break;
+                default: node.CommentAfter = value; break;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+        });
+
+        games.MapPut("/{id:int}/moves/{nodeId:int}/nags", async (int id, int nodeId, SetNagsRequest body, CollectionDbContext db) =>
+        {
+            var node = await db.MoveNodes.SingleOrDefaultAsync(n => n.Id == nodeId && n.GameId == id);
+            if (node is null) return Results.NotFound();
+            var nags = body.Nags ?? [];
+            if (nags.Any(n => n is < 1 or > 255))
+                return Invalid("nags", "Symbols are NAG numbers from 1 to 255.");
+
+            node.Nags = string.Join(' ', nags.Distinct());
+            await db.SaveChangesAsync();
+            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+        });
+    }
+
     /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>
     private static async Task<MoveTree?> LoadTreeAsync(CollectionDbContext db, int gameId, int nodeId)
     {

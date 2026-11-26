@@ -3,13 +3,14 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Api, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
 import { Board } from './board';
+import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
 import { Scoresheet, TreeAction } from './scoresheet';
 
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, GameDetailsCard],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },
 })
