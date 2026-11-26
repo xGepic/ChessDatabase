@@ -9,6 +9,7 @@ It is an ASP.NET Core backend that hosts an Angular UI in a desktop window (Phot
 Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). What works so far:
 
 - The desktop window opens on the game list. The Collection is created and migrated automatically on first start.
+- Chess Rules (`src/ChessDatabase.Rules`): legal move generation (passes the standard perft suite), check, checkmate and stalemate, FEN, SAN (German piece letters K D T L S are accepted, English letters are always written) and Zobrist position hashes.
 
 ## Prerequisites
 

@@ -9,7 +9,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | # | Ticket | Blocked by | Status |
 |---|---|---|---|
 | 01 | [Walking skeleton](#01-walking-skeleton) | – | **Done** |
-| 02 | [Chess Rules core](#02-chess-rules-core) | 01 | Open |
+| 02 | [Chess Rules core](#02-chess-rules-core) | 01 | **Done** |
 | 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | Open |
 | 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | Open |
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | Open |
@@ -67,13 +67,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 01 (Walking skeleton).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Perft results match the published values for the standard positions (initial, "Kiwipete" and the other standard perft positions) at the usual test depths
-- [ ] SAN round trip: every legal move in the perft positions formats to SAN and parses back to the same move, with correct disambiguation, check and mate suffixes
-- [ ] German SAN input (e.g. `Sf3`, `Dxd8+`, `Lb5`, `Txe1`) parses to the same move as the English equivalent
-- [ ] FEN round trip for the standard test positions
-- [ ] Positions reached by different move orders have equal hashes; differing side to move, castling rights or en passant give different hashes
+- [x] Perft results match the published values for the standard positions (initial, "Kiwipete" and the other standard perft positions) at the usual test depths
+- [x] SAN round trip: every legal move in the perft positions formats to SAN and parses back to the same move, with correct disambiguation, check and mate suffixes
+- [x] German SAN input (e.g. `Sf3`, `Dxd8+`, `Lb5`, `Txe1`) parses to the same move as the English equivalent
+- [x] FEN round trip for the standard test positions
+- [x] Positions reached by different move orders have equal hashes; differing side to move, castling rights or en passant give different hashes
 
 ---
 
