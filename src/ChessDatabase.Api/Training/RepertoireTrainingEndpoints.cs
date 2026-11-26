@@ -115,7 +115,7 @@ public static class RepertoireTrainingEndpoints
         var repertoires = await RepertoireByPosition.LoadBothAsync(db);
         var wanted = repertoires
             .SelectMany(r => r.Value.Positions
-                .Where(p => p.Moves.Count > 0 && p.Position.SideToMove == (r.Key == OwnerColour.White ? Color.White : Color.Black))
+                .Where(p => p.Moves.Count > 0 && p.Position.SideToMove == r.Key.ToColor())
                 .Select(p => (Key: new RepertoireItemKey(r.Key, p.Key).ToString(), p.Line.Count)))
             .OrderBy(p => p.Count)
             .Select(p => p.Key)

@@ -46,7 +46,6 @@ public class MistakeTrainingTests
         await client.UseAsync(engine);
         await AnalysedScholarsMateAsync(client, "black");
         var itemId = (await client.NextMistakeAsync())!.ItemId;
-        var asked = engine.Commands().Count(c => c.StartsWith("go ", StringComparison.Ordinal));
 
         var best = await client.AnswerMistakeAsync(itemId, "g6");
         var qe7 = await client.AnswerMistakeAsync(itemId, "Qe7");     // loses 0.05: within the margin
@@ -57,8 +56,24 @@ public class MistakeTrainingTests
         Assert.Equal(["g6", "Qf3", "Nf6"], best.BestLineSan);
         Assert.Equal(("g7g6", "g7g6"), (a6.BestLineUci[0], a6.Shown)); // a wrong answer shows the Engine's move
         Assert.Equal("d8e7", qe7.Shown);
-        // Only the two answers that were neither the best move nor the Game's own move needed the Engine.
-        Assert.Equal(asked + 2, engine.Commands().Count(c => c.StartsWith("go ", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task Editing_a_Game_before_a_mistake_drops_it_until_the_Game_is_analysed_again_and_editing_after_keeps_it()
+    {
+        using var factory = new CollectionFactory(clock: new FakeTimeProvider(Morning));
+        var client = factory.CreateClient();
+        using var engine = Engine();
+        await client.UseAsync(engine);
+        var game = await AnalysedScholarsMateAsync(client, "black");
+
+        // After the mistake (3...Nf6): taking back 4.Qxf7# leaves the analysed moves up to it as they were.
+        (await client.DeleteAsync($"/api/games/{game.Id}/moves/{game.MainLine()[6].Id}")).EnsureSuccessStatusCode();
+        Assert.Equal((1, 1), await client.MistakesDueAsync());
+
+        // Before it: without 3.Bc4 the position no longer comes up, so "Open source Game" would show another one.
+        (await client.DeleteAsync($"/api/games/{game.Id}/moves/{game.MainLine()[4].Id}")).EnsureSuccessStatusCode();
+        Assert.Equal((0, 0), await client.MistakesDueAsync());
     }
 
     [Fact]
@@ -127,7 +142,7 @@ public class MistakeTrainingTests
     }
 
     [Fact]
-    public async Task Without_a_working_Engine_an_answer_that_needs_judging_is_not_counted()
+    public async Task Without_a_working_Engine_only_answers_that_need_judging_are_refused()
     {
         using var factory = new CollectionFactory(clock: new FakeTimeProvider(Morning));
         var client = factory.CreateClient();
@@ -142,6 +157,10 @@ public class MistakeTrainingTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal((1, 1), await client.MistakesDueAsync());
         Assert.True((await client.NextMistakeAsync())!.New); // still never answered
+
+        // The Engine's best move and the Game's own move need no Engine to judge.
+        Assert.False((await client.AnswerMistakeAsync(itemId, "Nf6")).Correct);
+        Assert.True((await client.AnswerMistakeAsync(itemId, "g6")).Correct);
     }
 
     private static async Task<GameDto> AnalysedScholarsMateAsync(HttpClient client, string ownerColour)

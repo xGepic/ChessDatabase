@@ -50,6 +50,7 @@ public static class ChessDatabaseApp
         });
         builder.Services.AddTransient<ITablebaseSource>(services => services.GetRequiredService<TablebaseClient>());
         builder.Services.AddSingleton<GameAnalyzer>();
+        builder.Services.AddSingleton<Training.AnalysedMistakes>();
         builder.Services.AddSingleton<GameAnalysisQueue>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<GameAnalysisQueue>());
         builder.Services.AddProblemDetails();

@@ -95,6 +95,12 @@ export interface TrainingAnswer {
   dueAt: string;
 }
 
+/** Training items due today (until local midnight) and in all. */
+export interface TrainingSummary {
+  due: number;
+  total: number;
+}
+
 /** A position from one of the Owner's analysed Games where the Owner made a mistake or blunder. */
 export interface MistakeItem {
   itemId: number;
@@ -670,8 +676,8 @@ export class Api {
     return this.http.get<OwnerDeviation[]>('/api/repertoire/deviations', { params: filters });
   }
   // Mistake Training
-  mistakeTrainingSummary(): Observable<{ due: number; total: number }> {
-    return this.http.get<{ due: number; total: number }>('/api/training/mistakes');
+  mistakeTrainingSummary(): Observable<TrainingSummary> {
+    return this.http.get<TrainingSummary>('/api/training/mistakes');
   }
   nextMistake(): Observable<MistakeItem | null> {
     return this.http.get<MistakeItem | null>('/api/training/mistakes/next');
@@ -683,8 +689,8 @@ export class Api {
 
   // Repertoire Training
   /** Items due today and in all; keeps the items in step with the Repertoire. */
-  repertoireTrainingSummary(): Observable<{ due: number; total: number }> {
-    return this.http.get<{ due: number; total: number }>('/api/training/repertoire');
+  repertoireTrainingSummary(): Observable<TrainingSummary> {
+    return this.http.get<TrainingSummary>('/api/training/repertoire');
   }
   /** The item due first, or null when nothing is due today. */
   nextRepertoireItem(): Observable<RepertoireTrainingItem | null> {

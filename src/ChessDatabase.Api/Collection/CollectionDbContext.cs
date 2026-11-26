@@ -105,6 +105,12 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     }
 }
 
+public static class OwnerColours
+{
+    /// <summary>The Chess Rules colour of a side the Owner plays.</summary>
+    public static Rules.Color ToColor(this OwnerColour colour) => colour == OwnerColour.White ? Rules.Color.White : Rules.Color.Black;
+}
+
 public enum OwnerColour
 {
     White,

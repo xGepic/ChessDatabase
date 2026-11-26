@@ -37,9 +37,8 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
 
         var positions = new List<StoredEvaluation>(mainLine.Count + 1);
         string engineName;
-        await using (var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken))
+        await using (var engine = await StartEngineAsync(definition, cancellationToken))
         {
-            engine.Send("ucinewgame");
             var position = Position.Initial;
             await progress(0, mainLine.Count + 1);
             for (var ply = 0; ply <= mainLine.Count; ply++)
@@ -55,6 +54,8 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         {
             var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
             if (!await db.Games.AnyAsync(g => g.Id == gameId, cancellationToken)) return; // deleted meanwhile
+            // One step: nobody ever sees the Game without an Engine Assessment in between.
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             await db.EngineAssessments.Where(a => a.GameId == gameId).ExecuteDeleteAsync(cancellationToken);
             db.EngineAssessments.Add(new EngineAssessmentRecord
             {
@@ -68,24 +69,31 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
                 Positions = positions,
             });
             await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
     }
 
     /// <summary>
-    /// Evaluates one position, the one after <paramref name="moves"/> (UCI) from the start, the way
-    /// Game Analysis evaluates each position: same Engine, same time, MultiPV 1.
+    /// Evaluates one position the way Game Analysis evaluates each position (MultiPV 1):
+    /// <paramref name="position"/>, reached by <paramref name="moves"/> (UCI) from the start.
     /// </summary>
+    /// <param name="msPerMove">The time to think: pass an Engine Assessment's own, to compare with its evaluations.</param>
     /// <exception cref="EngineException">The Engine could not be started, crashed or stopped answering.</exception>
-    public async Task<StoredEvaluation> EvaluateOnceAsync(IReadOnlyList<string> moves, CancellationToken cancellationToken = default)
+    public async Task<StoredEvaluation> EvaluateOnceAsync(
+        IReadOnlyList<string> moves, Position position, int msPerMove, CancellationToken cancellationToken = default)
     {
         EngineRecord definition;
         using (var scope = scopes.CreateScope())
             definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Engines.StockfishAsync(cancellationToken);
-        var position = Position.Initial;
-        foreach (var uci in moves) position = position.Play(ParseUci(uci));
-        await using var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken);
+        await using var engine = await StartEngineAsync(definition, cancellationToken);
+        return await EvaluateAsync(engine, moves, position, msPerMove, cancellationToken);
+    }
+
+    private async Task<UciEngine> StartEngineAsync(EngineRecord definition, CancellationToken cancellationToken)
+    {
+        var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken);
         engine.Send("ucinewgame");
-        return await EvaluateAsync(engine, moves, position, definition.AnalysisMsPerMove, cancellationToken);
+        return engine;
     }
 
     private static async Task<StoredEvaluation> EvaluateAsync(

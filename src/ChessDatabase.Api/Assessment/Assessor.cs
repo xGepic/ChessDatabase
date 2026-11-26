@@ -34,6 +34,13 @@ public static class Assessor
     /// <summary>Thresholds in points of winning chance lost, on Lichess's −100…+100 scale (as Lichess classifies).</summary>
     public const double InaccuracyFrom = 10, MistakeFrom = 20, BlunderFrom = 30;
 
+    /// <summary>
+    /// The winning chance a move gave away, in points on Lichess's −100…+100 scale: the mover's
+    /// winning chance (0–100) before and after it. Never negative.
+    /// </summary>
+    public static double Loss(double moverPercentBefore, double moverPercentAfter) =>
+        Math.Max(0, (moverPercentBefore - moverPercentAfter) * 2);
+
     public static MoveClassification? Classify(double loss) => loss switch
     {
         >= BlunderFrom => MoveClassification.Blunder,
@@ -62,7 +69,7 @@ public static class Assessor
             var whiteMoved = WinningChances.WhiteMoved(i);
             var before = whiteMoved ? whitePercents[i] : 100 - whitePercents[i];
             var after = whiteMoved ? whitePercents[i + 1] : 100 - whitePercents[i + 1];
-            var loss = Math.Max(0, (before - after) * 2); // percent of winning chance → points on the −100…+100 scale
+            var loss = Loss(before, after);
             var playedBest = positions[i].Line is [var best, ..] && best == played[i];
             moves.Add(new AssessedMove(i + 1, loss, playedBest ? null : Classify(loss), Accuracy.OfMove(before, after)));
         }

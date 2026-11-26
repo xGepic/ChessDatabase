@@ -1,11 +1,10 @@
-import { Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Component, computed, inject, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Api, RepertoireTrainingItem, TrainingAnswer, problemMessage } from '../api/api';
+import { Api, RepertoireTrainingItem, TrainingAnswer } from '../api/api';
 import { numberedChoices, numberedLine } from '../engine/scores';
 import { Board } from '../review/board';
-import { INITIAL_FEN } from '../shared/chess';
 import { TrainingNav } from './training-nav';
+import { TrainingSession } from './training-session';
 
 /** How long the Opponent's move takes to appear, so the Owner sees it played. */
 const OPPONENT_DELAY_MS = 450;
@@ -46,7 +45,7 @@ const OPPONENT_DELAY_MS = 450;
                   <strong class="mono">{{ expectedText() }}</strong>. It comes back soon.</p>
               }
               <button type="button" class="primary" data-testid="training-next" (click)="next()">Next (Enter)</button>
-            } @else if (canAnswer()) {
+            } @else if (canAnswer() || checking()) {
               <p data-testid="training-prompt">{{ it.new ? 'New: ' : '' }}What do you play with {{ it.side === 'white' ? 'White' : 'Black' }}? Play your Repertoire move on the board.</p>
             } @else {
               <p class="hint">Your Opponent is moving…</p>
@@ -63,27 +62,11 @@ const OPPONENT_DELAY_MS = 450;
     </div>
   `,
 })
-export class TrainingPage {
+export class TrainingPage extends TrainingSession<RepertoireTrainingItem, TrainingAnswer> {
   private readonly api = inject(Api);
   private readonly board = viewChild(Board);
-
-  protected readonly summary = signal<{ due: number; total: number } | null>(null);
-  protected readonly item = signal<RepertoireTrainingItem | null>(null);
-  protected readonly answer = signal<TrainingAnswer | null>(null);
-  protected readonly loading = signal(true);
-  protected readonly error = signal('');
-  /** What the board shows: the position before the Opponent's move first, then after it, then after the answer. */
-  protected readonly fen = signal(INITIAL_FEN);
-  protected readonly lastMove = signal<string | null>(null);
-  private readonly ready = signal(false);
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private request: Subscription | undefined;
 
-  protected readonly canAnswer = computed(() => this.ready() && !!this.item() && !this.answer());
-  protected readonly dueLabel = computed(() => {
-    const s = this.summary();
-    return s ? `${s.due} due today` : '';
-  });
   protected readonly lineText = computed(() => numberedLine(1, (this.item()?.line ?? []).map((m) => m.san)));
   private readonly ply = computed(() => (this.item()?.line.length ?? 0) + 1);
   protected readonly expectedText = computed(() => numberedChoices(this.ply(), this.answer()?.expected ?? []));
@@ -95,69 +78,42 @@ export class TrainingPage {
   });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => {
-      clearTimeout(this.timer);
-      this.request?.unsubscribe();
-    });
+    super();
     this.next();
   }
 
-  /** Loads the next due item and plays the Opponent's move onto the board. */
-  protected next() {
+  protected summaryRequest() {
+    return this.api.repertoireTrainingSummary();
+  }
+
+  protected nextRequest() {
+    return this.api.nextRepertoireItem();
+  }
+
+  protected answerRequest(itemId: number, uci: string) {
+    return this.api.answerRepertoireItem(itemId, uci);
+  }
+
+  /** Shows the position before the Opponent's move, then plays it. */
+  protected present(item: RepertoireTrainingItem) {
+    const line = item.line;
+    if (!item.fenBefore) {
+      this.show(item.fen, null);
+      this.ready.set(true);
+      return;
+    }
+    this.show(item.fenBefore, line.length > 1 ? line[line.length - 2].uci : null);
+    this.timer = setTimeout(() => {
+      this.show(item.fen, line[line.length - 1].uci);
+      this.ready.set(true);
+    }, OPPONENT_DELAY_MS);
+  }
+
+  protected restore() {
+    this.board()?.reset();
+  }
+
+  protected override stop() {
     clearTimeout(this.timer);
-    this.request?.unsubscribe(); // only the latest request shows its item
-    this.answer.set(null);
-    this.ready.set(false);
-    this.error.set('');
-    this.api.repertoireTrainingSummary().subscribe((s) => this.summary.set(s));
-    this.request = this.api.nextRepertoireItem().subscribe({
-      next: (item) => {
-        this.loading.set(false);
-        this.item.set(item);
-        if (!item) return;
-        const line = item.line;
-        if (!item.fenBefore) {
-          this.show(item.fen, null);
-          this.ready.set(true);
-          return;
-        }
-        this.show(item.fenBefore, line.length > 1 ? line[line.length - 2].uci : null);
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-          this.show(item.fen, line[line.length - 1].uci);
-          this.ready.set(true);
-        }, OPPONENT_DELAY_MS);
-      },
-      error: (e) => {
-        this.loading.set(false);
-        this.error.set(problemMessage(e));
-      },
-    });
-  }
-
-  protected onMove(uci: string) {
-    const item = this.item();
-    if (!item || !this.canAnswer()) return;
-    this.api.answerRepertoireItem(item.itemId, uci).subscribe({
-      next: (answer) => {
-        this.answer.set(answer);
-        this.show(answer.fenAfter, answer.shown); // the Owner's move when right, the Repertoire's when wrong
-      },
-      error: (e) => {
-        this.error.set(problemMessage(e));
-        this.board()?.reset();
-      },
-    });
-  }
-
-  /** Enter goes on; on the Next button itself the button's own click does, so it isn't done twice. */
-  protected onEnter(event: Event) {
-    if ((event.target as HTMLElement | null)?.closest('button')) return;
-    if (this.answer()) this.next();
-  }
-
-  private show(fen: string, lastMove: string | null) {
-    this.fen.set(fen);
-    this.lastMove.set(lastMove);
   }
 }
