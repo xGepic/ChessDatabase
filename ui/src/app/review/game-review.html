@@ -15,12 +15,12 @@
 
     <section class="card scoresheet-card">
       <header class="sheet-head">
-        <div class="sheet-player" [class.owner]="g.ownerColor === 'white'">
+        <div class="sheet-player" [class.owner]="g.ownerColour === 'white'">
           <span class="colour-dot"></span>
           <span class="name" data-testid="white-name">{{ g.white }}</span>
           <span class="elo" [class.unrated]="!g.whiteElo">{{ eloLabel(g.whiteElo) }}</span>
         </div>
-        <div class="sheet-player" [class.owner]="g.ownerColor === 'black'">
+        <div class="sheet-player" [class.owner]="g.ownerColour === 'black'">
           <span class="colour-dot black"></span>
           <span class="name" data-testid="black-name">{{ g.black }}</span>
           <span class="elo" [class.unrated]="!g.blackElo">{{ eloLabel(g.blackElo) }}</span>

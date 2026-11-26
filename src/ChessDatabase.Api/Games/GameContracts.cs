@@ -3,11 +3,14 @@ using ChessDatabase.Api.Players;
 
 namespace ChessDatabase.Api.Games;
 
-/// <summary>One row of the game list. White and Black are display names: the Owner's name or the Opponent's.</summary>
-public sealed record GameSummaryDto(
+/// <summary>
+/// One row of the game list. White and Black are display names: the Owner's name or the Opponent's.
+/// Result is PGN text: "1-0", "0-1" or "1/2-1/2".
+/// </summary>
+public record GameSummaryDto(
     int Id,
     string? Date,
-    OwnerColor OwnerColor,
+    OwnerColour OwnerColour,
     PlayerDto Opponent,
     string White,
     string Black,
@@ -19,19 +22,20 @@ public sealed record GameSummaryDto(
 /// A Game with its move tree as a flat node list. <see cref="FirstMoves"/> are the children of the
 /// starting position; every node lists its own children. The first child is the main continuation.
 /// </summary>
-public sealed record GameDto(
-    int Id,
-    string? Date,
-    OwnerColor OwnerColor,
-    PlayerDto Opponent,
-    string White,
-    string Black,
-    int? WhiteElo,
-    int? BlackElo,
-    string Result,
-    string StartFen,
-    IReadOnlyList<int> FirstMoves,
-    IReadOnlyList<MoveNodeDto> Nodes);
+public sealed record GameDto : GameSummaryDto
+{
+    public GameDto(GameSummaryDto summary, string startFen, IReadOnlyList<int> firstMoves, IReadOnlyList<MoveNodeDto> nodes)
+        : base(summary)
+    {
+        StartFen = startFen;
+        FirstMoves = firstMoves;
+        Nodes = nodes;
+    }
+
+    public string StartFen { get; }
+    public IReadOnlyList<int> FirstMoves { get; }
+    public IReadOnlyList<MoveNodeDto> Nodes { get; }
+}
 
 /// <param name="Fen">The position after this move.</param>
 public sealed record MoveNodeDto(
@@ -48,7 +52,7 @@ public sealed record MoveNodeDto(
 
 /// <summary>Create or update a Game's details. Elo 0 or null means unrated.</summary>
 public sealed record GameDetailsRequest(
-    OwnerColor? OwnerColor,
+    OwnerColour? OwnerColour,
     int? OpponentId,
     int? WhiteElo,
     int? BlackElo,

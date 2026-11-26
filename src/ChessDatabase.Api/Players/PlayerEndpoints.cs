@@ -1,5 +1,6 @@
 using ChessDatabase.Api.Collection;
 using Microsoft.EntityFrameworkCore;
+using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Players;
 
@@ -30,7 +31,7 @@ public static class PlayerEndpoints
         {
             var name = body.Name?.Trim() ?? "";
             if (name.Length == 0)
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["name"] = ["A Player needs a name."] });
+                return Invalid("name", "A Player needs a name.");
 
             var all = await db.Players.ToListAsync();
             var existing = all.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase));

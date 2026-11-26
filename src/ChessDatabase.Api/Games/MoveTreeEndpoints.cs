@@ -1,6 +1,7 @@
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
+using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Games;
 
@@ -59,48 +60,12 @@ public static class MoveTreeEndpoints
             return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
         });
 
-        // Delete from here: the move and everything after it.
+        // Delete from here: the move and everything after it. If it was the main continuation, the
+        // next Variation at that point (if any) becomes the main line.
         games.MapDelete("/{id:int}/moves/{nodeId:int}", async (int id, int nodeId, CollectionDbContext db) =>
         {
             if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
             await DeleteSubtreeAsync(db, tree, nodeId);
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
-        });
-    }
-
-    public const int MaxCommentLength = 10_000;
-
-    /// <summary>Annotations: a text comment after (or before) a move, and symbols as NAGs.</summary>
-    public static void MapAnnotationEndpoints(this RouteGroupBuilder games)
-    {
-        games.MapPut("/{id:int}/moves/{nodeId:int}/comment", async (int id, int nodeId, SetCommentRequest body, CollectionDbContext db) =>
-        {
-            var node = await db.MoveNodes.SingleOrDefaultAsync(n => n.Id == nodeId && n.GameId == id);
-            if (node is null) return Results.NotFound();
-            var text = body.Text?.Trim();
-            if (text?.Length > MaxCommentLength)
-                return Invalid("text", $"A comment can be at most {MaxCommentLength} characters long.");
-
-            var value = string.IsNullOrEmpty(text) ? null : text;
-            switch (body.Placement)
-            {
-                case CommentPlacement.Before: node.CommentBefore = value; break;
-                default: node.CommentAfter = value; break;
-            }
-            await db.SaveChangesAsync();
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
-        });
-
-        games.MapPut("/{id:int}/moves/{nodeId:int}/nags", async (int id, int nodeId, SetNagsRequest body, CollectionDbContext db) =>
-        {
-            var node = await db.MoveNodes.SingleOrDefaultAsync(n => n.Id == nodeId && n.GameId == id);
-            if (node is null) return Results.NotFound();
-            var nags = body.Nags ?? [];
-            if (nags.Any(n => n is < 1 or > 255))
-                return Invalid("nags", "Symbols are NAG numbers from 1 to 255.");
-
-            node.Nags = string.Join(' ', nags.Distinct());
-            await db.SaveChangesAsync();
             return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
         });
     }
@@ -125,7 +90,4 @@ public static class MoveTreeEndpoints
         if (Move.TryParseUci(text, out move) && position.IsLegal(move)) return true;
         return position.TryParseSan(text, out move);
     }
-
-    internal static IResult Invalid(string field, string message) =>
-        Results.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
 }

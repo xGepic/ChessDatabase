@@ -3,10 +3,10 @@
   <form class="form-grid" (submit)="$event.preventDefault(); start()">
     <span class="label">I played</span>
     <div class="segmented" role="radiogroup" aria-label="Your colour">
-      <button type="button" role="radio" data-testid="colour-white" [attr.aria-checked]="ownerColor() === 'white'"
-              [class.on]="ownerColor() === 'white'" (click)="ownerColor.set('white')">White</button>
-      <button type="button" role="radio" data-testid="colour-black" [attr.aria-checked]="ownerColor() === 'black'"
-              [class.on]="ownerColor() === 'black'" (click)="ownerColor.set('black')">Black</button>
+      <button type="button" role="radio" data-testid="colour-white" [attr.aria-checked]="ownerColour() === 'white'"
+              [class.on]="ownerColour() === 'white'" (click)="ownerColour.set('white')">White</button>
+      <button type="button" role="radio" data-testid="colour-black" [attr.aria-checked]="ownerColour() === 'black'"
+              [class.on]="ownerColour() === 'black'" (click)="ownerColour.set('black')">Black</button>
     </div>
 
     <label for="opponent">Opponent</label>

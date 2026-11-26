@@ -106,6 +106,22 @@ public class AnnotationTests
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(1, 2)]    // ! and ?
+    [InlineData(14, 16)]  // ⩲ and ±
+    public async Task A_move_takes_at_most_one_move_symbol_and_one_position_symbol(int first, int second)
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        var game = await client.CreateGameAsync();
+        var e4 = (await client.PlayMainLineAsync(game.Id, "e4")).MainLine()[0].Id;
+
+        var response = await client.PutAsJsonAsync($"/api/games/{game.Id}/moves/{e4}/nags", new { nags = new[] { first, second } });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty((await client.GetGameAsync(game.Id)).Node(e4).Nags);
+    }
+
     [Fact]
     public async Task Annotations_stay_with_their_move_when_its_variation_is_promoted()
     {

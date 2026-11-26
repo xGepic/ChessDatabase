@@ -16,12 +16,12 @@ public static class TestApi
     }
 
     public static async Task<GameDto> CreateGameAsync(
-        this HttpClient client, string ownerColor = "white", string opponent = "Huber, Thomas",
+        this HttpClient client, string ownerColour = "white", string opponent = "Huber, Thomas",
         int? whiteElo = null, int? blackElo = null, string? result = "1-0", string? date = null)
     {
         var player = await client.CreatePlayerAsync(opponent);
         var response = await client.PostAsJsonAsync("/api/games",
-            new { ownerColor, opponentId = player.Id, whiteElo, blackElo, result, date });
+            new { ownerColour, opponentId = player.Id, whiteElo, blackElo, result, date });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<GameDto>())!;
     }
@@ -36,11 +36,11 @@ public static class TestApi
 public sealed record PlayerDto(int Id, string Name);
 
 public sealed record GameSummaryDto(
-    int Id, string? Date, string OwnerColor, PlayerDto Opponent, string White, string Black,
+    int Id, string? Date, string OwnerColour, PlayerDto Opponent, string White, string Black,
     int? WhiteElo, int? BlackElo, string Result);
 
 public sealed record GameDto(
-    int Id, string? Date, string OwnerColor, PlayerDto Opponent, string White, string Black,
+    int Id, string? Date, string OwnerColour, PlayerDto Opponent, string White, string Black,
     int? WhiteElo, int? BlackElo, string Result, string StartFen, List<int> FirstMoves, List<MoveNodeDto> Nodes);
 
 public sealed record MoveNodeDto(

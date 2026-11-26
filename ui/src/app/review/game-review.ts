@@ -38,7 +38,7 @@ export class GameReview {
   });
   protected readonly fen = computed(() => this.current()?.fen ?? this.game()?.startFen ?? '');
   protected readonly orientation = computed<'white' | 'black'>(() => {
-    const owner = this.game()?.ownerColor ?? 'white';
+    const owner = this.game()?.ownerColour ?? 'white';
     return this.flipped() ? (owner === 'white' ? 'black' : 'white') : owner;
   });
 

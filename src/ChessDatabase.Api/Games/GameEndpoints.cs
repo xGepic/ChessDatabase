@@ -8,8 +8,8 @@ namespace ChessDatabase.Api.Games;
 
 public static partial class GameEndpoints
 {
-    public static readonly string[] GameResults = ["1-0", "0-1", "1/2-1/2"];
     public const int MaxElo = 3500;
+    private static readonly string EloOutOfRange = $"An Elo is between 1 and {MaxElo}, or empty/0 for unrated.";
 
     public static void MapGameEndpoints(this IEndpointRouteBuilder app)
     {
@@ -69,18 +69,16 @@ public static partial class GameEndpoints
 
         var summary = ToSummary(game, await OwnerNameAsync(db));
         var (firstMoves, nodes) = new MoveTree(game.MoveNodes).ToDtos();
-        return new GameDto(
-            summary.Id, summary.Date, summary.OwnerColor, summary.Opponent, summary.White, summary.Black,
-            summary.WhiteElo, summary.BlackElo, summary.Result, MoveTree.StartPosition.ToFen(), firstMoves, nodes);
+        return new GameDto(summary, MoveTree.StartPosition.ToFen(), firstMoves, nodes);
     }
 
     private static GameSummaryDto ToSummary(GameRecord game, string ownerName)
     {
         var opponent = new PlayerDto(game.Opponent.Id, game.Opponent.Name);
-        var white = game.OwnerColor == OwnerColor.White ? ownerName : opponent.Name;
-        var black = game.OwnerColor == OwnerColor.Black ? ownerName : opponent.Name;
-        return new GameSummaryDto(game.Id, game.Date, game.OwnerColor, opponent, white, black,
-            game.WhiteElo, game.BlackElo, game.Result);
+        var white = game.OwnerColour == OwnerColour.White ? ownerName : opponent.Name;
+        var black = game.OwnerColour == OwnerColour.Black ? ownerName : opponent.Name;
+        return new GameSummaryDto(game.Id, game.Date, game.OwnerColour, opponent, white, black,
+            game.WhiteElo, game.BlackElo, game.Result.ToPgn());
     }
 
     private static async Task<string> OwnerNameAsync(CollectionDbContext db)
@@ -92,13 +90,13 @@ public static partial class GameEndpoints
     private static async Task<Dictionary<string, string[]>> ValidateAsync(GameDetailsRequest body, CollectionDbContext db)
     {
         var errors = new Dictionary<string, string[]>();
-        if (body.OwnerColor is null) errors["ownerColor"] = ["Choose the colour you played."];
+        if (body.OwnerColour is null) errors["ownerColour"] = ["Choose the colour you played."];
         if (body.OpponentId is not { } opponentId || !await db.Players.AnyAsync(p => p.Id == opponentId))
             errors["opponentId"] = ["Choose an existing Opponent."];
-        if (!GameResults.Contains(body.Result))
+        if (!GameResults.TryParsePgn(body.Result, out _))
             errors["result"] = ["A Game needs a result: 1-0, 0-1 or 1/2-1/2."];
-        if (body.WhiteElo is < 0 or > MaxElo) errors["whiteElo"] = [$"An Elo is between 1 and {MaxElo}, or empty/0 for unrated."];
-        if (body.BlackElo is < 0 or > MaxElo) errors["blackElo"] = [$"An Elo is between 1 and {MaxElo}, or empty/0 for unrated."];
+        if (body.WhiteElo is < 0 or > MaxElo) errors["whiteElo"] = [EloOutOfRange];
+        if (body.BlackElo is < 0 or > MaxElo) errors["blackElo"] = [EloOutOfRange];
         if (!string.IsNullOrWhiteSpace(body.Date) && !DatePattern().IsMatch(body.Date.Trim()))
             errors["date"] = ["Write the date as YYYY, YYYY-MM or YYYY-MM-DD."];
         return errors;
@@ -106,11 +104,11 @@ public static partial class GameEndpoints
 
     private static void Apply(GameDetailsRequest body, GameRecord game)
     {
-        game.OwnerColor = body.OwnerColor!.Value;
+        game.OwnerColour = body.OwnerColour!.Value;
         game.OpponentId = body.OpponentId!.Value;
         game.WhiteElo = Unrated(body.WhiteElo);
         game.BlackElo = Unrated(body.BlackElo);
-        game.Result = body.Result!;
+        game.Result = GameResults.ParsePgn(body.Result!);
         game.Date = string.IsNullOrWhiteSpace(body.Date) ? null : body.Date.Trim();
     }
 

@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Api, GameResult, OwnerColor, Player, RESULTS, problemMessage } from '../api/api';
+import { Api, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
 import { parseElo } from '../shared/elo';
 
@@ -15,7 +15,7 @@ export class NewGame {
   private readonly router = inject(Router);
 
   protected readonly results = RESULTS;
-  protected readonly ownerColor = signal<OwnerColor>('white');
+  protected readonly ownerColour = signal<OwnerColour>('white');
   protected readonly opponent = signal<Player | null>(null);
   protected readonly ownerElo = signal('');
   protected readonly opponentElo = signal('');
@@ -36,11 +36,11 @@ export class NewGame {
       this.error.set('An Elo is a number. Leave it empty or enter 0 for unrated.');
       return;
     }
-    const white = this.ownerColor() === 'white';
+    const white = this.ownerColour() === 'white';
     this.saving.set(true);
     this.api
       .createGame({
-        ownerColor: this.ownerColor(),
+        ownerColour: this.ownerColour(),
         opponentId: opponent.id,
         whiteElo: white ? ownerElo : opponentElo,
         blackElo: white ? opponentElo : ownerElo,

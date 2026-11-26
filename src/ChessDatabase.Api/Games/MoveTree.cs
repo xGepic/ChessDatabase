@@ -12,7 +12,7 @@ public sealed class MoveTree
     private readonly Dictionary<int, MoveNodeRecord> _nodes;
     private readonly Dictionary<int, List<MoveNodeRecord>> _children = [];
     private readonly List<MoveNodeRecord> _firstMoves;
-    private readonly Dictionary<int, (Position Position, int Ply)> _after = [];
+    private readonly Dictionary<int, (Position Position, int Ply)> _positionAfter = [];
 
     public MoveTree(IEnumerable<MoveNodeRecord> nodes)
     {
@@ -26,7 +26,7 @@ public sealed class MoveTree
         while (queue.TryDequeue(out var item))
         {
             var after = item.Before.Play(ParseStoredMove(item.Node.Uci));
-            _after[item.Node.Id] = (after, item.Ply);
+            _positionAfter[item.Node.Id] = (after, item.Ply);
             foreach (var child in ChildrenOf(item.Node.Id)) queue.Enqueue((child, after, item.Ply + 1));
         }
     }
@@ -35,16 +35,12 @@ public sealed class MoveTree
 
     public bool Contains(int nodeId) => _nodes.ContainsKey(nodeId);
 
-    public MoveNodeRecord this[int nodeId] => _nodes[nodeId];
-
     /// <summary>The ordered continuations of a node; null means the starting position.</summary>
     public IReadOnlyList<MoveNodeRecord> ChildrenOf(int? nodeId) =>
         nodeId is null ? _firstMoves : _children.TryGetValue(nodeId.Value, out var list) ? list : [];
 
     /// <summary>The position after a node; null means the starting position.</summary>
-    public Position PositionAfter(int? nodeId) => nodeId is null ? StartPosition : _after[nodeId.Value].Position;
-
-    public int PlyOf(int? nodeId) => nodeId is null ? 0 : _after[nodeId.Value].Ply;
+    public Position PositionAfter(int? nodeId) => nodeId is null ? StartPosition : _positionAfter[nodeId.Value].Position;
 
     /// <summary>The node and every move after it, in any line.</summary>
     public IReadOnlyList<int> Subtree(int nodeId)
@@ -72,24 +68,17 @@ public sealed class MoveTree
 
     /// <summary>
     /// Makes the node's line the main line: the node and each of its ancestors become the first
-    /// continuation among their siblings, the others keep their order. Returns the nodes whose order changed.
+    /// continuation among their siblings, the others keep their order.
     /// </summary>
-    public IReadOnlyList<MoveNodeRecord> PromoteToMainLine(int nodeId)
+    public void PromoteToMainLine(int nodeId)
     {
-        var changed = new List<MoveNodeRecord>();
         for (int? id = nodeId; id is { } current; id = _nodes[current].ParentId)
         {
             var siblings = ChildrenOf(_nodes[current].ParentId);
             if (siblings[0].Id == current) continue;
             var reordered = siblings.OrderBy(n => n.Id == current ? 0 : 1).ThenBy(n => n.Order).ToList();
-            for (var i = 0; i < reordered.Count; i++)
-            {
-                if (reordered[i].Order == i) continue;
-                reordered[i].Order = i;
-                changed.Add(reordered[i]);
-            }
+            for (var i = 0; i < reordered.Count; i++) reordered[i].Order = i;
         }
-        return changed;
     }
 
     public (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos()
@@ -99,17 +88,14 @@ public sealed class MoveTree
         while (stack.TryPop(out var node))
         {
             var children = ChildrenOf(node.Id);
-            var (after, ply) = _after[node.Id];
+            var (after, ply) = _positionAfter[node.Id];
             dtos.Add(new MoveNodeDto(
                 node.Id, node.ParentId, [.. children.Select(c => c.Id)], ply, node.San, node.Uci, after.ToFen(),
-                node.CommentBefore, node.CommentAfter, ParseNags(node.Nags)));
+                node.CommentBefore, node.CommentAfter, node.Nags));
             for (var i = children.Count - 1; i >= 0; i--) stack.Push(children[i]);
         }
         return ([.. _firstMoves.Select(n => n.Id)], dtos);
     }
-
-    public static IReadOnlyList<int> ParseNags(string nags) =>
-        [.. nags.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse)];
 
     private static Move ParseStoredMove(string uci) =>
         Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");

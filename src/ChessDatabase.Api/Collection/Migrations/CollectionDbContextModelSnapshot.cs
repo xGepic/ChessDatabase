@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126114142_EnterGames";
+    public override string LastMigrationId => "20261126120821_OwnerColourAndTypedValues";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -41,7 +41,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("OpponentId")
                     .HasColumnType("INTEGER");
 
-                b.Property<string>("OwnerColor")
+                b.Property<string>("OwnerColour")
                     .IsRequired()
                     .HasMaxLength(5)
                     .HasColumnType("TEXT");
@@ -76,9 +76,8 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("GameId")
                     .HasColumnType("INTEGER");
 
-                b.Property<string>("Nags")
+                b.PrimitiveCollection<string>("Nags")
                     .IsRequired()
-                    .HasMaxLength(100)
                     .HasColumnType("TEXT");
 
                 b.Property<int>("Order")

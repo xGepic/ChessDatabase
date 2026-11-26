@@ -13,12 +13,12 @@ public class GameEntryTests
         await client.SetOwnerNameAsync("Max Mustermann");
 
         var created = await client.CreateGameAsync(
-            ownerColor: "black", opponent: "Huber, Thomas", whiteElo: 1850, blackElo: 1720, result: "0-1", date: "2026-11-20");
+            ownerColour: "black", opponent: "Huber, Thomas", whiteElo: 1850, blackElo: 1720, result: "0-1", date: "2026-11-20");
 
         var game = Assert.Single(await client.ListGamesAsync());
         Assert.Equal(created.Id, game.Id);
         Assert.Equal("2026-11-20", game.Date);
-        Assert.Equal("black", game.OwnerColor);
+        Assert.Equal("black", game.OwnerColour);
         Assert.Equal("Huber, Thomas", game.Opponent.Name);
         Assert.Equal("Huber, Thomas", game.White);
         Assert.Equal("Max Mustermann", game.Black);
@@ -33,7 +33,7 @@ public class GameEntryTests
         using var factory = new CollectionFactory();
         var client = factory.CreateClient();
         await client.SetOwnerNameAsync("Max");
-        await client.CreateGameAsync(ownerColor: "white");
+        await client.CreateGameAsync(ownerColour: "white");
 
         await client.SetOwnerNameAsync("Max Mustermann");
 
@@ -68,7 +68,7 @@ public class GameEntryTests
         var opponent = await client.CreatePlayerAsync("Huber, Thomas");
 
         var response = await client.PostAsJsonAsync("/api/games",
-            new { ownerColor = "white", opponentId = opponent.Id, result });
+            new { ownerColour = "white", opponentId = opponent.Id, result });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty(await client.ListGamesAsync());
@@ -82,7 +82,7 @@ public class GameEntryTests
         var game = await client.CreateGameAsync(result: "1/2-1/2");
 
         var response = await client.PutAsJsonAsync($"/api/games/{game.Id}",
-            new { ownerColor = "white", opponentId = game.Opponent.Id, result = (string?)null });
+            new { ownerColour = "white", opponentId = game.Opponent.Id, result = (string?)null });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("1/2-1/2", (await client.GetGameAsync(game.Id)).Result);
@@ -93,15 +93,15 @@ public class GameEntryTests
     {
         using var factory = new CollectionFactory();
         var client = factory.CreateClient();
-        var game = await client.CreateGameAsync(ownerColor: "white", result: "1-0");
+        var game = await client.CreateGameAsync(ownerColour: "white", result: "1-0");
         var other = await client.CreatePlayerAsync("Berger, Anna");
 
         var response = await client.PutAsJsonAsync($"/api/games/{game.Id}",
-            new { ownerColor = "black", opponentId = other.Id, whiteElo = 2010, blackElo = 0, result = "0-1", date = "2026-11" });
+            new { ownerColour = "black", opponentId = other.Id, whiteElo = 2010, blackElo = 0, result = "0-1", date = "2026-11" });
 
         response.EnsureSuccessStatusCode();
         var saved = await client.GetGameAsync(game.Id);
-        Assert.Equal("black", saved.OwnerColor);
+        Assert.Equal("black", saved.OwnerColour);
         Assert.Equal("Berger, Anna", saved.Opponent.Name);
         Assert.Equal(2010, saved.WhiteElo);
         Assert.Null(saved.BlackElo);
@@ -119,7 +119,7 @@ public class GameEntryTests
         var opponent = await client.CreatePlayerAsync("Huber, Thomas");
 
         var response = await client.PostAsJsonAsync("/api/games",
-            new { ownerColor = "white", opponentId = opponent.Id, whiteElo = elo, result = "1-0" });
+            new { ownerColour = "white", opponentId = opponent.Id, whiteElo = elo, result = "1-0" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -134,7 +134,7 @@ public class GameEntryTests
         var opponent = await client.CreatePlayerAsync("Huber, Thomas");
 
         var response = await client.PostAsJsonAsync("/api/games",
-            new { ownerColor = "white", opponentId = opponent.Id, result = "1-0", date });
+            new { ownerColour = "white", opponentId = opponent.Id, result = "1-0", date });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -146,7 +146,7 @@ public class GameEntryTests
         var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games",
-            new { ownerColor = "white", opponentId = 999, result = "1-0" });
+            new { ownerColour = "white", opponentId = 999, result = "1-0" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

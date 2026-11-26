@@ -1,3 +1,4 @@
+using ChessDatabase.Api.Games;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChessDatabase.Api.Collection;
@@ -17,8 +18,8 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
 
         model.Entity<GameRecord>(game =>
         {
-            game.Property(g => g.OwnerColor).HasConversion<string>().HasMaxLength(5);
-            game.Property(g => g.Result).HasMaxLength(7);
+            game.Property(g => g.OwnerColour).HasConversion<string>().HasMaxLength(5);
+            game.Property(g => g.Result).HasConversion(r => r.ToPgn(), text => GameResults.ParsePgn(text)).HasMaxLength(7);
             game.Property(g => g.Date).HasMaxLength(10);
             game.HasOne(g => g.Opponent).WithMany().HasForeignKey(g => g.OpponentId).OnDelete(DeleteBehavior.Restrict);
             game.HasMany(g => g.MoveNodes).WithOne().HasForeignKey(n => n.GameId).OnDelete(DeleteBehavior.Cascade);
@@ -28,24 +29,23 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
         {
             node.Property(n => n.Uci).HasMaxLength(5);
             node.Property(n => n.San).HasMaxLength(10);
-            node.Property(n => n.Nags).HasMaxLength(100);
             node.HasOne<MoveNodeRecord>().WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
             node.HasIndex(n => new { n.GameId, n.ParentId, n.Order });
         });
     }
 }
 
-public enum OwnerColor
+public enum OwnerColour
 {
     White,
     Black,
 }
 
-/// <summary>A Game the Owner played. The Owner's side is implied by <see cref="OwnerColor"/>.</summary>
+/// <summary>A Game the Owner played. The Owner's side is implied by <see cref="OwnerColour"/>.</summary>
 public sealed class GameRecord
 {
     public int Id { get; set; }
-    public OwnerColor OwnerColor { get; set; }
+    public OwnerColour OwnerColour { get; set; }
     public int OpponentId { get; set; }
     public PlayerRecord Opponent { get; set; } = null!;
 
@@ -55,8 +55,8 @@ public sealed class GameRecord
     /// <summary>Null means unrated.</summary>
     public int? BlackElo { get; set; }
 
-    /// <summary>"1-0", "0-1" or "1/2-1/2", as in PGN. Never empty: every Game in the Collection is complete.</summary>
-    public string Result { get; set; } = "";
+    /// <summary>Every Game in the Collection is complete, so it always has a result. Stored as PGN text.</summary>
+    public GameResult Result { get; set; }
 
     /// <summary>"2024", "2024-03" or "2024-03-15"; partial dates are allowed, as in PGN.</summary>
     public string? Date { get; set; }
@@ -83,8 +83,8 @@ public sealed class MoveNodeRecord
     public string? CommentBefore { get; set; }
     public string? CommentAfter { get; set; }
 
-    /// <summary>Numeric Annotation Glyphs, space separated (e.g. "1 14").</summary>
-    public string Nags { get; set; } = "";
+    /// <summary>Numeric Annotation Glyphs, e.g. [1, 14] for "!" and "⩲". Stored as a JSON array.</summary>
+    public List<int> Nags { get; set; } = [];
 }
 
 /// <summary>A person the Owner has played against. The Owner is never a Player row.</summary>

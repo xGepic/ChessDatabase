@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-export type OwnerColor = 'white' | 'black';
+export type OwnerColour = 'white' | 'black';
 export type GameResult = '1-0' | '0-1' | '1/2-1/2';
 
 export interface Player {
@@ -13,7 +13,7 @@ export interface Player {
 export interface GameSummary {
   id: number;
   date: string | null;
-  ownerColor: OwnerColor;
+  ownerColour: OwnerColour;
   opponent: Player;
   white: string;
   black: string;
@@ -43,7 +43,7 @@ export interface Game extends GameSummary {
 }
 
 export interface GameDetails {
-  ownerColor: OwnerColor;
+  ownerColour: OwnerColour;
   opponentId: number;
   whiteElo: number | null;
   blackElo: number | null;

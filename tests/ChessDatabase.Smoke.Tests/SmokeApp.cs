@@ -60,7 +60,7 @@ public sealed class SmokeApp : IAsyncLifetime
         var player = await (await http.PostAsJsonAsync("/api/players", new { name = "Fixture Opponent" }))
             .Content.ReadFromJsonAsync<JsonElement>();
         var game = await (await http.PostAsJsonAsync("/api/games",
-                new { ownerColor = "white", opponentId = player.GetProperty("id").GetInt32(), result = "1-0" }))
+                new { ownerColour = "white", opponentId = player.GetProperty("id").GetInt32(), result = "1-0" }))
             .Content.ReadFromJsonAsync<JsonElement>();
         var gameId = game.GetProperty("id").GetInt32();
         int? parentId = null;

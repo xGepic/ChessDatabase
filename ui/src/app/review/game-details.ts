@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { Api, Game, GameDetails, GameResult, OwnerColor, Player, RESULTS, problemMessage } from '../api/api';
+import { Api, Game, GameDetails, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
 import { parseElo } from '../shared/elo';
 
@@ -13,10 +13,10 @@ import { parseElo } from '../shared/elo';
       <div class="form-grid compact">
         <span class="label">I played</span>
         <div class="segmented" role="radiogroup" aria-label="Your colour">
-          <button type="button" role="radio" [attr.aria-checked]="game().ownerColor === 'white'"
-                  [class.on]="game().ownerColor === 'white'" (click)="setColour('white')">White</button>
-          <button type="button" role="radio" [attr.aria-checked]="game().ownerColor === 'black'"
-                  [class.on]="game().ownerColor === 'black'" (click)="setColour('black')">Black</button>
+          <button type="button" role="radio" [attr.aria-checked]="game().ownerColour === 'white'"
+                  [class.on]="game().ownerColour === 'white'" (click)="setColour('white')">White</button>
+          <button type="button" role="radio" [attr.aria-checked]="game().ownerColour === 'black'"
+                  [class.on]="game().ownerColour === 'black'" (click)="setColour('black')">Black</button>
         </div>
 
         <label for="details-opponent">Opponent</label>
@@ -76,7 +76,7 @@ export class GameDetailsCard {
   private readonly details = computed<GameDetails>(() => {
     const g = this.game();
     return {
-      ownerColor: g.ownerColor,
+      ownerColour: g.ownerColour,
       opponentId: g.opponent.id,
       whiteElo: g.whiteElo,
       blackElo: g.blackElo,
@@ -95,8 +95,8 @@ export class GameDetailsCard {
   private readonly savedWhiteElo = computed(() => this.game().whiteElo);
   private readonly savedBlackElo = computed(() => this.game().blackElo);
 
-  protected setColour(ownerColor: OwnerColor) {
-    if (ownerColor !== this.game().ownerColor) this.save({ ownerColor });
+  protected setColour(ownerColour: OwnerColour) {
+    if (ownerColour !== this.game().ownerColour) this.save({ ownerColour });
   }
 
   protected setOpponent(player: Player) {
