@@ -1,9 +1,10 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, of, switchMap } from 'rxjs';
+import { Subject, catchError, combineLatest, of, startWith, switchMap } from 'rxjs';
 import { Api, Dossier, problemMessage, resultLabel } from '../api/api';
 import { TimeChart } from '../shared/time-chart';
+import { MergePanel } from './merge-panel';
 import { ScoreBar } from './score-bar';
 
 /**
@@ -12,7 +13,7 @@ import { ScoreBar } from './score-bar';
  */
 @Component({
   selector: 'app-dossier-page',
-  imports: [RouterLink, TimeChart, ScoreBar],
+  imports: [RouterLink, TimeChart, ScoreBar, MergePanel],
   template: `
     @if (dossier(); as d) {
       <div class="dossier">
@@ -20,6 +21,7 @@ import { ScoreBar } from './score-bar';
           <header class="card-head">
             <h1 data-testid="dossier-name">{{ d.player.name }}</h1>
             <span class="spacer"></span>
+            <button type="button" class="link-button" data-testid="merge-open" (click)="merging.set(true)">Merge…</button>
             <a routerLink="/players">All Players</a>
           </header>
           <div class="form-grid compact">
@@ -39,6 +41,9 @@ import { ScoreBar } from './score-bar';
           </div>
         </section>
 
+        @if (merging()) {
+          <app-merge-panel class="dossier-wide" [player]="d.player" (merged)="onMerged()" (closed)="merging.set(false)" />
+        }
         <section class="card">
           <header class="card-head"><h2>Rating history</h2></header>
           <div class="card-body">
@@ -96,6 +101,11 @@ export class DossierPage {
 
   /** Route parameter: the Player's id. */
   readonly id = input.required<string>();
+  /** Query parameter: open the merge panel straight away (from the Players list). */
+  readonly merge = input<string | undefined>();
+
+  protected readonly merging = signal(false);
+  private readonly reload = new Subject<void>();
 
   protected readonly dossier = signal<Dossier | null>(null);
   protected readonly error = signal('');
@@ -106,15 +116,23 @@ export class DossierPage {
   );
 
   constructor() {
-    toObservable(this.id)
+    combineLatest([toObservable(this.id), this.reload.pipe(startWith(undefined))])
       .pipe(
-        switchMap((id) => this.api.dossier(Number(id)).pipe(catchError((e) => {
+        switchMap(([id]) => this.api.dossier(Number(id)).pipe(catchError((e) => {
           this.error.set(problemMessage(e));
           return of(null);
         }))),
         takeUntilDestroyed(),
       )
       .subscribe((d) => this.dossier.set(d));
+    effect(() => this.merging.set(this.merge() !== undefined));
+  }
+
+  /** The other Player is gone and its Games are here now. */
+  protected onMerged() {
+    this.merging.set(false);
+    this.status.set('Merged');
+    this.reload.next();
   }
 
   protected saveDetails(fideId: string, club: string) {

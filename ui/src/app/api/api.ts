@@ -492,6 +492,10 @@ export class Api {
   updatePlayer(playerId: number, details: { name: string; fideId: string; club: string }): Observable<Player> {
     return this.http.put<Player>(`/api/players/${playerId}`, details);
   }
+  /** Moves every Game of mergeId to keptId, which takes the given details; mergeId is removed. */
+  mergePlayers(keptId: number, merge: { mergeId: number; name: string; fideId: string; club: string }): Observable<Player> {
+    return this.http.post<Player>(`/api/players/${keptId}/merge`, merge);
+  }
 
   // Import
   importText(pgn: string, allowDuplicates = false): Observable<ImportSummary> {

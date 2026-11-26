@@ -22,7 +22,7 @@ import { Api, PlayerRow } from '../api/api';
           <p class="empty">No Players found.</p>
         } @else {
           <table class="game-table">
-            <thead><tr><th>Name</th><th>Club</th><th class="num">Games</th><th class="num">My score</th><th>Last Game</th></tr></thead>
+            <thead><tr><th>Name</th><th>Club</th><th class="num">Games</th><th class="num">My score</th><th>Last Game</th><th></th></tr></thead>
             <tbody>
               @for (p of list; track p.id) {
                 <tr tabindex="0" data-testid="player-row" (click)="open(p)" (keydown.enter)="open(p)">
@@ -31,6 +31,8 @@ import { Api, PlayerRow } from '../api/api';
                   <td class="num">{{ p.score.games }}</td>
                   <td class="num mono">{{ p.score.games ? p.score.percent + '%' : '' }}</td>
                   <td class="mono">{{ p.lastDate ?? '' }}</td>
+                  <td><a [routerLink]="['/players', p.id]" [queryParams]="{ merge: 1 }" (click)="$event.stopPropagation()"
+                         data-testid="player-merge" title="Merge another Player into this one">Merge…</a></td>
                 </tr>
               }
             </tbody>

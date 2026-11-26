@@ -28,7 +28,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | **Done** |
 | 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | **Done** |
 | 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | **Done** |
-| 21 | [Merge Players](#21-merge-players) | 20 | Open |
+| 21 | [Merge Players](#21-merge-players) | 20 | **Done** |
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | Open |
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | Open |
 | 24 | [Deviation check](#24-deviation-check) | 23 | Open |
@@ -386,11 +386,11 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 20 (Opponent Dossier).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Merging asks for confirmation and which name, FIDE ID and club to keep
-- [ ] All Games are re-pointed; the merged Player disappears; Dossier figures reflect the union
-- [ ] API tests cover the merge
+- [x] Merging asks for confirmation and which name, FIDE ID and club to keep
+- [x] All Games are re-pointed; the merged Player disappears; Dossier figures reflect the union
+- [x] API tests cover the merge
 
 ---
 

@@ -617,6 +617,35 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("player-row")).ToHaveCountAsync(0);
     }
 
+    [Fact]
+    public async Task Merge_two_players_after_confirming_which_name_to_keep()
+    {
+        await _app.CreateGameAsync("e4"); // against "Fixture Opponent"
+        using (var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) })
+        {
+            var player = await (await http.PostAsJsonAsync("/api/players", new { name = "Opponent, Fixture" }))
+                .Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            (await http.PostAsJsonAsync("/api/games", new
+            {
+                ownerColour = "black", opponentId = player.GetProperty("id").GetInt32(), result = "1/2-1/2",
+            })).EnsureSuccessStatusCode();
+        }
+        await Page.GotoAsync($"{_app.BaseUrl}/players");
+        await Expect(Page.GetByTestId("player-row")).ToHaveCountAsync(2);
+
+        await Page.GetByTestId("player-row").Filter(new() { HasText = "Fixture Opponent" }).GetByTestId("player-merge").ClickAsync();
+        await Page.GetByTestId("merge-search").FillAsync("Opponent, F");
+        await Page.GetByTestId("merge-candidate").ClickAsync();
+        await Page.GetByTestId("merge-name").Filter(new() { HasText = "Fixture Opponent" }).ClickAsync();
+        await Page.GetByTestId("merge-confirm").ClickAsync();
+
+        await Expect(Page.GetByTestId("player-status")).ToHaveTextAsync("Merged");
+        await Expect(Page.GetByTestId("dossier-game")).ToHaveCountAsync(2);
+        await Expect(Page.GetByTestId("dossier-score")).ToHaveTextAsync("75%");
+        await Page.GetByTestId("tab-players").ClickAsync();
+        await Expect(Page.GetByTestId("player-row")).ToHaveCountAsync(1);
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;
