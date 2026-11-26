@@ -26,6 +26,8 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
     private readonly Lock _lock = new();
     private readonly List<(int GameId, int? MsPerMove)> _pending = [];
     private readonly SemaphoreSlim _work = new(0);
+    /// <summary>One status message at a time, so the UI gets them in the order the queue changed.</summary>
+    private readonly SemaphoreSlim _sending = new(1, 1);
     private RunningAnalysisDto? _running;
     private CancellationTokenSource? _current;
     private int _batchDone, _batchTotal;
@@ -36,7 +38,7 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
     }
 
     /// <summary>Adds Games to the end of the queue. A Game already waiting or running is not added twice.</summary>
-    public AnalysisQueueDto Enqueue(IEnumerable<int> gameIds, int? msPerMove)
+    public Task<AnalysisQueueDto> EnqueueAsync(IEnumerable<int> gameIds, int? msPerMove)
     {
         var added = 0;
         lock (_lock)
@@ -50,11 +52,11 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
             }
         }
         if (added > 0) _work.Release(added);
-        return Publish();
+        return PublishAsync();
     }
 
     /// <summary>Empties the queue and stops the running analysis. Finished Engine Assessments stay.</summary>
-    public AnalysisQueueDto Cancel()
+    public Task<AnalysisQueueDto> CancelAsync()
     {
         lock (_lock)
         {
@@ -62,7 +64,7 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
             _pending.Clear();
             _current?.Cancel();
         }
-        return Publish();
+        return PublishAsync();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -80,7 +82,7 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
                 _running = new RunningAnalysisDto(job.GameId, 0, 0);
                 cancel = _current = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             }
-            Publish();
+            await PublishAsync();
 
             string? error = null;
             try
@@ -88,7 +90,7 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
                 await analyzer.AnalyseAsync(job.GameId, job.MsPerMove, (done, total) =>
                 {
                     lock (_lock) _running = new RunningAnalysisDto(job.GameId, done, total);
-                    Publish();
+                    return PublishAsync();
                 }, cancel.Token);
             }
             catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
@@ -115,15 +117,37 @@ public sealed class GameAnalysisQueue(GameAnalyzer analyzer, IHubContext<Analysi
                 }
                 cancel.Dispose();
             }
-            await hub.Clients.All.SendAsync("analysisFinished", new AnalysisFinishedDto(job.GameId, error), CancellationToken.None);
-            Publish();
+            await SendAsync("analysisFinished", new AnalysisFinishedDto(job.GameId, error));
+            await PublishAsync();
         }
     }
 
-    private AnalysisQueueDto Publish()
+    /// <summary>Sends the current queue to every UI and returns it.</summary>
+    private async Task<AnalysisQueueDto> PublishAsync()
     {
-        var status = Status();
-        _ = hub.Clients.All.SendAsync("analysisQueue", status);
-        return status;
+        await _sending.WaitAsync();
+        try
+        {
+            var status = Status();
+            await SendAsync("analysisQueue", status);
+            return status;
+        }
+        finally
+        {
+            _sending.Release();
+        }
+    }
+
+    /// <summary>A UI that can't be reached must not stop the queue.</summary>
+    private async Task SendAsync(string method, object message)
+    {
+        try
+        {
+            await hub.Clients.All.SendAsync(method, message, CancellationToken.None);
+        }
+        catch (Exception e)
+        {
+            log.LogWarning(e, "Could not send {Method} to the UI", method);
+        }
     }
 }

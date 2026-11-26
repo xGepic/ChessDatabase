@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Engines;
 using ChessDatabase.Api.Games;
@@ -15,16 +16,20 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
     /// <summary>Engine lines are stored up to this many moves.</summary>
     private const int StoredLineLength = 12;
 
+    /// <summary>How much longer than the time per position the Engine may take before it counts as hung.</summary>
+    private static readonly TimeSpan AnswerGrace = TimeSpan.FromSeconds(30);
+
     /// <param name="msPerMove">Overrides the Engine's Game Analysis time per position.</param>
-    /// <param name="progress">Positions done so far, out of the total.</param>
-    public async Task AnalyseAsync(int gameId, int? msPerMove, Action<int, int> progress, CancellationToken cancellationToken)
+    /// <param name="progress">Called with positions done so far and the total.</param>
+    /// <exception cref="EngineException">The Engine could not be started, crashed or stopped answering.</exception>
+    public async Task AnalyseAsync(int gameId, int? msPerMove, Func<int, int, Task> progress, CancellationToken cancellationToken)
     {
         EngineRecord definition;
         List<string> mainLine;
         using (var scope = scopes.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
-            definition = await db.Engines.AsNoTracking().SingleAsync(e => e.Id == EngineRecord.StockfishId, cancellationToken);
+            definition = await db.Engines.StockfishAsync(cancellationToken);
             var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == gameId).ToListAsync(cancellationToken);
             mainLine = [.. new MoveTree(nodes).MainLine().Select(n => n.Uci)];
         }
@@ -36,12 +41,12 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         {
             engine.Send("ucinewgame");
             var position = Position.Initial;
-            progress(0, mainLine.Count + 1);
+            await progress(0, mainLine.Count + 1);
             for (var ply = 0; ply <= mainLine.Count; ply++)
             {
                 if (ply > 0) position = position.Play(ParseUci(mainLine[ply - 1]));
-                positions.Add(await EvaluateAsync(engine, mainLine.Take(ply), position, time, cancellationToken));
-                progress(ply + 1, mainLine.Count + 1);
+                positions.Add(await EvaluateAsync(engine, mainLine[..ply], position, time, cancellationToken));
+                await progress(ply + 1, mainLine.Count + 1);
             }
             engineName = engine.Name;
         }
@@ -67,33 +72,45 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
     }
 
     private static async Task<StoredEvaluation> EvaluateAsync(
-        UciEngine engine, IEnumerable<string> moves, Position position, int msPerMove, CancellationToken cancellationToken)
+        UciEngine engine, IReadOnlyList<string> moves, Position position, int msPerMove, CancellationToken cancellationToken)
     {
         // The rules settle positions without a legal move; the Engine isn't asked.
         if (position.LegalMoves().Count == 0)
             return position.IsCheck ? new StoredEvaluation(null, 0, []) : new StoredEvaluation(0, null, []);
 
-        var list = string.Join(' ', moves);
-        engine.Send(list.Length == 0 ? "position startpos" : $"position startpos moves {list}");
+        engine.SetPosition(moves);
         engine.Send($"go movetime {msPerMove}");
 
         UciInfo? best = null;
         string? bestmove = null;
+        // Cancelling stops the search; the Engine then still answers with "bestmove", which is read.
         using var stop = cancellationToken.Register(() => { try { engine.Send("stop"); } catch (IOException) { } });
-        while (bestmove is null)
+        using var answer = new CancellationTokenSource(TimeSpan.FromMilliseconds(msPerMove) + AnswerGrace);
+        try
         {
-            var line = await engine.ReadLineAsync(CancellationToken.None);
-            if (line.StartsWith("bestmove", StringComparison.Ordinal))
-                bestmove = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).ElementAtOrDefault(1) ?? "";
-            else if (UciInfo.TryParse(line, out var info) && info.MultiPv == 1)
-                best = info;
+            while (bestmove is null)
+            {
+                var line = await engine.ReadLineAsync(answer.Token);
+                if (line.StartsWith("bestmove", StringComparison.Ordinal))
+                    bestmove = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).ElementAtOrDefault(1) ?? "";
+                else if (UciInfo.TryParse(line, out var info) && info.MultiPv == 1)
+                    best = info;
+            }
+        }
+        catch (OperationCanceledException) when (answer.IsCancellationRequested)
+        {
+            throw new EngineException("The Engine stopped answering.");
+        }
+        catch (ChannelClosedException e)
+        {
+            throw new EngineException("The Engine stopped unexpectedly.", e);
         }
         cancellationToken.ThrowIfCancellationRequested();
 
-        var (uci, _) = (best ?? new UciInfo(0, 1, new EngineScore(0, null), [bestmove])).LegalLine(position);
-        if (uci.Count == 0 && Move.TryParseUci(bestmove, out var only) && position.IsLegal(only)) uci = [only.ToUci()];
+        var engineLine = best?.Pv is { Count: > 0 } pv ? pv : [bestmove];
+        var (legal, _) = position.PlayableLine(engineLine);
         var score = best?.Score ?? new EngineScore(0, null);
-        return new StoredEvaluation(score.Cp, score.Mate, [.. uci.Take(StoredLineLength)]);
+        return new StoredEvaluation(score.Cp, score.Mate, [.. legal.Take(StoredLineLength).Select(m => m.ToUci())]);
     }
 
     private static Move ParseUci(string uci) =>

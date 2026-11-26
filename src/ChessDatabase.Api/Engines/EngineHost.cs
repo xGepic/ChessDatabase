@@ -18,14 +18,9 @@ public sealed class EngineHost : IAsyncDisposable
     /// <summary>Starts the Engine and applies its options (Threads, Hash, MultiPV).</summary>
     public async Task<UciEngine> StartAsync(EngineRecord definition, int multiPv, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(definition.Path))
-            throw new EngineException($"Set the {definition.Name} path in Settings first.");
-        if (!File.Exists(definition.Path))
-            throw new EngineException($"There is no file at {definition.Path}. Check the {definition.Name} path in Settings.");
+        if (definition.StartProblem() is { } problem) throw new EngineException(problem);
 
-        var engine = await UciEngine.StartAsync(definition.Path, definition.Arguments, cancellationToken);
-        _running[engine] = engine.ProcessId;
-        engine.Disposed += e => _running.TryRemove(e, out _);
+        var engine = Track(await UciEngine.StartAsync(definition.Path, definition.Arguments, cancellationToken));
         try
         {
             await engine.ConfigureAsync(
@@ -42,8 +37,16 @@ public sealed class EngineHost : IAsyncDisposable
     /// <summary>Starts the program only to check that it speaks UCI; returns the name it reports.</summary>
     public async Task<string> ProbeAsync(string path, string? arguments)
     {
-        await using var engine = await UciEngine.StartAsync(path, arguments);
+        await using var engine = Track(await UciEngine.StartAsync(path, arguments));
         return engine.Name;
+    }
+
+    /// <summary>Every process is tracked from its start, so shutting down reaps it too.</summary>
+    private UciEngine Track(UciEngine engine)
+    {
+        _running[engine] = engine.ProcessId;
+        engine.Disposed += e => _running.TryRemove(e, out _);
+        return engine;
     }
 
     public async ValueTask DisposeAsync()

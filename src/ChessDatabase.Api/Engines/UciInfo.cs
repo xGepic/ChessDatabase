@@ -57,14 +57,7 @@ public sealed record UciInfo(int Depth, int MultiPv, EngineScore Score, IReadOnl
     /// </summary>
     public (List<string> Uci, List<string> San) LegalLine(Position position)
     {
-        List<string> uci = [], san = [];
-        foreach (var text in Pv)
-        {
-            if (!Move.TryParseUci(text, out var move) || !position.IsLegal(move)) break;
-            uci.Add(move.ToUci());
-            san.Add(position.ToSan(move));
-            position = position.Play(move);
-        }
-        return (uci, san);
+        var (moves, san) = position.PlayableLine(Pv);
+        return ([.. moves.Select(m => m.ToUci())], [.. san]);
     }
 }

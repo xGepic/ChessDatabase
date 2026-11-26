@@ -58,7 +58,7 @@ An unattended pass in which the Engine evaluates every move of a Game and flags 
 The Engine's verdict on a Game: evaluations, best moves and mistake classifications. It is kept separate from the Owner's own Annotations and becomes an Annotation only when the Owner explicitly copies it into the Game.
 
 **Move Classification**
-The label Game Analysis gives a move, based on how much winning chance it gave away: inaccuracy (about 10%), mistake (about 20%) or blunder (about 30% or more).
+The label Game Analysis gives a move, based on how much winning chance it gave away: inaccuracy, mistake or blunder. The thresholds are Lichess's: 10, 20 and 30 points on its −100 to +100 winning-chance scale (5, 10 and 15 percentage points), so the labels match what Lichess shows for the same Game.
 
 **Accuracy**
 A per-player percentage summarising how closely their moves in a Game matched the Engine's choices.

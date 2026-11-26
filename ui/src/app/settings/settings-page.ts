@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Api, BackupStatus, Engine, problemMessage } from '../api/api';
+import { ANALYSIS_SECONDS, Api, BackupStatus, Engine, STOCKFISH_ID, problemMessage } from '../api/api';
 import { sameName } from '../shared/names';
 
 @Component({
@@ -25,11 +25,13 @@ export class SettingsPage {
       this.aliases.set(s.aliases);
     });
     this.api.backupStatus().subscribe((b) => this.backup.set(b));
-    this.api.getEngines().subscribe((list) => this.engine.set(list[0] ?? null));
+    this.api.getEngines().subscribe((list) => this.engine.set(list.find((e) => e.id === STOCKFISH_ID) ?? null));
   }
 
   /** Saving checks the program by starting it once, so it happens on the button, not on every key. */
-  protected saveEngine(path: string, threads: string, hashMb: string, multiPv: string, seconds: string) {
+  protected readonly analysisSeconds = ANALYSIS_SECONDS;
+
+  protected saveEngine(path: string, threads: string, hashMb: string, multiPv: string, limit: string, seconds: string) {
     const engine = this.engine();
     if (!engine) return;
     this.engineSaving.set(true);
@@ -41,6 +43,7 @@ export class SettingsPage {
         threads: Number(threads),
         hashMb: Number(hashMb),
         multiPv: Number(multiPv),
+        interactiveSecondsLimit: limit.trim() ? Number(limit) : null,
         analysisSecondsPerMove: Number(seconds),
       })
       .subscribe({

@@ -88,6 +88,10 @@ public sealed class UciEngine : IAsyncDisposable
         }
     }
 
+    /// <summary>Sets up the position after these moves (UCI) from the starting position.</summary>
+    public void SetPosition(IReadOnlyList<string> moves) =>
+        Send(moves.Count == 0 ? "position startpos" : $"position startpos moves {string.Join(' ', moves)}");
+
     /// <summary>Sets the options, then waits until the Engine is ready (a large hash can take a while).</summary>
     public async Task ConfigureAsync(IEnumerable<(string Name, object Value)> options, CancellationToken cancellationToken = default)
     {

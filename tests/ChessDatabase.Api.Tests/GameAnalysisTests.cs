@@ -170,7 +170,7 @@ public sealed record AssessedMoveDto(
     string? BestSan, List<string> BestLineSan, List<string> BestLineUci);
 
 public sealed record AssessmentDto(
-    int GameId, string EngineName, int Threads, int HashMb, double SecondsPerMove, DateTime AnalysedAt, bool Stale,
+    int GameId, string EngineName, int Threads, int HashMb, double SecondsPerMove, DateTimeOffset AnalysedAt, bool Stale,
     double? WhiteAccuracy, double? BlackAccuracy, List<AssessedPositionDto> Positions, List<AssessedMoveDto> Moves);
 
 public static class AssessmentJson
@@ -180,7 +180,7 @@ public static class AssessmentJson
 
 public static class AnalysisTestExtensions
 {
-    public static async Task<AssessmentDto> WaitForAssessmentAsync(this HttpClient client, int gameId, DateTime? after = null)
+    public static async Task<AssessmentDto> WaitForAssessmentAsync(this HttpClient client, int gameId, DateTimeOffset? after = null)
     {
         for (var i = 0; i < 200; i++)
         {

@@ -6,6 +6,25 @@ namespace ChessDatabase.Rules;
 public sealed partial class Position
 {
     /// <summary>
+    /// The longest legal start of a line of UCI moves played from here, as moves and in SAN.
+    /// Used for Engine lines: anything after the first move the rules don't accept is dropped.
+    /// </summary>
+    public (IReadOnlyList<Move> Moves, IReadOnlyList<string> San) PlayableLine(IEnumerable<string> uciMoves)
+    {
+        List<Move> moves = [];
+        List<string> san = [];
+        var position = this;
+        foreach (var text in uciMoves)
+        {
+            if (!Move.TryParseUci(text, out var move) || !position.IsLegal(move)) break;
+            moves.Add(move);
+            san.Add(position.ToSan(move));
+            position = position.Play(move);
+        }
+        return (moves, san);
+    }
+
+    /// <summary>
     /// Formats a legal move in Standard Algebraic Notation with English piece letters,
     /// minimal disambiguation and a check (+) or mate (#) suffix.
     /// </summary>

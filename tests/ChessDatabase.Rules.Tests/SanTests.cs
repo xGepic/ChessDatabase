@@ -101,3 +101,21 @@ public class SanTests
         Assert.False(position.TryParseSan("Rd1", out _));
     }
 }
+
+public class PlayableLineTests
+{
+    [Fact]
+    public void A_line_is_cut_at_the_first_move_the_rules_do_not_accept()
+    {
+        var (moves, san) = ChessDatabase.Rules.Position.Initial.PlayableLine(["e2e4", "e7e5", "e4e5", "g1f3"]);
+
+        Assert.Equal(["e2e4", "e7e5"], moves.Select(m => m.ToUci()));
+        Assert.Equal(["e4", "e5"], san);
+    }
+
+    [Fact]
+    public void Text_that_is_not_a_move_ends_the_line()
+    {
+        Assert.Empty(ChessDatabase.Rules.Position.Initial.PlayableLine(["(none)"]).San);
+    }
+}

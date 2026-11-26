@@ -87,6 +87,12 @@ export interface BackupStatus {
   lastBackupAt: string | null;
 }
 
+/** The Stockfish definition's id (the only Engine that ships). */
+export const STOCKFISH_ID = 1;
+
+/** Game Analysis time per position, in seconds: the backend's allowed range. */
+export const ANALYSIS_SECONDS = { min: 0.1, max: 600 };
+
 /** An Engine definition (only Stockfish ships). */
 export interface Engine {
   id: number;
@@ -95,8 +101,10 @@ export interface Engine {
   path: string;
   threads: number;
   hashMb: number;
-  /** Lines shown in Interactive Analysis. */
+  /** Lines shown in Interactive Analysis (1–3). */
   multiPv: number;
+  /** Interactive Analysis search time in seconds; null means no limit. */
+  interactiveSecondsLimit: number | null;
   /** Game Analysis time per position. */
   analysisSecondsPerMove: number;
   /** What the program called itself, e.g. "Stockfish 17.1". */
@@ -110,6 +118,8 @@ export interface AnalysisLine {
   cp: number | null;
   /** Moves to mate; negative when Black mates. */
   mate: number | null;
+  /** White's winning chance in percent (Lichess formula, worked out by the backend). */
+  whitePercent: number;
   san: string[];
   uci: string[];
 }
@@ -166,6 +176,12 @@ export interface AnalysisQueue {
   queued: number[];
   batchDone: number;
   batchTotal: number;
+}
+
+/** copied: how many moves gained a symbol or a Variation. */
+export interface CopyResult {
+  copied: number;
+  game: Game;
 }
 
 export interface AnalysisFinished {
@@ -350,19 +366,21 @@ export class Api {
     return this.http.delete<AnalysisQueue>('/api/analysis/queue');
   }
   /** Copies a classified move into the Game: its symbol (unless one is set) and the Engine line as a Variation. */
-  copyAssessedMove(gameId: number, ply: number): Observable<Game> {
-    return this.http.post<Game>(`/api/games/${gameId}/assessment/moves/${ply}/copy`, null);
+  copyAssessedMove(gameId: number, ply: number): Observable<CopyResult> {
+    return this.http.post<CopyResult>(`/api/games/${gameId}/assessment/moves/${ply}/copy`, null);
   }
   /** Copies every mistake and blunder the same way. */
-  copyMistakesAndBlunders(gameId: number): Observable<{ copied: number; game: Game }> {
-    return this.http.post<{ copied: number; game: Game }>(`/api/games/${gameId}/assessment/copy`, null);
+  copyMistakesAndBlunders(gameId: number): Observable<CopyResult> {
+    return this.http.post<CopyResult>(`/api/games/${gameId}/assessment/copy`, null);
   }
   /** 404 when the Game has no Engine Assessment. */
   getAssessment(gameId: number): Observable<EngineAssessment> {
     return this.http.get<EngineAssessment>(`/api/games/${gameId}/assessment`);
   }
   /** Saving a path starts the program once to check it is a UCI engine. */
-  saveEngine(engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv' | 'analysisSecondsPerMove'>): Observable<Engine> {
+  saveEngine(
+    engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv' | 'interactiveSecondsLimit' | 'analysisSecondsPerMove'>,
+  ): Observable<Engine> {
     const { id, ...body } = engine;
     return this.http.put<Engine>(`/api/engines/${id}`, body);
   }

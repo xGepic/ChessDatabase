@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { AnalysisLine } from '../api/api';
-import { scoreLabel, whitePercent } from './scores';
+import { scoreLabel } from './scores';
 
 /** A vertical bar beside the board: White's share of the winning chances, from the Engine's best line. */
 @Component({
@@ -20,7 +20,7 @@ export class EvalBar {
 
   protected readonly percent = computed(() => {
     const line = this.line();
-    return line ? Math.round(whitePercent(line) * 10) / 10 : 50;
+    return line?.whitePercent ?? 50;
   });
   protected readonly label = computed(() => {
     const line = this.line();

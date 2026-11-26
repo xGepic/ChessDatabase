@@ -57,9 +57,10 @@ public sealed class FakeEngine : IDisposable
 }
 
 public sealed record EngineDto(
-    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, double AnalysisSecondsPerMove, string? ReportedName);
+    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, int? InteractiveSecondsLimit,
+    double AnalysisSecondsPerMove, string? ReportedName);
 
-public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, List<string> San, List<string> Uci);
+public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, double WhitePercent, List<string> San, List<string> Uci);
 
 public sealed record AnalysisUpdateDto(int RequestId, List<AnalysisLineDto> Lines);
 
@@ -68,9 +69,13 @@ public static class EngineTestExtensions
     public static async Task<HttpResponseMessage> PutEngineAsync(this HttpClient client, object body) =>
         await client.PutAsJsonAsync("/api/engines/1", body);
 
-    public static async Task UseAsync(this HttpClient client, FakeEngine engine, int threads = 16, int hashMb = 8192, int multiPv = 3)
+    public static async Task UseAsync(
+        this HttpClient client, FakeEngine engine, int threads = 16, int hashMb = 8192, int multiPv = 3, int? interactiveSecondsLimit = null)
     {
-        var response = await client.PutEngineAsync(new { path = FakeEngine.ExePath, arguments = engine.Arguments(), threads, hashMb, multiPv });
+        var response = await client.PutEngineAsync(new
+        {
+            path = FakeEngine.ExePath, arguments = engine.Arguments(), threads, hashMb, multiPv, interactiveSecondsLimit,
+        });
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
     }

@@ -3,20 +3,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChessDatabase.Api.Engines;
 
+/// <param name="InteractiveSecondsLimit">Interactive Analysis search time; null means no limit.</param>
 /// <param name="AnalysisSecondsPerMove">Game Analysis time per position.</param>
 public sealed record EngineDto(
-    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, double AnalysisSecondsPerMove, string? ReportedName);
+    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, int? InteractiveSecondsLimit,
+    double AnalysisSecondsPerMove, string? ReportedName);
 
 /// <param name="Path">The executable; empty clears it. Surrounding quotes (from "Copy as path") are ignored.</param>
 /// <param name="Arguments">Leaving it out keeps the stored arguments.</param>
+/// <param name="InteractiveSecondsLimit">Null means no limit (the default).</param>
 /// <param name="AnalysisSecondsPerMove">Leaving it out keeps the stored time.</param>
-public sealed record SaveEngineRequest(string? Path, string? Arguments, int Threads, int HashMb, int MultiPv, double? AnalysisSecondsPerMove = null);
+public sealed record SaveEngineRequest(
+    string? Path, string? Arguments, int Threads, int HashMb, int MultiPv,
+    int? InteractiveSecondsLimit = null, double? AnalysisSecondsPerMove = null);
 
 public static class EngineEndpoints
 {
     public const int MaxThreads = 1024;
     public const int MaxHashMb = 262_144;
-    public const int MaxLines = 5;
+    public const int MaxLines = 3;
+    public const int MaxSecondsLimit = 3600;
 
     public static void MapEngineEndpoints(this IEndpointRouteBuilder app)
     {
@@ -34,9 +40,10 @@ public static class EngineEndpoints
             if (body.Threads is < 1 or > MaxThreads) errors["threads"] = [$"Threads run from 1 to {MaxThreads}."];
             if (body.HashMb is < 1 or > MaxHashMb) errors["hashMb"] = [$"Hash runs from 1 to {MaxHashMb} MB."];
             if (body.MultiPv is < 1 or > MaxLines) errors["multiPv"] = [$"The Engine shows 1 to {MaxLines} lines."];
-            if (body.AnalysisSecondsPerMove is < Analysis.AnalysisEndpoints.MinSeconds or > Analysis.AnalysisEndpoints.MaxSeconds)
-                errors["analysisSecondsPerMove"] =
-                    [$"Time per position runs from {Analysis.AnalysisEndpoints.MinSeconds} to {Analysis.AnalysisEndpoints.MaxSeconds} seconds."];
+            if (body.InteractiveSecondsLimit is < 1 or > MaxSecondsLimit)
+                errors["interactiveSecondsLimit"] = [$"The time limit runs from 1 to {MaxSecondsLimit} seconds; leave it empty for none."];
+            if (body.AnalysisSecondsPerMove is { } time && !AnalysisTime.IsValid(time))
+                errors["analysisSecondsPerMove"] = [AnalysisTime.RangeMessage];
 
             var path = (body.Path ?? "").Trim().Trim('"').Trim();
             var arguments = body.Arguments ?? engine.Arguments;
@@ -64,7 +71,8 @@ public static class EngineEndpoints
             engine.Threads = body.Threads;
             engine.HashMb = body.HashMb;
             engine.MultiPv = body.MultiPv;
-            if (body.AnalysisSecondsPerMove is { } seconds) engine.AnalysisMsPerMove = (int)Math.Round(seconds * 1000);
+            engine.InteractiveSecondsLimit = body.InteractiveSecondsLimit;
+            if (body.AnalysisSecondsPerMove is { } seconds) engine.AnalysisMsPerMove = AnalysisTime.ToMs(seconds);
             engine.ReportedName = reportedName;
             await db.SaveChangesAsync();
             return Results.Ok(ToDto(engine));
@@ -72,5 +80,6 @@ public static class EngineEndpoints
     }
 
     private static EngineDto ToDto(EngineRecord e) =>
-        new(e.Id, e.Name, e.Path, e.Threads, e.HashMb, e.MultiPv, e.AnalysisMsPerMove / 1000.0, e.ReportedName);
+        new(e.Id, e.Name, e.Path, e.Threads, e.HashMb, e.MultiPv, e.InteractiveSecondsLimit,
+            AnalysisTime.ToSeconds(e.AnalysisMsPerMove), e.ReportedName);
 }

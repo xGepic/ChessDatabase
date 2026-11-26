@@ -64,12 +64,13 @@ public class AssessmentTests
     [Fact]
     public void Black_moves_lose_winning_chance_from_Blacks_side()
     {
-        // White to move at +0.30 after 1.e4 e5 2.Nf3; Black's 2...f6 gives White +1.90.
+        // 1.e4 keeps White at +0.30; Black's 1...f6 gives White +1.90.
         var assessment = Assessor.Assess(
-            [Eval(30, "b8c6", blackToMove: true), Eval(190, "f3e5")],
-            ["f7f6"], firstMoveByBlack: true);
+            [Eval(30, "e2e4"), Eval(30, "e7e5", blackToMove: true), Eval(190, "d2d4")],
+            ["e2e4", "f7f6"]);
 
-        Assert.Equal(MoveClassification.Mistake, assessment.Moves[0].Classification);
+        Assert.Null(assessment.Moves[0].Classification);
+        Assert.Equal(MoveClassification.Mistake, assessment.Moves[1].Classification);
     }
 
     [Fact]

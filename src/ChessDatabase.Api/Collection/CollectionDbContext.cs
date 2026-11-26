@@ -209,6 +209,9 @@ public sealed class EngineRecord
     /// <summary>Lines shown in Interactive Analysis. Game Analysis always uses one.</summary>
     public int MultiPv { get; set; }
 
+    /// <summary>Interactive Analysis stops searching after this many seconds; null means no limit.</summary>
+    public int? InteractiveSecondsLimit { get; set; }
+
     /// <summary>Game Analysis time per position, in milliseconds.</summary>
     public int AnalysisMsPerMove { get; set; }
 

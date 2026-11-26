@@ -9,6 +9,10 @@ public sealed class DailyBackups(CollectionBackup backup, TimeProvider clock, IC
 {
     private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
     private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromHours(1);
+    private ITimer? _timer;
+
+    /// <summary>When the waiting timer fires; null until the first wait. Tests wait for it before moving the clock.</summary>
+    internal DateTimeOffset? NextDue { get; private set; }
 
     /// <summary>The start-of-day backup happens before the app takes requests, so it is never skipped.</summary>
     public override async Task StartAsync(CancellationToken cancellationToken)
@@ -34,10 +38,6 @@ public sealed class DailyBackups(CollectionBackup backup, TimeProvider clock, IC
         }
     }
 
-    private ITimer? _timer;
-
-    /// <summary>When the waiting timer fires; null until the first wait. Tests wait for it before moving the clock.</summary>
-    public DateTimeOffset? NextDue { get; private set; }
 
     private async Task DelayAsync(TimeSpan wait, CancellationToken cancellationToken)
     {

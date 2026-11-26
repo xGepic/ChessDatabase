@@ -78,10 +78,13 @@ public class CopyAssessmentTests
         var (factory, client, game) = await AnalysedScholarsMateAsync();
         using var _ = factory;
 
-        await client.CopyMoveAsync(game.Id, ply: 6);
-        var twice = await client.CopyMoveAsync(game.Id, ply: 6);
-        (await client.PostAsync($"/api/games/{game.Id}/assessment/copy", null)).EnsureSuccessStatusCode();
+        var once = await client.CopyMoveResultAsync(game.Id, ply: 6);
+        var again = await client.CopyMoveResultAsync(game.Id, ply: 6);
+        var twice = again.Game;
+        var all = await (await client.PostAsync($"/api/games/{game.Id}/assessment/copy", null)).Content.ReadFromJsonAsync<CopyResultDto>();
         var thrice = await client.GetGameAsync(game.Id);
+
+        Assert.Equal((1, 0, 0), (once.Copied, again.Copied, all!.Copied)); // nothing left to copy the second time
 
         Assert.Equal(twice.Nodes.Count, thrice.Nodes.Count);
         var nf6 = thrice.MainLine()[5];
@@ -146,10 +149,13 @@ public sealed record CopyResultDto(int Copied, GameDto Game);
 
 public static class CopyTestExtensions
 {
-    public static async Task<GameDto> CopyMoveAsync(this HttpClient client, int gameId, int ply)
+    public static async Task<GameDto> CopyMoveAsync(this HttpClient client, int gameId, int ply) =>
+        (await client.CopyMoveResultAsync(gameId, ply)).Game;
+
+    public static async Task<CopyResultDto> CopyMoveResultAsync(this HttpClient client, int gameId, int ply)
     {
         var response = await client.PostAsync($"/api/games/{gameId}/assessment/moves/{ply}/copy", null);
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<GameDto>())!;
+        return (await response.Content.ReadFromJsonAsync<CopyResultDto>())!;
     }
 }

@@ -1,7 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { AnalysisQueue, Api, AssessedMove, EngineAssessment, OwnerColour } from '../api/api';
+import { ANALYSIS_SECONDS, AnalysisQueue, Api, EngineAssessment, OwnerColour, STOCKFISH_ID } from '../api/api';
 import { EvalGraph } from './eval-graph';
+import { numberedLine } from './scores';
 
 /**
  * The Engine Assessment of the Game (ADR 0003: separate from the Owner's Annotations): Accuracy,
@@ -43,12 +44,12 @@ import { EvalGraph } from './eval-graph';
                         [attr.data-mark]="m.classification" data-testid="classified-move" [disabled]="m.nodeId === null"
                         (click)="goToPly.emit(m.ply)">
                   <span class="mark-dot"></span>
-                  <span class="mono">{{ label(m.ply, m.san) }}</span>
+                  <span class="mono">{{ numberedLine(m.ply, [m.san]) }}</span>
                   <span class="classified-kind">{{ m.classification }}</span>
-                  @if (m.bestSan) { <span class="classified-best">best <span class="mono" data-testid="best-move">{{ label(m.ply, m.bestSan) }}</span></span> }
+                  @if (m.bestSan) { <span class="classified-best">best <span class="mono" data-testid="best-move">{{ numberedLine(m.ply, [m.bestSan]) }}</span></span> }
                 </button>
                 <button type="button" class="copy-move" data-testid="copy-move" [disabled]="m.nodeId === null"
-                        [attr.aria-label]="'Copy ' + label(m.ply, m.san) + ' into the Game'"
+                        [attr.aria-label]="'Copy ' + numberedLine(m.ply, [m.san]) + ' into the Game'"
                         title="Copy into the Game: the symbol and the Engine line as a Variation" (click)="copy.emit(m.ply)">Copy</button>
               </li>
             }
@@ -58,7 +59,7 @@ import { EvalGraph } from './eval-graph';
         }
         @if (selected(); as m) {
           <div class="best-line" data-testid="best-line">
-            <p>Instead of <span class="mono">{{ label(m.ply, m.san) }}</span>, the Engine plays <span class="mono">{{ bestLine(m) }}</span></p>
+            <p>Instead of <span class="mono">{{ numberedLine(m.ply, [m.san]) }}</span>, the Engine plays <span class="mono">{{ numberedLine(m.ply, m.bestLineSan) }}</span></p>
           </div>
         }
         @if (hasMistakes()) {
@@ -75,7 +76,7 @@ import { EvalGraph } from './eval-graph';
         }
         <p class="assessment-meta" data-testid="assessment-meta">
           {{ a.engineName }} · {{ a.secondsPerMove }} s per position · {{ a.threads }} {{ a.threads === 1 ? 'thread' : 'threads' }} · {{ a.hashMb }} MB hash ·
-          {{ a.analysedAt + 'Z' | date: 'mediumDate' }}
+          {{ a.analysedAt | date: 'mediumDate' }}
         </p>
       } @else if (!running() && !waiting()) {
         <p class="assessment-note">The Engine goes through every move of the main line and marks inaccuracies, mistakes and blunders.
@@ -83,9 +84,10 @@ import { EvalGraph } from './eval-graph';
       }
 
       @if (!running() && !waiting()) {
-        <form class="analysis-start" (submit)="$event.preventDefault(); start(seconds.value)">
+        <form class="analysis-start" (submit)="$event.preventDefault(); start(secondsInput.value)">
           <label for="analysis-seconds">Time per position</label>
-          <input #seconds id="analysis-seconds" class="elo" type="number" min="0.1" max="600" step="0.1" [value]="defaultSeconds()" /> s
+          <input #secondsInput id="analysis-seconds" class="elo" type="number" [min]="seconds.min" [max]="seconds.max" step="0.1"
+                 [value]="defaultSeconds()" /> s
           <button type="submit" class="primary" data-testid="analyse-game">{{ assessment() ? 'Analyse again' : 'Analyse Game' }}</button>
         </form>
       }
@@ -111,9 +113,14 @@ export class AssessmentCard {
   readonly copyMessage = input('');
 
   protected readonly defaultSeconds = signal(2);
+  protected readonly seconds = ANALYSIS_SECONDS;
+  protected readonly numberedLine = numberedLine;
 
   constructor() {
-    this.api.getEngines().subscribe((list) => list[0] && this.defaultSeconds.set(list[0].analysisSecondsPerMove));
+    this.api.getEngines().subscribe((list) => {
+      const stockfish = list.find((e) => e.id === STOCKFISH_ID);
+      if (stockfish) this.defaultSeconds.set(stockfish.analysisSecondsPerMove);
+    });
   }
 
   protected readonly running = computed(() => {
@@ -135,23 +142,6 @@ export class AssessmentCard {
     const id = this.currentId();
     return this.classified().find((m) => m.nodeId !== null && m.nodeId === id) ?? null;
   });
-
-  /** "3.Qh5" or "6...Nf6" for the move at a ply. */
-  protected label(ply: number, san: string): string {
-    const number = Math.ceil(ply / 2);
-    return ply % 2 === 1 ? `${number}.${san}` : `${number}...${san}`;
-  }
-
-  /** The Engine's line in place of a move, numbered: "6...g6 7.Qf3 Nf6". */
-  protected bestLine(move: AssessedMove): string {
-    return move.bestLineSan
-      .map((san, i) => {
-        const ply = move.ply + i;
-        if (i === 0) return this.label(ply, san);
-        return ply % 2 === 1 ? this.label(ply, san) : san;
-      })
-      .join(' ');
-  }
 
   protected start(seconds: string) {
     const value = Number(seconds);

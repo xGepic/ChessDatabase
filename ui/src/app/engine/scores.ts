@@ -1,4 +1,4 @@
-/** Display helpers for Engine scores. Scores are from White's side. */
+/** Display helpers for Engine scores and lines. Scores are from White's side. */
 
 export interface Score {
   cp: number | null;
@@ -13,23 +13,20 @@ export function scoreLabel(s: Score): string {
   return (pawns > 0 ? '+' : '−') + Math.abs(pawns).toFixed(2);
 }
 
-/** White's winning chance in percent (Lichess formula; mate counts as ±1000 cp). */
-export function whitePercent(s: Score): number {
-  const cp = s.mate !== null ? (s.mate >= 0 ? 1000 : -1000) : Math.max(-1000, Math.min(1000, s.cp ?? 0));
-  return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
+/** The ply (1 = White's first move) of the next move in the position described by a FEN. */
+export function nextPly(fen: string): number {
+  const [, side, , , , full] = fen.split(' ');
+  return ((Number(full) || 1) - 1) * 2 + (side === 'b' ? 2 : 1);
 }
 
-/** SAN moves with move numbers, as the scoresheet writes them, from the position in the FEN: "12...e5 13.Nf3". */
-export function numberedLine(fen: string, san: string[]): string {
-  const [, side, , , , full] = fen.split(' ');
-  let number = Number(full) || 1;
-  let white = side !== 'b';
-  const parts: string[] = [];
-  san.forEach((move, i) => {
-    if (white) parts.push(`${number}.${move}`);
-    else parts.push(i === 0 ? `${number}...${move}` : move);
-    if (!white) number++;
-    white = !white;
-  });
-  return parts.join(' ');
+/** Moves numbered as the scoresheet writes them, the first at the given ply: "12...e5 13.Nf3 Nc6". */
+export function numberedLine(firstPly: number, san: string[]): string {
+  return san
+    .map((move, i) => {
+      const ply = firstPly + i;
+      const number = Math.ceil(ply / 2);
+      if (ply % 2 === 1) return `${number}.${move}`;
+      return i === 0 ? `${number}...${move}` : move;
+    })
+    .join(' ');
 }

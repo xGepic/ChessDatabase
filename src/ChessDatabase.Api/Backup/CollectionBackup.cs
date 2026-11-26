@@ -67,16 +67,14 @@ public sealed class CollectionBackup(IConfiguration configuration, IServiceScope
     private IEnumerable<(string Path, DateTimeOffset Time)> Backups(string folder)
     {
         if (!Directory.Exists(folder)) return [];
-        return Directory.GetFiles(folder, Prefix + "*.db")
-            .Select(path => (Path: path, Stamp: Path.GetFileNameWithoutExtension(path)[Prefix.Length..]))
-            .Where(b => DateTime.TryParseExact(b.Stamp, StampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-            .Select(b =>
-            {
-                var local = DateTime.ParseExact(b.Stamp, StampFormat, CultureInfo.InvariantCulture);
-                return (b.Path, new DateTimeOffset(local, clock.LocalTimeZone.GetUtcOffset(local)));
-            })
-            .OrderByDescending(b => b.Item2)
-            .ToList();
+        var backups = new List<(string Path, DateTimeOffset Time)>();
+        foreach (var path in Directory.GetFiles(folder, Prefix + "*.db"))
+        {
+            var stamp = Path.GetFileNameWithoutExtension(path)[Prefix.Length..];
+            if (DateTime.TryParseExact(stamp, StampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var local))
+                backups.Add((path, new DateTimeOffset(local, clock.LocalTimeZone.GetUtcOffset(local))));
+        }
+        return backups.OrderByDescending(b => b.Time);
     }
 
     private async Task<string?> ConfiguredFolderAsync()

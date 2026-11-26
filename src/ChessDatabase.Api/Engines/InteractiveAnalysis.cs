@@ -1,16 +1,18 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading.Channels;
+using ChessDatabase.Api.Assessment;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Rules;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ChessDatabase.Api.Engines;
 
 /// <summary>One Engine line: score from White's side, moves in SAN and UCI.</summary>
 /// <param name="Rank">1 for the Engine's best line.</param>
-public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, IReadOnlyList<string> San, IReadOnlyList<string> Uci);
+/// <param name="WhitePercent">White's winning chance (0–100) by the Lichess formula, for the evaluation bar.</param>
+public sealed record AnalysisLineDto(
+    int Rank, int Depth, int? Cp, int? Mate, double WhitePercent, IReadOnlyList<string> San, IReadOnlyList<string> Uci);
 
 /// <param name="RequestId">Echoes the request, so the UI can drop updates for a position it has left.</param>
 /// <param name="Lines">Best first. Empty when the position has no legal moves.</param>
@@ -18,8 +20,9 @@ public sealed record AnalysisUpdateDto(int RequestId, IReadOnlyList<AnalysisLine
 
 /// <summary>
 /// Interactive Analysis over SignalR. The UI calls Analyse with the moves from the start to the
-/// position on the board; the Engine searches until the next Analyse or Stop and streams its lines
-/// back as "lines" messages. Closing the connection (leaving the Game) stops the Engine too.
+/// position on the board; the Engine searches until the next Analyse or Stop (or the time limit)
+/// and streams its lines back as "lines" messages. Closing the connection (leaving the Game) stops
+/// the Engine too.
 /// </summary>
 public sealed class AnalysisHub(InteractiveAnalysis analysis) : Hub
 {
@@ -29,17 +32,29 @@ public sealed class AnalysisHub(InteractiveAnalysis analysis) : Hub
 
     public Task Stop() => analysis.StopAsync(Context.ConnectionId);
 
-    public override Task OnDisconnectedAsync(Exception? exception) => analysis.StopAsync(Context.ConnectionId);
+    public override Task OnDisconnectedAsync(Exception? exception) => analysis.CloseAsync(Context.ConnectionId);
 }
 
 /// <summary>Keeps one Engine session per connection.</summary>
 public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory scopes, IHubContext<AnalysisHub> hub) : IAsyncDisposable
 {
-    private readonly ConcurrentDictionary<string, InteractiveSession> _sessions = new();
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+    /// <summary>
+    /// Per connection: a gate so its calls run one at a time, its session, and whether it has
+    /// closed. A call still waiting at the gate when the connection closes finds it closed and
+    /// starts nothing, so no Engine outlives its Game view.
+    /// </summary>
+    private sealed class Connection
+    {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public InteractiveSession? Session { get; set; }
+        public bool Closed { get; set; }
+    }
+
+    private readonly ConcurrentDictionary<string, Connection> _connections = new();
 
     public async Task AnalyseAsync(string connectionId, int requestId, IReadOnlyList<string> moves)
     {
+        var connection = _connections.GetOrAdd(connectionId, _ => new Connection());
         var position = Position.Initial;
         foreach (var text in moves)
         {
@@ -48,36 +63,55 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
             position = position.Play(move);
         }
 
-        var gate = _locks.GetOrAdd(connectionId, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync();
+        await connection.Gate.WaitAsync();
         try
         {
-            if (!_sessions.TryGetValue(connectionId, out var session) || session.HasEnded)
+            if (connection.Closed) return;
+            if (connection.Session is not { HasEnded: false } session)
             {
-                if (session is not null) await session.DisposeAsync();
-                session = await StartSessionAsync(connectionId);
-                _sessions[connectionId] = session;
+                if (connection.Session is not null) await connection.Session.DisposeAsync();
+                connection.Session = session = await StartSessionAsync(connectionId);
             }
-            await session.AnalyseAsync(requestId, moves, position);
+            try
+            {
+                await session.AnalyseAsync(requestId, moves, position);
+            }
+            catch (EngineException e)
+            {
+                await session.DisposeAsync();
+                connection.Session = null;
+                throw new HubException(e.Message);
+            }
         }
         finally
         {
-            gate.Release();
+            connection.Gate.Release();
         }
     }
 
-    public async Task StopAsync(string connectionId)
+    /// <summary>The Owner switched the Engine off: its process ends, the connection stays usable.</summary>
+    public Task StopAsync(string connectionId) => EndSessionAsync(connectionId, close: false);
+
+    /// <summary>The connection is gone (Game view left, app closed).</summary>
+    public Task CloseAsync(string connectionId) => EndSessionAsync(connectionId, close: true);
+
+    private async Task EndSessionAsync(string connectionId, bool close)
     {
-        var gate = _locks.GetOrAdd(connectionId, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync();
+        if (!_connections.TryGetValue(connectionId, out var connection)) return;
+        await connection.Gate.WaitAsync();
         try
         {
-            if (_sessions.TryRemove(connectionId, out var session)) await session.DisposeAsync();
+            if (connection.Session is not null) await connection.Session.DisposeAsync();
+            connection.Session = null;
+            if (close)
+            {
+                connection.Closed = true;
+                _connections.TryRemove(connectionId, out _);
+            }
         }
         finally
         {
-            gate.Release();
-            _locks.TryRemove(connectionId, out _);
+            connection.Gate.Release();
         }
     }
 
@@ -85,13 +119,12 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
     {
         EngineRecord definition;
         using (var scope = scopes.CreateScope())
-            definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>()
-                .Engines.AsNoTracking().SingleAsync(e => e.Id == EngineRecord.StockfishId);
+            definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Engines.StockfishAsync();
         try
         {
             var engine = await host.StartAsync(definition, definition.MultiPv);
             var client = hub.Clients.Client(connectionId);
-            return new InteractiveSession(engine, definition.MultiPv,
+            return new InteractiveSession(engine, definition.MultiPv, definition.InteractiveSecondsLimit,
                 update => client.SendAsync("lines", update),
                 message => client.SendAsync("engineError", message));
         }
@@ -103,8 +136,8 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
 
     public async ValueTask DisposeAsync()
     {
-        await Task.WhenAll(_sessions.Values.Select(s => s.DisposeAsync().AsTask()));
-        _sessions.Clear();
+        await Task.WhenAll(_connections.Values.Select(c => c.Session).OfType<InteractiveSession>().Select(s => s.DisposeAsync().AsTask()));
+        _connections.Clear();
     }
 }
 
@@ -117,13 +150,18 @@ public sealed class InteractiveSession : IAsyncDisposable
     /// <summary>Lines are sent when a full set of lines at a depth is in, or at least this often.</summary>
     private static readonly TimeSpan MaxQuiet = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>How long a stopped search may take to answer before the Engine counts as hung.</summary>
+    private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(10);
+
     private readonly UciEngine _engine;
     private readonly int _multiPv;
+    private readonly int? _secondsLimit;
     private readonly Func<AnalysisUpdateDto, Task> _publish;
     private readonly Func<string, Task> _fail;
     private readonly CancellationTokenSource _stopping = new();
     private readonly Task _readLoop;
     private volatile Search? _search;
+    private volatile bool _hasEnded;
     private bool _disposed;
 
     private sealed class Search(int requestId, Position position, int expectedLines)
@@ -136,17 +174,20 @@ public sealed class InteractiveSession : IAsyncDisposable
         public Stopwatch SincePublished { get; } = Stopwatch.StartNew();
     }
 
-    public InteractiveSession(UciEngine engine, int multiPv, Func<AnalysisUpdateDto, Task> publish, Func<string, Task> fail)
+    /// <param name="secondsLimit">Null: search until told otherwise.</param>
+    public InteractiveSession(
+        UciEngine engine, int multiPv, int? secondsLimit, Func<AnalysisUpdateDto, Task> publish, Func<string, Task> fail)
     {
         _engine = engine;
         _multiPv = multiPv;
+        _secondsLimit = secondsLimit;
         _publish = publish;
         _fail = fail;
         _readLoop = Task.Run(ReadLoopAsync);
     }
 
-    /// <summary>True once the Engine process has gone away (crashed or quit).</summary>
-    public bool HasEnded { get; private set; }
+    /// <summary>True once the Engine process has gone away (crashed, quit or stopped answering).</summary>
+    public bool HasEnded => _hasEnded;
 
     public async Task AnalyseAsync(int requestId, IReadOnlyList<string> moves, Position position)
     {
@@ -158,15 +199,23 @@ public sealed class InteractiveSession : IAsyncDisposable
             return;
         }
         _search = new Search(requestId, position, Math.Min(_multiPv, legal));
-        _engine.Send(moves.Count == 0 ? "position startpos" : $"position startpos moves {string.Join(' ', moves)}");
-        _engine.Send("go infinite");
+        _engine.SetPosition(moves);
+        _engine.Send(_secondsLimit is { } seconds ? $"go movetime {seconds * 1000}" : "go infinite");
     }
 
     private async Task StopSearchAsync()
     {
         if (_search is not { } search) return;
         _engine.Send("stop");
-        await search.Finished.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        try
+        {
+            await search.Finished.Task.WaitAsync(StopTimeout);
+        }
+        catch (TimeoutException)
+        {
+            _hasEnded = true;
+            throw new EngineException("The Engine stopped answering. Turn it on again to restart it.");
+        }
         _search = null;
     }
 
@@ -189,6 +238,8 @@ public sealed class InteractiveSession : IAsyncDisposable
                 if (search is null) continue;
                 if (line.StartsWith("bestmove", StringComparison.Ordinal))
                 {
+                    if (unpublished == search) await PublishAsync(search);
+                    unpublished = null;
                     search.Finished.TrySetResult();
                     continue;
                 }
@@ -196,7 +247,8 @@ public sealed class InteractiveSession : IAsyncDisposable
                 var (uci, san) = info.LegalLine(search.Position);
                 if (uci.Count == 0) continue;
                 var score = info.Score.ForWhite(search.Position.SideToMove);
-                search.Lines[info.MultiPv] = new AnalysisLineDto(info.MultiPv, info.Depth, score.Cp, score.Mate, san, uci);
+                search.Lines[info.MultiPv] = new AnalysisLineDto(
+                    info.MultiPv, info.Depth, score.Cp, score.Mate, Math.Round(WinningChances.WhitePercent(score), 1), san, uci);
 
                 if (info.MultiPv == search.ExpectedLines || search.SincePublished.Elapsed >= MaxQuiet)
                 {
@@ -206,19 +258,30 @@ public sealed class InteractiveSession : IAsyncDisposable
                 else unpublished = search;
             }
         }
-        catch (OperationCanceledException) { }
-        catch (ChannelClosedException)
+        catch (OperationCanceledException) when (_stopping.IsCancellationRequested) { }
+        catch (Exception e) when (e is ChannelClosedException or IOException)
         {
-            HasEnded = true;
-            _search?.Finished.TrySetResult();
-            if (!_disposed) await _fail("The Engine stopped unexpectedly. Turn it on again to restart it.");
+            await EndAsync("The Engine stopped unexpectedly. Turn it on again to restart it.");
         }
     }
 
-    private Task PublishAsync(Search search)
+    private async Task EndAsync(string message)
+    {
+        _hasEnded = true;
+        _search?.Finished.TrySetResult();
+        if (_disposed) return;
+        try { await _fail(message); } catch (Exception) { } // the client may be gone as well
+    }
+
+    /// <summary>Sends the lines; a client that has gone away doesn't stop the Engine's output being read.</summary>
+    private async Task PublishAsync(Search search)
     {
         search.SincePublished.Restart();
-        return _publish(new AnalysisUpdateDto(search.RequestId, [.. search.Lines.Values]));
+        try
+        {
+            await _publish(new AnalysisUpdateDto(search.RequestId, [.. search.Lines.Values]));
+        }
+        catch (Exception e) when (e is not OperationCanceledException) { }
     }
 
     public async ValueTask DisposeAsync()

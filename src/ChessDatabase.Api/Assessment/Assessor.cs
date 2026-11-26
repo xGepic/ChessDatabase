@@ -25,94 +25,10 @@ public sealed record GameAssessment(
     IReadOnlyList<double> WhitePercents, IReadOnlyList<AssessedMove> Moves, double? WhiteAccuracy, double? BlackAccuracy);
 
 /// <summary>
-/// Turns raw Engine evaluations into Winning chances, Move Classifications and Accuracy.
-/// Lichess's formulas throughout. Pure functions, no I/O.
+/// The Assessment module: turns the Engine's evaluations of a Game's positions into an Engine
+/// Assessment (winning chance per position, Move Classification and Accuracy per move, Accuracy per
+/// side). Lichess's formulas throughout. Pure functions, no I/O.
 /// </summary>
-public static class WinningChances
-{
-    private const double Multiplier = -0.00368208;
-    private const int CpCeiling = 1000;
-
-    /// <summary>Lichess "winning chances": −1 (Black wins) to +1 (White wins). Mate counts as the ±1000 cp ceiling.</summary>
-    public static double White(EngineScore whiteScore)
-    {
-        var cp = whiteScore.Mate is { } mate
-            ? (mate >= 0 ? CpCeiling : -CpCeiling)
-            : Math.Clamp(whiteScore.Cp ?? 0, -CpCeiling, CpCeiling);
-        return Math.Clamp(2 / (1 + Math.Exp(Multiplier * cp)) - 1, -1, 1);
-    }
-
-    /// <summary>White's winning chance in percent, for a score from White's side.</summary>
-    public static double WhitePercent(EngineScore whiteScore) => 50 + 50 * White(whiteScore);
-
-    /// <summary>
-    /// White's winning chance in percent, for a score as the Engine reports it (from the side to
-    /// move). "Mate 0" means the side to move is checkmated.
-    /// </summary>
-    public static double WhitePercent(EngineScore score, Color sideToMove)
-    {
-        if (score.Mate == 0) return WhitePercent(new EngineScore(null, sideToMove == Color.White ? -1 : 1));
-        return WhitePercent(score.ForWhite(sideToMove));
-    }
-}
-
-/// <summary>Lichess's Accuracy: per move from the winning chance kept, per side a volatility-weighted mean.</summary>
-public static class Accuracy
-{
-    /// <summary>Accuracy of one move, from the mover's winning chance (percent) before and after it.</summary>
-    public static double OfMove(double before, double after)
-    {
-        if (after >= before) return 100;
-        var raw = 103.1668100711649 * Math.Exp(-0.04354415386753951 * (before - after)) - 3.166924740191411;
-        return Math.Clamp(raw + 1, 0, 100);
-    }
-
-    /// <summary>
-    /// Accuracy per side: the mean of the weighted mean (weights from how volatile the game was
-    /// around each move) and the harmonic mean of the move accuracies.
-    /// </summary>
-    public static (double? White, double? Black) OfGame(IReadOnlyList<double> whitePercents, bool firstMoveByBlack)
-    {
-        var moves = whitePercents.Count - 1;
-        if (moves < 1) return (null, null);
-        var windowSize = Math.Clamp(moves / 10, 2, 8);
-        var windows = Enumerable.Repeat(whitePercents.Take(windowSize).ToList(), Math.Min(windowSize, whitePercents.Count) - 2)
-            .Concat(Sliding(whitePercents, windowSize))
-            .ToList();
-
-        List<(double Accuracy, double Weight)> white = [], black = [];
-        for (var i = 0; i < moves; i++)
-        {
-            var weight = Math.Clamp(StandardDeviation(windows[i]), 0.5, 12);
-            var whiteMoved = i % 2 == 0 != firstMoveByBlack;
-            var (before, after) = (whitePercents[i], whitePercents[i + 1]);
-            if (whiteMoved) white.Add((OfMove(before, after), weight));
-            else black.Add((OfMove(100 - before, 100 - after), weight));
-        }
-        return (Combine(white), Combine(black));
-    }
-
-    private static double? Combine(List<(double Accuracy, double Weight)> moves)
-    {
-        if (moves.Count == 0) return null;
-        var weighted = moves.Sum(m => m.Accuracy * m.Weight) / moves.Sum(m => m.Weight);
-        var harmonic = moves.Count / moves.Sum(m => 1 / Math.Max(1, m.Accuracy));
-        return (weighted + harmonic) / 2;
-    }
-
-    private static IEnumerable<List<double>> Sliding(IReadOnlyList<double> values, int size)
-    {
-        if (values.Count <= size) { yield return [.. values]; yield break; }
-        for (var i = 0; i + size <= values.Count; i++) yield return [.. values.Skip(i).Take(size)];
-    }
-
-    private static double StandardDeviation(List<double> values)
-    {
-        var mean = values.Average();
-        return Math.Sqrt(values.Sum(v => (v - mean) * (v - mean)) / values.Count);
-    }
-}
-
 public static class Assessor
 {
     /// <summary>Thresholds in points of winning chance lost, on Lichess's −100…+100 scale (as Lichess classifies).</summary>
@@ -127,22 +43,23 @@ public static class Assessor
     };
 
     /// <summary>
-    /// Assesses a line of moves from its evaluations: <paramref name="positions"/> has one entry per
-    /// position, the one before the first move included, so one more than <paramref name="played"/>.
+    /// Assesses the moves of a Game from the initial position: <paramref name="positions"/> has one
+    /// evaluation per position, the starting one included, so one more than <paramref name="played"/>.
+    /// A move that is the Engine's own choice is never classified.
     /// </summary>
-    public static GameAssessment Assess(IReadOnlyList<PositionEvaluation> positions, IReadOnlyList<string> played, bool firstMoveByBlack = false)
+    public static GameAssessment Assess(IReadOnlyList<PositionEvaluation> positions, IReadOnlyList<string> played)
     {
         if (positions.Count != played.Count + 1)
             throw new ArgumentException("There must be one evaluation per position, including the starting one.");
 
         var whitePercents = positions
-            .Select((p, i) => WinningChances.WhitePercent(p.Score, i % 2 == 0 != firstMoveByBlack ? Color.White : Color.Black))
+            .Select((p, i) => WinningChances.WhitePercent(p.Score, WinningChances.WhiteMoved(i) ? Color.White : Color.Black))
             .ToList();
 
         var moves = new List<AssessedMove>(played.Count);
         for (var i = 0; i < played.Count; i++)
         {
-            var whiteMoved = i % 2 == 0 != firstMoveByBlack;
+            var whiteMoved = WinningChances.WhiteMoved(i);
             var before = whiteMoved ? whitePercents[i] : 100 - whitePercents[i];
             var after = whiteMoved ? whitePercents[i + 1] : 100 - whitePercents[i + 1];
             var loss = Math.Max(0, (before - after) * 2); // percent of winning chance → points on the −100…+100 scale
@@ -150,7 +67,7 @@ public static class Assessor
             moves.Add(new AssessedMove(i + 1, loss, playedBest ? null : Classify(loss), Accuracy.OfMove(before, after)));
         }
 
-        var (white, black) = Accuracy.OfGame(whitePercents, firstMoveByBlack);
+        var (white, black) = Accuracy.OfGame(whitePercents);
         return new GameAssessment(whitePercents, moves, white, black);
     }
 }

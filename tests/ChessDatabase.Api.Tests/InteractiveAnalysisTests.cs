@@ -18,7 +18,7 @@ public class EngineSettingsTests
 
         var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDto>>("/api/engines"))!);
 
-        Assert.Equal(new EngineDto(1, "Stockfish", "", 16, 8192, 3, 2.0, null), engine);
+        Assert.Equal(new EngineDto(1, "Stockfish", "", 16, 8192, 3, null, 2.0, null), engine);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class EngineSettingsTests
         using var factory = new CollectionFactory();
         var client = factory.CreateClient();
 
-        var response = await client.PutEngineAsync(new { path = "", threads = 0, hashMb = 8192, multiPv = 9 });
+        var response = await client.PutEngineAsync(new { path = "", threads = 0, hashMb = 8192, multiPv = 4 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
@@ -105,6 +105,7 @@ public class InteractiveAnalysisTests
         Assert.Equal(["e7e5", "g1f3"], best.Uci);
         Assert.Equal(["c5", "Nf3"], update.Lines[1].San);
         Assert.Equal((null, 4), (update.Lines[2].Cp, update.Lines[2].Mate));
+        Assert.Equal(52.3, best.WhitePercent);
         Assert.Contains(analysis.Updates, u => u.Lines.All(l => l.Depth == 1)); // it streamed the earlier depth first
     }
 
@@ -125,6 +126,24 @@ public class InteractiveAnalysisTests
         Assert.Contains("setoption name Hash value 512", commands);
         Assert.Contains("setoption name MultiPV value 2", commands);
         Assert.Contains("go infinite", commands);
+    }
+
+    [Fact]
+    public async Task With_a_time_limit_the_Engine_searches_that_long_and_its_lines_stay()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        using var fake = new FakeEngine();
+        await client.UseAsync(fake, interactiveSecondsLimit: 5);
+        await using var analysis = await factory.ConnectAnalysisAsync();
+
+        await analysis.AnalyseAsync(1);
+        await analysis.WaitForAsync(u => u.RequestId == 1);
+        await analysis.AnalyseAsync(2, "e2e4");
+
+        await analysis.WaitForAsync(u => u.RequestId == 2);
+        Assert.Equal(2, fake.Commands().Count(c => c == "go movetime 5000"));
+        Assert.DoesNotContain("go infinite", fake.Commands());
     }
 
     [Fact]
@@ -193,6 +212,23 @@ public class InteractiveAnalysisTests
         var running = Process.GetProcessById(Assert.Single(host.RunningProcessIds));
         await factory.DisposeAsync(); // the app closes
         Assert.True(running.WaitForExit(5000));
+    }
+
+    [Fact]
+    public async Task Closing_the_Game_view_while_the_Engine_is_starting_leaves_no_process_behind()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        using var fake = new FakeEngine();
+        await client.UseAsync(fake);
+        var analysis = factory.Services.GetRequiredService<InteractiveAnalysis>();
+        var host = factory.Services.GetRequiredService<EngineHost>();
+
+        var starting = analysis.AnalyseAsync("connection-1", 1, []);
+        var closing = analysis.CloseAsync("connection-1");
+        await Task.WhenAll(starting, closing);
+
+        await Wait.UntilAsync(() => host.RunningProcessIds.Count == 0, "no Engine may outlive its connection");
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AnalysisLine, AnalysisUpdate } from '../api/api';
-import { numberedLine, scoreLabel } from './scores';
+import { nextPly, numberedLine, scoreLabel } from './scores';
 
 /** The Engine's best lines for the board position, with an on/off switch. Clicking a line plays it. */
 @Component({
@@ -36,7 +36,7 @@ import { numberedLine, scoreLabel } from './scores';
                 <button type="button" class="engine-line" data-testid="engine-line" (click)="play.emit(line)"
                         title="Add this line to the Game as a Variation">
                   <span class="engine-score mono">{{ scoreLabel(line) }}</span>
-                  <span class="engine-moves mono">{{ numberedLine(fen(), line.san) }}</span>
+                  <span class="engine-moves mono">{{ numberedLine(nextPly(fen()), line.san) }}</span>
                 </button>
               </li>
             }
@@ -61,5 +61,6 @@ export class EnginePanel {
 
   protected readonly scoreLabel = scoreLabel;
   protected readonly numberedLine = numberedLine;
+  protected readonly nextPly = nextPly;
   protected readonly depth = computed(() => this.update()?.lines[0]?.depth ?? null);
 }

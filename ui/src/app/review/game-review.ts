@@ -135,9 +135,9 @@ export class GameReview {
     const game = this.game();
     if (!game) return;
     this.api.copyAssessedMove(game.id, ply).subscribe({
-      next: (updated) => {
+      next: ({ copied, game: updated }) => {
         this.game.set(updated);
-        this.copyMessage.set('Copied into the Game.');
+        this.copyMessage.set(copied ? 'Copied into the Game.' : 'Already in the Game.');
       },
       error: (e) => this.copyMessage.set(problemMessage(e)),
     });
@@ -149,7 +149,9 @@ export class GameReview {
     this.api.copyMistakesAndBlunders(game.id).subscribe({
       next: ({ copied, game: updated }) => {
         this.game.set(updated);
-        this.copyMessage.set(copied === 1 ? 'Copied 1 move into the Game.' : `Copied ${copied} moves into the Game.`);
+        this.copyMessage.set(
+          copied === 0 ? 'Already in the Game.' : copied === 1 ? 'Copied 1 move into the Game.' : `Copied ${copied} moves into the Game.`,
+        );
       },
       error: (e) => this.copyMessage.set(problemMessage(e)),
     });

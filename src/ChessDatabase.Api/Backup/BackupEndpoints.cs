@@ -22,7 +22,7 @@ public static class BackupEndpoints
             {
                 return Results.Ok(await backup.BackUpAsync());
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException)
             {
                 return Invalid("folder", $"The backup could not be written: {e.Message}");
             }

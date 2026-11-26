@@ -6,6 +6,8 @@ namespace ChessDatabase.Api.Games;
 /// </summary>
 public static class Nags
 {
+    public const int Good = 1, Mistake = 2, Brilliant = 3, Blunder = 4, Interesting = 5, Dubious = 6;
+
     public static bool IsMoveSymbol(int nag) => nag is >= 1 and <= 6;
 
     public static bool IsPositionSymbol(int nag) => nag is >= 10 and <= 19;
