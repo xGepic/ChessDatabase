@@ -679,6 +679,31 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("stats-accuracy")).ToContainTextAsync("No analysed Games");
     }
 
+    [Fact]
+    public async Task Build_a_repertoire_from_a_game_and_on_the_board()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3", "Nc6");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}?ply=3"); // after 2.Nf3
+
+        await Page.GetByTestId("add-to-repertoire").ClickAsync();
+        await Expect(Page.GetByTestId("repertoire-message")).ToHaveTextAsync("Added to your White Repertoire.");
+
+        await Page.GetByTestId("tab-repertoire").ClickAsync();
+        await Expect(Page.GetByTestId("move")).ToHaveTextAsync(["e4", "e5", "Nf3"]);
+
+        // A different answer to 1.e4 becomes a Variation; the comment saves.
+        await Page.GetByTestId("move").Filter(new() { HasText = "e4" }).ClickAsync();
+        await Page.PlayAsync("c7c5");
+        await Expect(Page.GetByTestId("variation")).ToContainTextAsync("1...c5");
+        await Page.GetByTestId("repertoire-comment").FillAsync("Meet the Sicilian with 2.Nf3.");
+        await Expect(Page.GetByTestId("repertoire-comment-status")).ToHaveTextAsync("Saved");
+
+        await Page.GetByTestId("repertoire-black").ClickAsync();
+        await Expect(Page.GetByTestId("move")).ToHaveCountAsync(0);
+        await Page.GetByTestId("repertoire-white").ClickAsync();
+        await Expect(Page.GetByTestId("move")).ToHaveCountAsync(4);
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

@@ -21,6 +21,8 @@ import { Api, BoardMove, Game, MasterGameRef, Masters, OpeningTree, PositionGame
                   [class.on]="source() === 'masters'" (click)="source.set('masters')">Masters</button>
         </div>
         <span class="spacer"></span>
+        <button type="button" class="link-button" data-testid="tree-add-to-repertoire" (click)="addToRepertoire.emit()"
+                title="Add the line up to this position to your Repertoire">+ Repertoire</button>
         @if (source() === 'mine') {
           @if (tree(); as t) { <span class="hint" data-testid="tree-count">{{ t.gameCount }} {{ t.gameCount === 1 ? 'Game' : 'Games' }}</span> }
         } @else if (masters()?.available) {
@@ -147,6 +149,8 @@ export class OpeningTreePanel {
   /** A move from the tree (either source): the Game view steps into it, or shows it without saving. */
   readonly play = output<BoardMove>();
   readonly openGame = output<PositionGame>();
+  /** Add the line up to the board position to the Repertoire. */
+  readonly addToRepertoire = output<void>();
 
   private readonly router = inject(Router);
 

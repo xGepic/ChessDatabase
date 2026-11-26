@@ -10,6 +10,7 @@ import { MasterGamePage } from './research/master-game';
 import { PlayersPage } from './people/players-page';
 import { DossierPage } from './people/dossier-page';
 import { OwnerStatisticsPage } from './people/owner-statistics-page';
+import { RepertoirePage } from './training/repertoire-page';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'games' },
@@ -18,6 +19,8 @@ export const routes: Routes = [
   { path: 'games/:id', component: GameReview, title: 'Game · Chess Database' },
   { path: 'import', component: ImportPage, title: 'Import · Chess Database' },
   { path: 'import/review', component: ReviewPage, title: 'Review imports · Chess Database' },
+  { path: 'repertoire', pathMatch: 'full', redirectTo: 'repertoire/white' },
+  { path: 'repertoire/:side', component: RepertoirePage, title: 'Repertoire · Chess Database' },
   { path: 'statistics', component: OwnerStatisticsPage, title: 'My statistics · Chess Database' },
   { path: 'players', component: PlayersPage, title: 'Players · Chess Database' },
   { path: 'players/:id', component: DossierPage, title: 'Dossier · Chess Database' },

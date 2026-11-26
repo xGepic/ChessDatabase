@@ -16,6 +16,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<EngineRecord> Engines => Set<EngineRecord>();
     public DbSet<EngineAssessmentRecord> EngineAssessments => Set<EngineAssessmentRecord>();
     public DbSet<PositionIndexRecord> PositionIndex => Set<PositionIndexRecord>();
+    public DbSet<RepertoireNodeRecord> RepertoireNodes => Set<RepertoireNodeRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -54,6 +55,16 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             engine.Property(e => e.Arguments).HasMaxLength(2000);
             engine.Property(e => e.ReportedName).HasMaxLength(200);
             engine.HasData(EngineRecord.Stockfish());
+        });
+
+        model.Entity<RepertoireNodeRecord>(node =>
+        {
+            node.Property(n => n.Side).HasConversion<string>().HasMaxLength(5);
+            node.Property(n => n.Uci).HasMaxLength(5);
+            node.Property(n => n.San).HasMaxLength(10);
+            node.Property(n => n.Comment).HasMaxLength(GameDetailLimits.Notes);
+            node.HasOne(n => n.Parent).WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
+            node.HasIndex(n => new { n.Side, n.ParentId, n.Order });
         });
 
         model.Entity<PositionIndexRecord>(position =>
@@ -134,6 +145,28 @@ public sealed class GameRecord
 }
 
 /// <summary>
+/// One move of the Owner's Repertoire for one colour: what the Owner intends to play, as a move
+/// tree with the same Variation behaviour as a Game's (the first child is the main continuation).
+/// </summary>
+public sealed class RepertoireNodeRecord : ITreeNode
+{
+    public int Id { get; set; }
+
+    /// <summary>Whose Repertoire: the lines the Owner plays with White, or with Black.</summary>
+    public OwnerColour Side { get; set; }
+
+    public int? ParentId { get; set; }
+
+    /// <summary>Set when a new line is added in one go, so ids are assigned on save.</summary>
+    public RepertoireNodeRecord? Parent { get; set; }
+
+    public int Order { get; set; }
+    public string Uci { get; set; } = "";
+    public string San { get; set; } = "";
+    public string? Comment { get; set; }
+}
+
+/// <summary>
 /// The position index: one row per main-line position of a Game, the starting position and the
 /// final one included. Variations are never indexed. It drives the Opening Tree and Position Search,
 /// and is rebuilt whenever a Game's main line changes.
@@ -182,7 +215,7 @@ public static class GameDetailLimits
 /// One move in a Game's move tree. Children are ordered by <see cref="Order"/>; the first child is
 /// the main continuation and later children are Variations.
 /// </summary>
-public sealed class MoveNodeRecord
+public sealed class MoveNodeRecord : ITreeNode
 {
     public int Id { get; set; }
     public int GameId { get; set; }

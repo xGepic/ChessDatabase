@@ -3,26 +3,42 @@ using ChessDatabase.Rules;
 
 namespace ChessDatabase.Api.Games;
 
-/// <summary>
-/// A Game's move tree, loaded from its stored nodes. Positions are replayed through Chess Rules,
-/// so every node's position comes from the rules, never from stored text.
-/// </summary>
-public sealed class MoveTree
+/// <summary>A stored move in a move tree: a Game's or a Repertoire's.</summary>
+public interface ITreeNode
 {
-    private readonly Dictionary<int, MoveNodeRecord> _nodes;
-    private readonly Dictionary<int, List<MoveNodeRecord>> _children = [];
-    private readonly List<MoveNodeRecord> _firstMoves;
+    int Id { get; }
+
+    /// <summary>Null for a move from the starting position.</summary>
+    int? ParentId { get; }
+
+    /// <summary>Among siblings, 0 is the main continuation; later ones are Variations.</summary>
+    int Order { get; set; }
+
+    string Uci { get; }
+
+    string San { get; }
+}
+
+/// <summary>
+/// A move tree loaded from its stored nodes (a Game's, a Repertoire's). Positions are replayed
+/// through Chess Rules, so every node's position comes from the rules, never from stored text.
+/// Variations behave the same in every tree: the first child is the main continuation.
+/// </summary>
+public class MoveTree<TNode> where TNode : class, ITreeNode
+{
+    private readonly Dictionary<int, TNode> _nodes;
+    private readonly Dictionary<int, List<TNode>> _children = [];
+    private readonly List<TNode> _firstMoves;
     private readonly Dictionary<int, (Position Position, int Ply)> _positionAfter = [];
 
-    public MoveTree(IEnumerable<MoveNodeRecord> nodes)
+    public MoveTree(IEnumerable<TNode> nodes)
     {
         _nodes = nodes.ToDictionary(n => n.Id);
         foreach (var group in _nodes.Values.Where(n => n.ParentId is not null).GroupBy(n => n.ParentId!.Value))
             _children[group.Key] = [.. group.OrderBy(n => n.Order)];
         _firstMoves = [.. _nodes.Values.Where(n => n.ParentId is null).OrderBy(n => n.Order)];
 
-        var queue = new Queue<(MoveNodeRecord Node, Position Before, int Ply)>(
-            _firstMoves.Select(n => (n, StartPosition, 1)));
+        var queue = new Queue<(TNode Node, Position Before, int Ply)>(_firstMoves.Select(n => (n, StartPosition, 1)));
         while (queue.TryDequeue(out var item))
         {
             var after = item.Before.Play(ParseStoredMove(item.Node.Uci));
@@ -35,10 +51,10 @@ public sealed class MoveTree
 
     public bool Contains(int nodeId) => _nodes.ContainsKey(nodeId);
 
-    public MoveNodeRecord Node(int nodeId) => _nodes[nodeId];
+    public TNode Node(int nodeId) => _nodes[nodeId];
 
     /// <summary>The ordered continuations of a node; null means the starting position.</summary>
-    public IReadOnlyList<MoveNodeRecord> ChildrenOf(int? nodeId) =>
+    public IReadOnlyList<TNode> ChildrenOf(int? nodeId) =>
         nodeId is null ? _firstMoves : _children.TryGetValue(nodeId.Value, out var list) ? list : [];
 
     /// <summary>The position after a node; null means the starting position.</summary>
@@ -47,10 +63,10 @@ public sealed class MoveTree
     /// <summary>The half-move number of a node: 1 for White's first move.</summary>
     public int PlyOf(int nodeId) => _positionAfter[nodeId].Ply;
 
-    /// <summary>The moves actually played: first continuations from the start.</summary>
-    public IReadOnlyList<MoveNodeRecord> MainLine()
+    /// <summary>The first continuations from the start: the moves actually played in a Game.</summary>
+    public IReadOnlyList<TNode> MainLine()
     {
-        var line = new List<MoveNodeRecord>();
+        var line = new List<TNode>();
         for (var next = ChildrenOf(null).FirstOrDefault(); next is not null; next = ChildrenOf(next.Id).FirstOrDefault())
             line.Add(next);
         return line;
@@ -95,17 +111,50 @@ public sealed class MoveTree
         }
     }
 
-    public (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos()
+    /// <summary>
+    /// Plays checked moves (UCI and SAN) one after another from the parent. A move already in the
+    /// tree there is followed; the first new one starts a new line after the existing continuations.
+    /// <paramref name="create"/> makes each new node from (existing parent id, new parent node,
+    /// order, UCI, SAN) and adds it wherever the caller keeps nodes; nothing is saved here. Returns
+    /// the line's last node and whether anything is new.
+    /// </summary>
+    public (TNode Last, bool Added) AddLine(
+        int? parentId, IReadOnlyList<(string Uci, string San)> line, Func<int?, TNode?, int, string, string, TNode> create)
+    {
+        if (line.Count == 0) throw new ArgumentException("A line has at least one move.", nameof(line));
+        int? at = parentId;
+        TNode? last = null, firstNew = null;
+        foreach (var (uci, san) in line)
+        {
+            if (firstNew is null && ChildrenOf(at).FirstOrDefault(n => n.Uci == uci) is { } existing)
+            {
+                last = existing;
+                at = existing.Id;
+                continue;
+            }
+            if (firstNew is null)
+            {
+                var siblings = ChildrenOf(at);
+                last = firstNew = create(at, null, siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1, uci, san);
+            }
+            else last = create(null, last, 0, uci, san);
+        }
+        return (last!, firstNew is not null);
+    }
+
+    /// <summary>The tree as the API shows it: every node in reading order, with its position and annotations.</summary>
+    protected (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos(
+        Func<TNode, (string? Before, string? After, IReadOnlyList<int> Nags)> annotations)
     {
         var dtos = new List<MoveNodeDto>(_nodes.Count);
-        var stack = new Stack<MoveNodeRecord>(_firstMoves.AsEnumerable().Reverse());
+        var stack = new Stack<TNode>(_firstMoves.AsEnumerable().Reverse());
         while (stack.TryPop(out var node))
         {
             var children = ChildrenOf(node.Id);
             var (after, ply) = _positionAfter[node.Id];
+            var (before, afterComment, nags) = annotations(node);
             dtos.Add(new MoveNodeDto(
-                node.Id, node.ParentId, [.. children.Select(c => c.Id)], ply, node.San, node.Uci, after.ToFen(),
-                node.CommentBefore, node.CommentAfter, node.Nags));
+                node.Id, node.ParentId, [.. children.Select(c => c.Id)], ply, node.San, node.Uci, after.ToFen(), before, afterComment, [.. nags]));
             for (var i = children.Count - 1; i >= 0; i--) stack.Push(children[i]);
         }
         return ([.. _firstMoves.Select(n => n.Id)], dtos);
@@ -113,4 +162,11 @@ public sealed class MoveTree
 
     private static Move ParseStoredMove(string uci) =>
         Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
+}
+
+/// <summary>A Game's move tree.</summary>
+public sealed class MoveTree(IEnumerable<MoveNodeRecord> nodes) : MoveTree<MoveNodeRecord>(nodes)
+{
+    public (IReadOnlyList<int> FirstMoves, IReadOnlyList<MoveNodeDto> Nodes) ToDtos() =>
+        ToDtos(n => (n.CommentBefore, n.CommentAfter, n.Nags));
 }

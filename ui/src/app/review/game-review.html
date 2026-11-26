@@ -13,9 +13,12 @@
         <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
         <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
         <a class="button tool-link" [href]="'/api/games/' + g.id + '/pgn'" download data-testid="export-game">Export PGN</a>
+        <button type="button" data-testid="add-to-repertoire" (click)="addToRepertoire()"
+                title="Add the moves up to here to your Repertoire for the colour you had">Add to Repertoire</button>
         <a class="button tool-link" routerLink="/search" [queryParams]="{ fen: fen() }" data-testid="search-this-position"
            title="Find every Game that reached this position">Search position</a>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
+        @if (repertoireMessage()) { <span class="board-note" role="status" data-testid="repertoire-message">{{ repertoireMessage() }}</span> }
       </div>
       @if (explore().length) {
         <div class="explore-bar" role="status" data-testid="explore-bar">
@@ -27,7 +30,8 @@
       <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
                         (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
       <app-tablebase-panel [fen]="fen()" (play)="onTreeMove($event)" />
-      <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)" />
+      <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)"
+                        (addToRepertoire)="addToRepertoire()" />
     </div>
 
     <section class="card scoresheet-card">

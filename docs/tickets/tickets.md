@@ -30,7 +30,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | **Done** |
 | 21 | [Merge Players](#21-merge-players) | 20 | **Done** |
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | **Done** |
-| 23 | [Repertoire builder](#23-repertoire-builder) | 16 | Open |
+| 23 | [Repertoire builder](#23-repertoire-builder) | 16 | **Done** |
 | 24 | [Deviation check](#24-deviation-check) | 23 | Open |
 | 25 | [Repertoire Training](#25-repertoire-training) | 23 | Open |
 | 26 | [Mistake Training](#26-mistake-training) | 12, 25 | Open |
@@ -416,12 +416,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 16 (Opening Tree from my Games).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Separate White and Black Repertoires can be edited as trees; edits save automatically
-- [ ] "Add to Repertoire" from a Game position and from the Opening Tree adds the line, merging it with existing branches
-- [ ] Lines can be deleted, and comments added
-- [ ] API tests cover adding, merging and deleting lines
+- [x] Separate White and Black Repertoires can be edited as trees; edits save automatically
+- [x] "Add to Repertoire" from a Game position and from the Opening Tree adds the line, merging it with existing branches
+- [x] Lines can be deleted, and comments added
+- [x] API tests cover adding, merging and deleting lines
 
 ---
 

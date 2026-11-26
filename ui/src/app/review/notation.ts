@@ -1,4 +1,4 @@
-import { Game, MoveNode } from '../api/api';
+import { MoveNode, MoveTreeView } from '../api/api';
 import { nagSuffix } from '../shared/nags';
 
 /**
@@ -56,7 +56,7 @@ export function moveLabel(node: MoveNode, withNumber: boolean): string {
   return withNumber ? `${moveNumber(node)}...${san}` : san;
 }
 
-export function buildSheet(game: Game): SheetItem[] {
+export function buildSheet(game: MoveTreeView): SheetItem[] {
   const byId = new Map(game.nodes.map((n) => [n.id, n]));
   const children = (ids: number[]) => ids.map((id) => byId.get(id)!);
   const items: SheetItem[] = [];
@@ -129,7 +129,7 @@ export function lineTokens(start: MoveNode, byId: Map<number, MoveNode>): Token[
 }
 
 /** True when every move from the start to this node is a first continuation. */
-export function isOnMainLine(game: Game, node: MoveNode): boolean {
+export function isOnMainLine(game: MoveTreeView, node: MoveNode): boolean {
   const byId = new Map(game.nodes.map((n) => [n.id, n]));
   let current: MoveNode | undefined = node;
   while (current) {
@@ -138,4 +138,28 @@ export function isOnMainLine(game: Game, node: MoveNode): boolean {
     current = current.parentId === null ? undefined : byId.get(current.parentId);
   }
   return true;
+}
+
+/** The continuations of a node (null: the starting position), main continuation first. */
+export function continuations(tree: MoveTreeView | null, byId: ReadonlyMap<number, MoveNode>, id: number | null): number[] {
+  if (!tree) return [];
+  return id === null ? tree.firstMoves : (byId.get(id)?.children ?? []);
+}
+
+/** Follows first continuations from a node to the end of its line. */
+export function lineEnd(tree: MoveTreeView | null, byId: ReadonlyMap<number, MoveNode>, id: number | null): number | null {
+  let next = continuations(tree, byId, id)[0];
+  while (next !== undefined) {
+    id = next;
+    next = continuations(tree, byId, id)[0];
+  }
+  return id;
+}
+
+/** The moves (UCI) from the start to a node. */
+export function pathTo(byId: ReadonlyMap<number, MoveNode>, id: number | null): string[] {
+  const moves: string[] = [];
+  for (let node = id === null ? undefined : byId.get(id); node; node = node.parentId === null ? undefined : byId.get(node.parentId))
+    moves.unshift(node.uci);
+  return moves;
 }

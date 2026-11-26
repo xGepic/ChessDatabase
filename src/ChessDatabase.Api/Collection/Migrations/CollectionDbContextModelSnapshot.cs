@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126202756_PlayerDetails";
+    public override string LastMigrationId => "20261126203917_Repertoire";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -332,6 +332,46 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("PositionIndex");
             });
 
+        modelBuilder.Entity("ChessDatabase.Api.Collection.RepertoireNodeRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Comment")
+                    .HasMaxLength(10000)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("Order")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("ParentId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("San")
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Side")
+                    .IsRequired()
+                    .HasMaxLength(5)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Uci")
+                    .IsRequired()
+                    .HasMaxLength(5)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ParentId");
+
+                b.HasIndex("Side", "ParentId", "Order");
+
+                b.ToTable("RepertoireNodes");
+            });
+
         modelBuilder.Entity("ChessDatabase.Api.Collection.SettingsRecord", b =>
             {
                 b.Property<int>("Id")
@@ -436,6 +476,16 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .HasForeignKey("GameId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
+            });
+
+        modelBuilder.Entity("ChessDatabase.Api.Collection.RepertoireNodeRecord", b =>
+            {
+                b.HasOne("ChessDatabase.Api.Collection.RepertoireNodeRecord", "Parent")
+                    .WithMany()
+                    .HasForeignKey("ParentId")
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.Navigation("Parent");
             });
 
         modelBuilder.Entity("GameRecordTagRecord", b =>

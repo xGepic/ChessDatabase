@@ -170,6 +170,12 @@ a { color: var(--wood-active); }
 .board-tools button { background: transparent; color: var(--boxwood); border-color: var(--frame-light); }
 .board-tools button:hover { background: rgba(232,207,160,.1) !important; }
 .board-error { color: #f3b9a8; }
+.board-note { color: var(--boxwood); }
+.segmented a.button { border-radius: 0; margin-left: -1px; }
+.segmented a.button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+.segmented a.button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.segmented a.button.on { background: var(--wood-active); color: var(--cream); }
+.comment-input { width: 100%; resize: vertical; }
 
 /* ---------- engine: evaluation bar and lines ---------- */
 .board-with-bar { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: stretch; }

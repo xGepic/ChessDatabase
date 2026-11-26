@@ -83,39 +83,15 @@ public static class MoveTreeEndpoints
         return Results.Ok(new AddMoveResponse(last.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
     }
 
-    /// <summary>
-    /// Adds checked moves (UCI and SAN) to the Game's tracked nodes, one after another from the parent:
-    /// a move already recorded there is followed, the first new one starts a new line after the
-    /// existing continuations. Nothing is saved. Returns the line's last node and whether anything is new.
-    /// </summary>
+    /// <summary>Adds checked moves to a Game's tracked nodes through <see cref="MoveTree{TNode}.AddLine"/>. Nothing is saved.</summary>
     public static (MoveNodeRecord Last, bool Added) AddLine(
-        GameRecord game, MoveTree tree, int? parentId, IReadOnlyList<(string Uci, string San)> line)
-    {
-        if (line.Count == 0) throw new ArgumentException("A line has at least one move.", nameof(line));
-        int? at = parentId;
-        MoveNodeRecord? last = null, firstNew = null;
-        foreach (var (uci, san) in line)
+        GameRecord game, MoveTree tree, int? parentId, IReadOnlyList<(string Uci, string San)> line) =>
+        tree.AddLine(parentId, line, (existingParent, newParent, order, uci, san) =>
         {
-            if (firstNew is null && tree.ChildrenOf(at).FirstOrDefault(n => n.Uci == uci) is { } existing)
-            {
-                last = existing;
-                at = existing.Id;
-                continue;
-            }
-            var node = new MoveNodeRecord { GameId = game.Id, Uci = uci, San = san };
-            if (firstNew is null)
-            {
-                var siblings = tree.ChildrenOf(at);
-                node.ParentId = at;
-                node.Order = siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1;
-                firstNew = node;
-            }
-            else node.Parent = last;
+            var node = new MoveNodeRecord { GameId = game.Id, ParentId = existingParent, Parent = newParent, Order = order, Uci = uci, San = san };
             game.MoveNodes.Add(node);
-            last = node;
-        }
-        return (last!, firstNew is not null);
-    }
+            return node;
+        });
 
     /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>
     private static async Task<MoveTree?> LoadTreeAsync(CollectionDbContext db, int gameId, int nodeId)
@@ -132,7 +108,8 @@ public static class MoveTreeEndpoints
         await db.SaveChangesAsync();
     }
 
-    private static bool TryReadMove(Position position, string? text, out Move move)
+    /// <summary>A move typed or sent as UCI or SAN (German piece letters too), if it is legal here.</summary>
+    public static bool TryReadMove(Position position, string? text, out Move move)
     {
         text = text?.Trim();
         if (Move.TryParseUci(text, out move) && position.IsLegal(move)) return true;

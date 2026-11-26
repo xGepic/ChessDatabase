@@ -8,6 +8,7 @@ import {
   AnalysisLine, Api, BoardMove, Classification, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
 import { nextPly, numberedLine } from '../engine/scores';
+import { continuations, lineEnd, pathTo } from './notation';
 import { openGameAt } from '../shared/chess';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 import { AssessmentCard } from '../engine/assessment-card';
@@ -103,12 +104,7 @@ export class GameReview {
   });
 
   /** The moves from the start to the board position, in UCI: what the Engine is given. */
-  private readonly path = computed(() => {
-    const moves: string[] = [];
-    for (let node = this.current(); node; node = node.parentId === null ? null : (this.nodes().get(node.parentId) ?? null))
-      moves.unshift(node.uci);
-    return [...moves, ...this.explore().map((s) => s.uci)];
-  });
+  private readonly path = computed(() => [...pathTo(this.nodes(), this.currentId()), ...this.explore().map((s) => s.uci)]);
 
   constructor() {
     // The Engine follows the board: every new position restarts the analysis (briefly debounced for held keys).
@@ -256,9 +252,7 @@ export class GameReview {
   }
 
   private continuations(id: number | null): number[] {
-    const game = this.game();
-    if (!game) return [];
-    return id === null ? game.firstMoves : (this.nodes().get(id)?.children ?? []);
+    return continuations(this.game(), this.nodes(), id);
   }
 
   /** Where a Game opens: the main-line move at the requested ply, otherwise the end of the main line. */
@@ -309,14 +303,24 @@ export class GameReview {
     this.saveLine(game.id, steps.map((s) => s.uci));
   }
 
-  /** Follows first continuations from a node to the end of its line. */
   private lineEnd(id: number | null): number | null {
-    let next = this.continuations(id)[0];
-    while (next !== undefined) {
-      id = next;
-      next = this.continuations(id)[0];
-    }
-    return id;
+    return lineEnd(this.game(), this.nodes(), id);
+  }
+
+  // ---------------------------------------------------------------- Repertoire
+
+  protected readonly repertoireMessage = signal('');
+
+  /** Adds the line up to the board position (explored moves included) to the Repertoire of the colour the Owner had. */
+  protected addToRepertoire() {
+    const game = this.game();
+    const moves = this.path();
+    if (!game || !moves.length) return;
+    const side = game.ownerColour;
+    this.api.addRepertoireLine(side, null, moves).subscribe({
+      next: () => this.repertoireMessage.set(`Added to your ${side === 'white' ? 'White' : 'Black'} Repertoire.`),
+      error: (e) => this.repertoireMessage.set(problemMessage(e)),
+    });
   }
 
   // ---------------------------------------------------------------- editing

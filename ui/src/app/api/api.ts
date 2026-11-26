@@ -47,6 +47,17 @@ export interface MoveNode {
   nags: number[];
 }
 
+/** A move tree: a Game's moves, or a Repertoire. firstMoves are the continuations of the starting position. */
+export interface MoveTreeView {
+  firstMoves: number[];
+  nodes: MoveNode[];
+}
+
+/** One of the Owner's Repertoires (comments are commentAfter on its nodes). */
+export interface Repertoire extends MoveTreeView {
+  side: OwnerColour;
+}
+
 export interface Game extends GameSummary {
   site: string | null;
   round: string | null;
@@ -562,6 +573,27 @@ export class Api {
   /** A Master Game from Lichess; with a FEN, ply says where that position occurs in it. */
   masterGame(id: string, fen?: string): Observable<MasterGame> {
     return this.http.get<MasterGame>(`/api/research/masters/games/${encodeURIComponent(id)}`, { params: fen ? { fen } : {} });
+  }
+
+  // Repertoire
+  repertoire(side: OwnerColour): Observable<Repertoire> {
+    return this.http.get<Repertoire>(`/api/repertoire/${side}`);
+  }
+  /** Plays the moves (UCI) from a node (null: the start); moves already there are followed, so lines merge. */
+  addRepertoireLine(side: OwnerColour, parentId: number | null, moves: string[]): Observable<{ nodeId: number; repertoire: Repertoire }> {
+    return this.http.post<{ nodeId: number; repertoire: Repertoire }>(`/api/repertoire/${side}/lines`, { parentId, moves });
+  }
+  deleteRepertoireFrom(side: OwnerColour, nodeId: number): Observable<Repertoire> {
+    return this.http.delete<Repertoire>(`/api/repertoire/${side}/nodes/${nodeId}`);
+  }
+  deleteRepertoireVariation(side: OwnerColour, nodeId: number): Observable<Repertoire> {
+    return this.http.delete<Repertoire>(`/api/repertoire/${side}/nodes/${nodeId}/variation`);
+  }
+  promoteRepertoire(side: OwnerColour, nodeId: number): Observable<Repertoire> {
+    return this.http.post<Repertoire>(`/api/repertoire/${side}/nodes/${nodeId}/promote`, null);
+  }
+  setRepertoireComment(side: OwnerColour, nodeId: number, text: string): Observable<Repertoire> {
+    return this.http.put<Repertoire>(`/api/repertoire/${side}/nodes/${nodeId}/comment`, { text });
   }
 
   // Settings

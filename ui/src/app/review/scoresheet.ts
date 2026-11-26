@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
-import { Classification, Game, MoveNode, resultLabel } from '../api/api';
+import { Classification, GameResult, MoveNode, MoveTreeView, resultLabel } from '../api/api';
 import { annotatedSan, buildSheet, isOnMainLine } from './notation';
 
 export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
@@ -56,8 +56,8 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
       } @empty {
         <p class="sheet-empty">Play the moves on the board.</p>
       }
-      @if (items().length) {
-        <div class="sheet-end">{{ resultLabel(game().result) }}</div>
+      @if (items().length && game().result) {
+        <div class="sheet-end">{{ resultLabel(game().result!) }}</div>
       }
     </div>
 
@@ -84,7 +84,8 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
 export class Scoresheet {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  readonly game = input.required<Game>();
+  /** A Game (its result ends the sheet) or any other move tree, such as a Repertoire. */
+  readonly game = input.required<MoveTreeView & { result?: GameResult }>();
   readonly currentId = input<number | null>(null);
   /** Move Classifications from the Engine Assessment, by move. Shown as a coloured mark, never as a symbol. */
   readonly marks = input<ReadonlyMap<number, Classification>>(new Map());
