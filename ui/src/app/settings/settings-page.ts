@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Api, BackupStatus, problemMessage } from '../api/api';
+import { Api, BackupStatus, Engine, problemMessage } from '../api/api';
 import { sameName } from '../shared/names';
 
 @Component({
@@ -11,6 +11,9 @@ export class SettingsPage {
   protected readonly ownerName = signal('');
   protected readonly aliases = signal<string[]>([]);
   protected readonly status = signal('');
+  protected readonly engine = signal<Engine | null>(null);
+  protected readonly engineMessage = signal('');
+  protected readonly engineSaving = signal(false);
   protected readonly backup = signal<BackupStatus | null>(null);
   protected readonly backupMessage = signal('');
   protected readonly backingUp = signal(false);
@@ -22,6 +25,28 @@ export class SettingsPage {
       this.aliases.set(s.aliases);
     });
     this.api.backupStatus().subscribe((b) => this.backup.set(b));
+    this.api.getEngines().subscribe((list) => this.engine.set(list[0] ?? null));
+  }
+
+  /** Saving checks the program by starting it once, so it happens on the button, not on every key. */
+  protected saveEngine(path: string, threads: string, hashMb: string, multiPv: string) {
+    const engine = this.engine();
+    if (!engine) return;
+    this.engineSaving.set(true);
+    this.engineMessage.set('');
+    this.api
+      .saveEngine({ id: engine.id, path, threads: Number(threads), hashMb: Number(hashMb), multiPv: Number(multiPv) })
+      .subscribe({
+        next: (saved) => {
+          this.engine.set(saved);
+          this.engineSaving.set(false);
+          this.engineMessage.set(saved.reportedName ? `Saved. Found ${saved.reportedName}.` : 'Saved');
+        },
+        error: (e) => {
+          this.engineSaving.set(false);
+          this.engineMessage.set(problemMessage(e));
+        },
+      });
   }
 
   protected setBackupFolder(value: string) {

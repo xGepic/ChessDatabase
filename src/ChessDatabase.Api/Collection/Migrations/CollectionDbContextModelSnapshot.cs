@@ -15,12 +15,61 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126152620_Backups";
+    public override string LastMigrationId => "20261126153839_Engines";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0");
+
+        modelBuilder.Entity("ChessDatabase.Api.Collection.EngineRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Arguments")
+                    .HasMaxLength(2000)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("HashMb")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("MultiPv")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Path")
+                    .IsRequired()
+                    .HasMaxLength(1000)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ReportedName")
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("Threads")
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("Id");
+
+                b.ToTable("Engines");
+
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        HashMb = 8192,
+                        MultiPv = 3,
+                        Name = "Stockfish",
+                        Path = "",
+                        Threads = 16
+                    });
+            });
 
         modelBuilder.Entity("ChessDatabase.Api.Collection.EventRecord", b =>
             {

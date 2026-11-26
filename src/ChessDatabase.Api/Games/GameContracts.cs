@@ -87,6 +87,9 @@ public sealed record AddMoveRequest(int? ParentId, string? Move);
 
 public sealed record AddMoveResponse(int NodeId, GameDto Game);
 
+/// <param name="Moves">UCI (or SAN) moves, played one after another from the parent.</param>
+public sealed record AddLineRequest(int? ParentId, IReadOnlyList<string?>? Moves);
+
 public enum CommentPlacement
 {
     After,

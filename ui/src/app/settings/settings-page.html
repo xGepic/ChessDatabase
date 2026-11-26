@@ -28,6 +28,40 @@
 </section>
 
 <section class="card narrow-card">
+  <header class="card-head"><h2>Engine</h2></header>
+  @if (engine(); as e) {
+    <form class="form-grid" (submit)="$event.preventDefault(); saveEngine(path.value, threads.value, hash.value, lines.value)">
+      <label for="engine-path">{{ e.name }} program</label>
+      <div>
+        <input #path id="engine-path" data-testid="engine-path" [value]="e.path" placeholder="e.g. C:\Tools\stockfish\stockfish.exe" />
+        <p class="hint">
+          @if (e.reportedName) { Found <strong data-testid="engine-name">{{ e.reportedName }}</strong>. }
+          The .exe from stockfishchess.org. Replace it any time to update {{ e.name }}.
+        </p>
+      </div>
+
+      <label for="engine-threads">Threads</label>
+      <input #threads id="engine-threads" class="elo" type="number" min="1" max="1024" [value]="e.threads" />
+
+      <label for="engine-hash">Hash (MB)</label>
+      <input #hash id="engine-hash" class="elo" type="number" min="1" [value]="e.hashMb" />
+
+      <label for="engine-lines">Lines</label>
+      <div>
+        <input #lines id="engine-lines" class="elo" type="number" min="1" max="5" [value]="e.multiPv" />
+        <p class="hint">How many best lines Interactive Analysis shows.</p>
+      </div>
+
+      <span></span>
+      <div class="form-actions">
+        <button type="submit" class="primary" data-testid="engine-save" [disabled]="engineSaving()">Save</button>
+        @if (engineMessage()) { <span class="status" data-testid="engine-status" role="status">{{ engineMessage() }}</span> }
+      </div>
+    </form>
+  }
+</section>
+
+<section class="card narrow-card">
   <header class="card-head"><h2>Backups</h2></header>
   @if (backup(); as b) {
     <div class="form-grid">

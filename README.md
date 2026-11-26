@@ -17,6 +17,7 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 - PGN import (Import tab): choose a PGN file or paste PGN with any number of Games. Variations, comments and symbols are kept, and German piece letters become English. A Game is yours when one side matches your name in any usual form ("Mustermann, Max", "Mustermann M.", "Max Mustermann") or one of the Aliases listed in Settings. The other side becomes the Opponent: an existing Player with exactly that name, otherwise a new Player. Missing or 0 Elos import as unrated. Games with no matching side or no result are held back as "needs review". Malformed Games fail with a reason and never stop the rest. Files may be UTF-8 or Latin-1.
 - Import review list (Import → Review list): held-back Games wait here until you choose your side and/or the result. An Opponent whose name only resembles an existing Player ("Huber T." / "Huber, Thomas") is offered as a suggestion: confirm to link that Player, or say no to create a new one. Nothing is linked without your confirmation. Games already in the Collection (same Players, date and moves) are reported as duplicates and skipped. Each one can still be imported anyway, and resolving a review item that is already in the Collection asks before adding it again. An entry without a name for White or Black fails with a reason.
 - PGN export: "Export PGN" under the board saves one Game, and "Export to PGN" on the game list saves the whole Collection. The output is standard PGN with English piece letters: the Seven Tag Roster, Elo tags for rated sides only, the other details, Variations, comments and symbols ($n). Your Tags and notes travel in extra `Tags` and `Notes` tags, so exporting and re-importing loses nothing.
+- Interactive Analysis: in a Game, switch the Engine on (the switch under the board, or E). It shows up to 3 best lines with evaluation and depth, updating live, and an evaluation bar beside the board. Scores are from White's side. It follows you as you step through the Game, and stops when you switch it off or leave the Game. Clicking a line adds it to the Game as a Variation at the board position. Settings → Engine holds the Stockfish program path (download it from stockfishchess.org; the path is checked when you save), threads, hash and the number of lines (defaults 16 threads, 8 GB hash, 3 lines).
 - Daily backups: on the first start of each day, and every 24 hours while the app runs, the Collection is copied (with SQLite's online backup, so the copy is consistent) into the backup folder. Only the 10 newest copies are kept. Settings → Backups shows the folder and the last backup, lets you choose another folder (another drive is safer), and has "Back up now".
 - Game list: click a column header to sort (click again to reverse; empty values always go last). Filter by Opponent, Event, date range (partial dates count when they overlap), result from your side (won/drawn/lost), your colour, ECO range, Tag and time control. Filters combine and stay in the URL. "Export shown to PGN" exports exactly the filtered list.
 
@@ -58,6 +59,9 @@ This one command builds the UI and the backend and runs every test project. Once
 | `tests/ChessDatabase.Rules.Tests` | Chess Rules directly: perft, SAN and FEN round trips, hashing (ADR 0002) |
 | `tests/ChessDatabase.Api.Tests` | The HTTP API, run in-process against a fresh temporary SQLite file per test |
 | `tests/ChessDatabase.Smoke.Tests` | Playwright drives the real app (built UI and backend) in headless Edge |
+| `tests/ChessDatabase.FakeEngine` | Not a test project: a scripted UCI engine that answers with canned output per position, so Engine tests are exact |
+
+The tests never need Stockfish. One optional check runs the real one: set `STOCKFISH_PATH` to the executable and run `dotnet test --filter Category=Stockfish`. Without the variable it is skipped.
 
 ## Project layout
 
@@ -69,6 +73,8 @@ src/
   ChessDatabase.Api/            ASP.NET Core backend: HTTP API and the Collection (EF Core + SQLite)
     ChessDatabaseApp.cs         composes the app; shared by browser mode, desktop shell and tests
     Collection/                 DbContext, entities, migrations
+    Engines/                    Engine Host: UCI processes, Interactive Analysis hub (SignalR)
+    Backup/                     daily backups
   ChessDatabase.Desktop/        Photino desktop shell (builds ChessDatabase.exe)
 ui/                             Angular UI (chessground board, chess.js for instant feedback)
 tests/                          see Testing

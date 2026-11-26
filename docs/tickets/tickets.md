@@ -18,7 +18,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 08 | [Import review list](#08-import-review-list) | 07 | **Done** |
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | **Done** |
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | **Done** |
-| 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | Open |
+| 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | **Done** |
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
@@ -221,15 +221,15 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 04 (Replay a Game and branch into Variations).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Stockfish path and options are configurable in Settings with the stated defaults; a missing or invalid path gives a clear message
-- [ ] Turning the Engine on streams up to 3 lines (evaluation, depth, moves in SAN) and updates the evaluation bar
-- [ ] Moving to another position restarts analysis there without manual action
-- [ ] Turning the Engine off or leaving the Game ends the search; no orphaned Stockfish processes remain after the app closes
-- [ ] Clicking a line adds it as a Variation at the current position
-- [ ] A fake UCI engine program exists that replies with canned output per position; hub tests use it to verify streaming, follow and stop behaviour
-- [ ] An optional slow test category runs real Stockfish at low depth as a smoke check
+- [x] Stockfish path and options are configurable in Settings with the stated defaults; a missing or invalid path gives a clear message
+- [x] Turning the Engine on streams up to 3 lines (evaluation, depth, moves in SAN) and updates the evaluation bar
+- [x] Moving to another position restarts analysis there without manual action
+- [x] Turning the Engine off or leaving the Game ends the search; no orphaned Stockfish processes remain after the app closes
+- [x] Clicking a line adds it as a Variation at the current position
+- [x] A fake UCI engine program exists that replies with canned output per position; hub tests use it to verify streaming, follow and stop behaviour
+- [x] An optional slow test category runs real Stockfish at low depth as a smoke check
 
 ---
 

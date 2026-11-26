@@ -1,5 +1,6 @@
 using ChessDatabase.Api.Backup;
 using ChessDatabase.Api.Collection;
+using ChessDatabase.Api.Engines;
 using ChessDatabase.Api.Games;
 using ChessDatabase.Api.Import;
 using ChessDatabase.Api.Openings;
@@ -26,6 +27,9 @@ public static class ChessDatabaseApp
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<CollectionBackup>();
         builder.Services.AddHostedService<DailyBackups>();
+        builder.Services.AddSingleton<EngineHost>();
+        builder.Services.AddSingleton<InteractiveAnalysis>();
+        builder.Services.AddSignalR();
         builder.Services.AddProblemDetails();
         builder.Services.ConfigureHttpJsonOptions(o =>
             o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(
@@ -48,6 +52,8 @@ public static class ChessDatabaseApp
         app.MapImportEndpoints();
         app.MapImportReviewEndpoints();
         app.MapBackupEndpoints();
+        app.MapEngineEndpoints();
+        app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.
         app.MapFallbackToFile("index.html");

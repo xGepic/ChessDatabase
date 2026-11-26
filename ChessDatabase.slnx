@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ChessDatabase.Api.Tests/ChessDatabase.Api.Tests.csproj" />
+    <Project Path="tests/ChessDatabase.FakeEngine/ChessDatabase.FakeEngine.csproj" />
     <Project Path="tests/ChessDatabase.Rules.Tests/ChessDatabase.Rules.Tests.csproj" />
     <Project Path="tests/ChessDatabase.Smoke.Tests/ChessDatabase.Smoke.Tests.csproj" />
   </Folder>

@@ -13,6 +13,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<TagRecord> Tags => Set<TagRecord>();
     public DbSet<SettingsRecord> Settings => Set<SettingsRecord>();
     public DbSet<ImportReviewItemRecord> ImportReviewItems => Set<ImportReviewItemRecord>();
+    public DbSet<EngineRecord> Engines => Set<EngineRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -36,6 +37,15 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             game.HasMany(g => g.Tags).WithMany();
             game.HasOne(g => g.Opponent).WithMany().HasForeignKey(g => g.OpponentId).OnDelete(DeleteBehavior.Restrict);
             game.HasMany(g => g.MoveNodes).WithOne().HasForeignKey(n => n.GameId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<EngineRecord>(engine =>
+        {
+            engine.Property(e => e.Name).HasMaxLength(100);
+            engine.Property(e => e.Path).HasMaxLength(1000);
+            engine.Property(e => e.Arguments).HasMaxLength(2000);
+            engine.Property(e => e.ReportedName).HasMaxLength(200);
+            engine.HasData(EngineRecord.Stockfish());
         });
 
         model.Entity<MoveNodeRecord>(node =>
@@ -162,6 +172,36 @@ public sealed class SettingsRecord
 
     /// <summary>Where daily backups go; null means "Backups" beside the Collection's file.</summary>
     public string? BackupFolder { get; set; }
+}
+
+/// <summary>
+/// An Engine definition: a UCI program and the options it runs with. Several can exist; only
+/// Stockfish ships, and it starts without a path until the Owner sets one.
+/// </summary>
+public sealed class EngineRecord
+{
+    public const int StockfishId = 1;
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+
+    /// <summary>The executable; empty until set.</summary>
+    public string Path { get; set; } = "";
+
+    /// <summary>Command-line arguments, if the program needs any (the tests' fake engine does).</summary>
+    public string? Arguments { get; set; }
+
+    public int Threads { get; set; }
+    public int HashMb { get; set; }
+
+    /// <summary>Lines shown in Interactive Analysis. Game Analysis always uses one.</summary>
+    public int MultiPv { get; set; }
+
+    /// <summary>What the program called itself when the path was saved ("id name"), e.g. "Stockfish 17.1".</summary>
+    public string? ReportedName { get; set; }
+
+    /// <summary>The shipped definition, with the Interactive Analysis defaults.</summary>
+    public static EngineRecord Stockfish() =>
+        new() { Id = StockfishId, Name = "Stockfish", Path = "", Threads = 16, HashMb = 8192, MultiPv = 3 };
 }
 
 /// <summary>

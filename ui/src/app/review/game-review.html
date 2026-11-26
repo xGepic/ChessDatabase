@@ -1,8 +1,11 @@
 @if (game(); as g) {
   <div class="review">
     <div class="board-column">
-      <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="current()?.uci ?? null"
-                 (move)="onBoardMove($event)" />
+      <div class="board-with-bar">
+        <app-eval-bar [line]="engine.on() ? (engine.update()?.lines?.[0] ?? null) : null" [orientation]="orientation()" />
+        <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="current()?.uci ?? null"
+                   (move)="onBoardMove($event)" />
+      </div>
       <div class="board-tools">
         <button type="button" (click)="goTo(null)" title="Start (Home)" aria-label="Start">⏮</button>
         <button type="button" (click)="goTo(current()?.parentId ?? null)" title="Back (←)" aria-label="Back">◀</button>
@@ -12,6 +15,8 @@
         <a class="button tool-link" [href]="'/api/games/' + g.id + '/pgn'" download data-testid="export-game">Export PGN</a>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
       </div>
+      <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
+                        (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
     </div>
 
     <section class="card scoresheet-card">

@@ -11,39 +11,12 @@ public static class MoveTreeEndpoints
 {
     public static void MapMoveTreeEndpoints(this RouteGroupBuilder games)
     {
-        games.MapPost("/{id:int}/moves", async (int id, AddMoveRequest body, CollectionDbContext db, OpeningClassifier openings) =>
-        {
-            var game = await db.Games.Include(g => g.MoveNodes).SingleOrDefaultAsync(g => g.Id == id);
-            if (game is null) return Results.NotFound();
-            var tree = new MoveTree(game.MoveNodes);
+        games.MapPost("/{id:int}/moves", (int id, AddMoveRequest body, CollectionDbContext db, OpeningClassifier openings) =>
+            AddLineAsync(db, openings, id, body.ParentId, [body.Move], "move"));
 
-            if (body.ParentId is { } parentId && !tree.Contains(parentId))
-                return Invalid("parentId", "That move is not part of this Game.");
-
-            var position = tree.PositionAfter(body.ParentId);
-            if (!TryReadMove(position, body.Move, out var move))
-                return Invalid("move", $"'{body.Move}' is not a legal move here.");
-
-            // Playing the recorded continuation again just moves along it; anything else becomes a new line.
-            var siblings = tree.ChildrenOf(body.ParentId);
-            var node = siblings.FirstOrDefault(n => n.Uci == move.ToUci());
-            if (node is null)
-            {
-                node = new MoveNodeRecord
-                {
-                    GameId = id,
-                    ParentId = body.ParentId,
-                    Order = siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1,
-                    Uci = move.ToUci(),
-                    San = position.ToSan(move),
-                };
-                game.MoveNodes.Add(node);
-                await db.SaveChangesAsync();
-                await MainLine.RefreshAsync(db, openings, id);
-            }
-
-            return Results.Ok(new AddMoveResponse(node.Id, (await GameQueries.LoadGameDtoAsync(db, id))!));
-        });
+        // A whole line at once, e.g. an Engine line the Owner clicked.
+        games.MapPost("/{id:int}/moves/line", (int id, AddLineRequest body, CollectionDbContext db, OpeningClassifier openings) =>
+            AddLineAsync(db, openings, id, body.ParentId, body.Moves ?? [], "moves"));
 
         games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
         {
@@ -73,6 +46,62 @@ public static class MoveTreeEndpoints
             await MainLine.RefreshAsync(db, openings, id);
             return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
+    }
+
+    /// <summary>
+    /// Plays the moves one after another from the parent. Where a move is already recorded there,
+    /// it just moves along it; the first new move starts a new line (a Variation if the position
+    /// already had a continuation). Every move is checked before anything is saved.
+    /// </summary>
+    private static async Task<IResult> AddLineAsync(
+        CollectionDbContext db, OpeningClassifier openings, int gameId, int? parentId, IReadOnlyList<string?> moves, string field)
+    {
+        var game = await db.Games.Include(g => g.MoveNodes).SingleOrDefaultAsync(g => g.Id == gameId);
+        if (game is null) return Results.NotFound();
+        var tree = new MoveTree(game.MoveNodes);
+        if (parentId is { } id && !tree.Contains(id))
+            return Invalid("parentId", "That move is not part of this Game.");
+        if (moves.Count == 0) return Invalid(field, "Give at least one move.");
+
+        var position = tree.PositionAfter(parentId);
+        var line = new List<(string Uci, string San)>();
+        foreach (var text in moves)
+        {
+            if (!TryReadMove(position, text, out var move))
+                return Invalid(field, $"'{text}' is not a legal move here.");
+            line.Add((move.ToUci(), position.ToSan(move)));
+            position = position.Play(move);
+        }
+
+        int? at = parentId;
+        MoveNodeRecord? last = null, firstNew = null;
+        foreach (var (uci, san) in line)
+        {
+            if (firstNew is null && tree.ChildrenOf(at).FirstOrDefault(n => n.Uci == uci) is { } existing)
+            {
+                last = existing;
+                at = existing.Id;
+                continue;
+            }
+            var node = new MoveNodeRecord { GameId = gameId, Uci = uci, San = san };
+            if (firstNew is null)
+            {
+                var siblings = tree.ChildrenOf(at);
+                node.ParentId = at;
+                node.Order = siblings.Count == 0 ? 0 : siblings.Max(n => n.Order) + 1;
+                firstNew = node;
+            }
+            else node.Parent = last;
+            game.MoveNodes.Add(node);
+            last = node;
+        }
+
+        if (firstNew is not null)
+        {
+            await db.SaveChangesAsync();
+            await MainLine.RefreshAsync(db, openings, gameId);
+        }
+        return Results.Ok(new AddMoveResponse(last!.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
     }
 
     /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>

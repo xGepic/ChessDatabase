@@ -303,4 +303,53 @@ public class SmokeTests : IAsyncLifetime
         await Expect(Page.GetByTestId("backup-status")).ToHaveTextAsync("Backed up");
         await Expect(Page.GetByTestId("last-backup")).Not.ToHaveTextAsync("none yet");
     }
+
+    [Fact]
+    public async Task Switch_the_engine_on_follow_the_moves_and_play_a_line_as_a_variation()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "e5");
+        const string afterE4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -";
+        const string afterE5 = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -";
+        await _app.UseFakeEngineAsync(new()
+        {
+            [afterE4] = (["depth 12 multipv 1 score cp -25 pv c7c5 g1f3", "depth 12 multipv 2 score cp -30 pv e7e5 g1f3",
+                "depth 12 multipv 3 score cp -40 pv e7e6 d2d4"], "c7c5"),
+            [afterE5] = (["depth 14 multipv 1 score cp 35 pv g1f3 b8c6", "depth 14 multipv 2 score cp 30 pv f1c4",
+                "depth 14 multipv 3 score cp 20 pv b1c3"], "g1f3"),
+        });
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("engine-toggle").ClickAsync();
+        await Expect(Page.GetByTestId("engine-line")).ToHaveCountAsync(3);
+        await Expect(Page.GetByTestId("engine-line").First).ToContainTextAsync("+0.35");
+        await Expect(Page.GetByTestId("engine-line").First).ToContainTextAsync("2.Nf3 Nc6");
+        await Expect(Page.GetByTestId("engine-depth")).ToHaveTextAsync("depth 14");
+
+        // The Engine follows the board.
+        await Page.Keyboard.PressAsync("ArrowLeft");
+        await Expect(Page.GetByTestId("engine-line").First).ToContainTextAsync("1...c5 2.Nf3");
+        await Expect(Page.GetByTestId("engine-eval")).ToHaveTextAsync("+0.25");
+
+        // Clicking a line adds it as a Variation at the board position.
+        await Page.GetByTestId("engine-line").First.ClickAsync();
+        await Expect(Page.Locator(".variation")).ToContainTextAsync("1...c5 2.Nf3");
+
+        await Page.GetByTestId("engine-toggle").ClickAsync();
+        await Expect(Page.GetByTestId("engine-line")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Set_the_engine_path_in_settings()
+    {
+        await Page.GotoAsync($"{_app.BaseUrl}/settings");
+
+        await Page.GetByTestId("engine-path").FillAsync(@"C:
+owhere\stockfish.exe");
+        await Page.GetByTestId("engine-save").ClickAsync();
+        await Expect(Page.GetByTestId("engine-status")).ToContainTextAsync("There is no file at");
+
+        await Page.GetByTestId("engine-path").FillAsync(Path.Combine(AppContext.BaseDirectory, "FakeEngine.exe"));
+        await Page.GetByTestId("engine-save").ClickAsync();
+        await Expect(Page.GetByTestId("engine-status")).ToHaveTextAsync("Saved. Found Fake Engine 1.0.");
+    }
 }

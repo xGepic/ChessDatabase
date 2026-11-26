@@ -1,7 +1,10 @@
 import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { Api, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
+import { AnalysisLine, Api, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
+import { EnginePanel } from '../engine/engine-panel';
+import { EngineSession } from '../engine/engine-session';
+import { EvalBar } from '../engine/eval-bar';
 import { Board } from './board';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
@@ -10,13 +13,15 @@ import { Scoresheet, TreeAction } from './scoresheet';
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar],
+  providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },
 })
 export class GameReview {
   private readonly api = inject(Api);
   private readonly router = inject(Router);
+  protected readonly engine = inject(EngineSession);
 
   /** Route parameter. */
   readonly id = input.required<string>();
@@ -47,7 +52,24 @@ export class GameReview {
     return this.flipped() ? (owner === 'white' ? 'black' : 'white') : owner;
   });
 
+  /** The moves from the start to the board position, in UCI: what the Engine is given. */
+  private readonly path = computed(() => {
+    const moves: string[] = [];
+    for (let node = this.current(); node; node = node.parentId === null ? null : (this.nodes().get(node.parentId) ?? null))
+      moves.unshift(node.uci);
+    return moves;
+  });
+
   constructor() {
+    // The Engine follows the board: every new position restarts the analysis (briefly debounced for held keys).
+    let followTimer: ReturnType<typeof setTimeout> | undefined;
+    effect(() => {
+      const moves = this.path();
+      if (!this.engine.on()) return;
+      clearTimeout(followTimer);
+      followTimer = setTimeout(() => this.engine.analyse(moves), 80);
+    });
+
     effect(() => {
       const id = Number(this.id());
       this.api.getGame(id).subscribe({
@@ -82,6 +104,10 @@ export class GameReview {
         case 'f':
         case 'F':
           this.flipped.update((f) => !f);
+          return true;
+        case 'e':
+        case 'E':
+          this.toggleEngine();
           return true;
         default:
           return false;
@@ -136,6 +162,29 @@ export class GameReview {
         this.error.set(problemMessage(e));
         this.board()?.reset();
       },
+    });
+  }
+
+  // ---------------------------------------------------------------- engine
+
+  protected toggleEngine() {
+    if (this.engine.on()) this.engine.stop();
+    else this.engine.start(this.path());
+  }
+
+  /** Adds the Engine line at the board position (as a Variation if a move is recorded there) and steps into it. */
+  protected onPlayLine(line: AnalysisLine) {
+    const game = this.game();
+    if (!game) return;
+    const from = this.currentId();
+    this.error.set('');
+    this.api.addLine(game.id, from, line.uci).subscribe({
+      next: ({ game: updated }) => {
+        this.game.set(updated);
+        const first = this.continuations(from).find((id) => this.nodes().get(id)?.uci === line.uci[0]);
+        if (first !== undefined) this.currentId.set(first);
+      },
+      error: (e) => this.error.set(problemMessage(e)),
     });
   }
 

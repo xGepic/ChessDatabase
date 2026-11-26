@@ -85,6 +85,37 @@ export interface BackupStatus {
   lastBackupAt: string | null;
 }
 
+/** An Engine definition (only Stockfish ships). */
+export interface Engine {
+  id: number;
+  name: string;
+  /** Empty until set. */
+  path: string;
+  threads: number;
+  hashMb: number;
+  /** Lines shown in Interactive Analysis. */
+  multiPv: number;
+  /** What the program called itself, e.g. "Stockfish 17.1". */
+  reportedName: string | null;
+}
+
+/** One Engine line. Scores are from White's side: positive favours White. */
+export interface AnalysisLine {
+  rank: number;
+  depth: number;
+  cp: number | null;
+  /** Moves to mate; negative when Black mates. */
+  mate: number | null;
+  san: string[];
+  uci: string[];
+}
+
+export interface AnalysisUpdate {
+  requestId: number;
+  /** Empty when the position has no legal moves. */
+  lines: AnalysisLine[];
+}
+
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
@@ -171,6 +202,10 @@ export class Api {
   addMove(gameId: number, parentId: number | null, move: string): Observable<{ nodeId: number; game: Game }> {
     return this.http.post<{ nodeId: number; game: Game }>(`/api/games/${gameId}/moves`, { parentId, move });
   }
+  /** Plays several moves from a node; a move already recorded there is followed, not doubled. */
+  addLine(gameId: number, parentId: number | null, moves: string[]): Observable<{ nodeId: number; game: Game }> {
+    return this.http.post<{ nodeId: number; game: Game }>(`/api/games/${gameId}/moves/line`, { parentId, moves });
+  }
   promote(gameId: number, nodeId: number): Observable<Game> {
     return this.http.post<Game>(`/api/games/${gameId}/moves/${nodeId}/promote`, null);
   }
@@ -238,6 +273,16 @@ export class Api {
   }
   saveSettings(settings: Settings): Observable<Settings> {
     return this.http.put<Settings>('/api/settings', settings);
+  }
+
+  // Engines
+  getEngines(): Observable<Engine[]> {
+    return this.http.get<Engine[]>('/api/engines');
+  }
+  /** Saving a path starts the program once to check it is a UCI engine. */
+  saveEngine(engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv'>): Observable<Engine> {
+    const { id, ...body } = engine;
+    return this.http.put<Engine>(`/api/engines/${id}`, body);
   }
 
   // Backups
