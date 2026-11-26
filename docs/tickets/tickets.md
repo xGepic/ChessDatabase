@@ -16,7 +16,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | **Done** |
 | 07 | [Import PGN](#07-import-pgn) | 05, 06 | **Done** |
 | 08 | [Import review list](#08-import-review-list) | 07 | **Done** |
-| 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | Open |
+| 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | **Done** |
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | Open |
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | Open |
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
@@ -190,12 +190,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 05 (Annotate moves), 06 (Game details, Tags and ECO).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Export single Game and export entire Collection are available from the UI
-- [ ] Exported PGN re-imports into an empty Collection with identical moves, Variations, comments, NAGs and details (round-trip test)
-- [ ] Unrated sides produce no Elo tag; partial dates use PGN's `??` notation
-- [ ] The output opens in another standard PGN tool (manually verified once with a sample file)
+- [x] Export single Game and export entire Collection are available from the UI
+- [x] Exported PGN re-imports into an empty Collection with identical moves, Variations, comments, NAGs and details (round-trip test)
+- [x] Unrated sides produce no Elo tag; partial dates use PGN's `??` notation
+- [x] The output opens in another standard PGN tool (manually verified once with a sample file)
 
 ---
 

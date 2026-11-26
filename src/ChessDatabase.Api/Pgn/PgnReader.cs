@@ -116,7 +116,7 @@ public static partial class PgnReader
             {
                 var match = TagPattern().Match(trimmed);
                 if (!match.Success) throw new FormatException($"Unreadable tag line: {trimmed}");
-                game.Tags[match.Groups[1].Value] = Regex.Unescape(match.Groups[2].Value.Replace("\\\"", "\""));
+                game.Tags[match.Groups[1].Value] = PgnValues.UnescapeTag(match.Groups[2].Value);
                 continue;
             }
             if (trimmed.Length > 0) inTags = false;

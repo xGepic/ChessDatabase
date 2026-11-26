@@ -9,6 +9,7 @@
         <button type="button" (click)="forward()" title="Forward (→)" aria-label="Forward">▶</button>
         <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
         <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
+        <a class="button tool-link" [href]="'/api/games/' + g.id + '/pgn'" download data-testid="export-game">Export PGN</a>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
       </div>
     </div>

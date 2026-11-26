@@ -267,6 +267,19 @@ public class ImportTests
     }
 
     [Fact]
+    public async Task Backslashes_and_escaped_quotes_in_tags_are_read_as_written()
+    {
+        using var factory = new CollectionFactory();
+        var client = await CollectionWithOwnerAsync(factory);
+
+        var summary = await client.ImportTextAsync(
+            "[Event \"Open \\\"A\\\" C:\\q\"]\n[White \"Mustermann, Max\"]\n[Black \"X\"]\n[Result \"1-0\"]\n\n1. e4 1-0\n");
+
+        var game = await client.GetGameAsync(Assert.Single(summary.Games).GameId!.Value);
+        Assert.Equal("Open \"A\" C:\\q", game.Event!.Name);
+    }
+
+    [Fact]
     public async Task Empty_input_is_refused()
     {
         using var factory = new CollectionFactory();

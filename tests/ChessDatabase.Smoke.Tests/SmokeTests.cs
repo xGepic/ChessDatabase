@@ -206,6 +206,21 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Export_a_game_to_a_pgn_file()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        var download = await Page.RunAndWaitForDownloadAsync(() => Page.GetByTestId("export-game").ClickAsync());
+
+        Assert.EndsWith(".pgn", download.SuggestedFilename);
+        var pgn = await File.ReadAllTextAsync((await download.PathAsync())!);
+        Assert.Contains("[White \"Smoke Owner\"]", pgn);
+        Assert.Contains("1. e4 e5 2. Nf3 1-0", pgn);
+    }
+
+    [Fact]
     public async Task Annotate_a_move_with_a_symbol_and_a_comment()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");

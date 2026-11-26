@@ -58,6 +58,7 @@ public static partial class GameEndpoints
 
         games.MapMoveTreeEndpoints();
         games.MapAnnotationEndpoints();
+        games.MapExportEndpoints();
     }
 
     public static async Task<GameDto?> LoadGameDtoAsync(CollectionDbContext db, int id)

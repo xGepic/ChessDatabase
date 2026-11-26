@@ -44,6 +44,9 @@ public sealed class MoveTree
     /// <summary>The position after a node; null means the starting position.</summary>
     public Position PositionAfter(int? nodeId) => nodeId is null ? StartPosition : _positionAfter[nodeId.Value].Position;
 
+    /// <summary>The half-move number of a node: 1 for White's first move.</summary>
+    public int PlyOf(int nodeId) => _positionAfter[nodeId].Ply;
+
     /// <summary>The moves actually played: first continuations from the start.</summary>
     public IReadOnlyList<MoveNodeRecord> MainLine()
     {

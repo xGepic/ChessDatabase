@@ -287,3 +287,5 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .review-actions { display: flex; gap: 8px; align-items: center; }
 .link-button { border: none; background: none; padding: 0 4px; color: var(--wood-active); text-decoration: underline; }
 .link-button:hover { background: none !important; color: var(--ink); }
+.board-tools .tool-link { background: transparent; color: var(--boxwood); border-color: var(--frame-light); }
+.board-tools .tool-link:hover { background: rgba(232,207,160,.1); }

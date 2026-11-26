@@ -138,6 +138,8 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
             Site = PgnValues.Text(pgn.Tag("Site")),
             Round = PgnValues.Text(pgn.Tag("Round")),
             TimeControl = PgnValues.Text(pgn.Tag("TimeControl")),
+            Notes = PgnValues.Text(pgn.Tag("Notes")),
+            Tags = await NamedRecords.FindOrCreateTagsAsync(db, (pgn.Tag("Tags") ?? "").Split(';')),
             Eco = opening?.Eco,
             OpeningName = opening?.Name,
             CreatedAt = DateTime.UtcNow,
