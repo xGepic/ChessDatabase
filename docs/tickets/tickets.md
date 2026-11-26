@@ -2,6 +2,44 @@
 
 Built from [the spec](../specs/0001-chess-database.md). Tickets are numbered so that each one's blockers come before it. Start with any ticket whose blockers are all done.
 
+Every ticket is only done once README.md reflects it. If the ticket changes how to build, run, test or use the app, update the README in the same change.
+
+## Overview
+
+| # | Ticket | Blocked by | Status |
+|---|---|---|---|
+| 01 | [Walking skeleton](#01-walking-skeleton) | – | Open |
+| 02 | [Chess Rules core](#02-chess-rules-core) | 01 | Open |
+| 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | Open |
+| 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | Open |
+| 05 | [Annotate moves](#05-annotate-moves) | 04 | Open |
+| 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | Open |
+| 07 | [Import PGN](#07-import-pgn) | 05, 06 | Open |
+| 08 | [Import review list](#08-import-review-list) | 07 | Open |
+| 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | Open |
+| 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | Open |
+| 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | Open |
+| 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
+| 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
+| 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
+| 15 | [Daily backups](#15-daily-backups) | 01 | Open |
+| 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | Open |
+| 17 | [Position Search](#17-position-search) | 16 | Open |
+| 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | Open |
+| 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | Open |
+| 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | Open |
+| 21 | [Merge Players](#21-merge-players) | 20 | Open |
+| 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | Open |
+| 23 | [Repertoire builder](#23-repertoire-builder) | 16 | Open |
+| 24 | [Deviation check](#24-deviation-check) | 23 | Open |
+| 25 | [Repertoire Training](#25-repertoire-training) | 23 | Open |
+| 26 | [Mistake Training](#26-mistake-training) | 12, 25 | Open |
+| 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | Open |
+| 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | Open |
+| 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | Open |
+| 30 | [Side-by-side engines in Interactive Analysis](#30-side-by-side-engines-in-interactive-analysis) | 29 | Open |
+
+When a ticket is finished, set its Status here to **Done**, set the **Status:** line in the ticket itself to `done`, and tick its acceptance criteria.
 
 ---
 
@@ -19,6 +57,7 @@ Built from [the spec](../specs/0001-chess-database.md). Tickets are numbered so 
 - [ ] An API integration test calls the game list endpoint against a fresh temporary database and gets an empty list
 - [ ] A Playwright smoke test opens the app and sees the empty game list
 - [ ] One command builds and runs all tests
+- [ ] README.md exists with what the app is, prerequisites, how to run it (desktop and browser), how to run the tests, the project layout, and links to the glossary, spec, ADRs and tickets
 
 ---
 
