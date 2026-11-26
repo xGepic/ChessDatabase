@@ -447,6 +447,58 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("move")).ToHaveTextAsync(["e4", "c5"]);
     }
 
+    [Fact]
+    public async Task Search_the_board_position_from_a_game_and_open_a_transposed_game_there()
+    {
+        var first = await _app.CreateGameAsync("e4", "e5", "Nf3", "Nc6", "Bb5");
+        var second = await _app.CreateGameAsync("Nf3", "Nc6", "e4", "e5", "d4");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{first}?ply=4");
+
+        await Page.GetByTestId("search-this-position").ClickAsync();
+
+        await Expect(Page.GetByTestId("search-result")).ToHaveCountAsync(2);
+        await Expect(Page.GetByTestId("search-move")).ToHaveTextAsync(["3", "3"]);
+        await Page.GetByTestId("search-result").First.ClickAsync(); // newest first: the second Game
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex($@"/games/{second}\?ply=4$"));
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("e5");
+    }
+
+    [Fact]
+    public async Task Set_up_a_position_in_the_editor_and_search_it()
+    {
+        await _app.CreateGameAsync("e4", "e5");
+        await Page.GotoAsync($"{_app.BaseUrl}/search");
+
+        await Page.GetByTestId("editor-start").ClickAsync();
+        await Page.GetByTestId("search-position").ClickAsync();
+        await Expect(Page.GetByTestId("search-result")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("search-move")).ToHaveTextAsync("1");
+
+        // Two kings and a pawn on the first rank: refused with the reason.
+        await Page.GetByTestId("editor-clear").ClickAsync();
+        await PlaceAsync("palette-white-king", "e1");
+        await PlaceAsync("palette-black-king", "e8");
+        await PlaceAsync("palette-white-pawn", "a1");
+        await Page.GetByTestId("search-position").ClickAsync();
+        await Expect(Page.GetByTestId("search-error")).ToContainTextAsync("Pawns can't stand on the first or the last rank.");
+
+        // Erase the pawn: a legal position nobody reached.
+        await PlaceAsync("palette-erase", "a1");
+        await Page.GetByTestId("search-position").ClickAsync();
+        await Expect(Page.GetByTestId("search-empty")).ToBeVisibleAsync();
+    }
+
+    /// <summary>Chooses a palette tool and clicks a square on the editor board (White at the bottom).</summary>
+    private async Task PlaceAsync(string tool, string square)
+    {
+        var button = Page.GetByTestId(tool);
+        if (await button.GetAttributeAsync("class") is not { } css || !css.Split(' ').Contains("on")) await button.ClickAsync();
+        var box = (await Page.GetByTestId("editor-board").BoundingBoxAsync())!;
+        var file = square[0] - 'a';
+        var rank = square[1] - '1';
+        await Page.Mouse.ClickAsync(box.X + (file + 0.5f) * box.Width / 8, box.Y + (7 - rank + 0.5f) * box.Height / 8);
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

@@ -13,6 +13,8 @@
         <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
         <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
         <a class="button tool-link" [href]="'/api/games/' + g.id + '/pgn'" download data-testid="export-game">Export PGN</a>
+        <a class="button tool-link" routerLink="/search" [queryParams]="{ fen: fen() }" data-testid="search-this-position"
+           title="Find every Game that reached this position">Search position</a>
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
       </div>
       <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"

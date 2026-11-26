@@ -24,7 +24,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | **Done** |
 | 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
 | 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | **Done** |
-| 17 | [Position Search](#17-position-search) | 16 | Open |
+| 17 | [Position Search](#17-position-search) | 16 | **Done** |
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | Open |
 | 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | Open |
 | 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | Open |
@@ -323,13 +323,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 16 (Opening Tree from my Games).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Search from the current board position works from any Game view
-- [ ] A position editor lets the Owner set up an arbitrary legal position and search it
-- [ ] Results list each Game with the move number where the position occurred; opening a result jumps there
-- [ ] Positions that occur only in Variations are not found
-- [ ] API tests cover a transposition hit and a Variation-only miss
+- [x] Search from the current board position works from any Game view
+- [x] A position editor lets the Owner set up an arbitrary legal position and search it
+- [x] Results list each Game with the move number where the position occurred; opening a result jumps there
+- [x] Positions that occur only in Variations are not found
+- [x] API tests cover a transposition hit and a Variation-only miss
 
 ---
 

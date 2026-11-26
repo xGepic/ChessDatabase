@@ -27,12 +27,14 @@ import { Api, Game, OpeningTree, PositionGame, problemMessage, resultLabel } fro
                               [title]="'Play ' + m.san">{{ m.san }}</button></td>
                   <td class="num" data-testid="tree-games">{{ m.games }}</td>
                   <td>
+                    <div class="score-cell">
                     <div class="score-bar" [title]="m.wins + ' won, ' + m.draws + ' drawn, ' + m.losses + ' lost'">
                       <span class="won" [style.flex-grow]="m.wins"></span>
                       <span class="drawn" [style.flex-grow]="m.draws"></span>
                       <span class="lost" [style.flex-grow]="m.losses"></span>
                     </div>
                     <span class="score mono" data-testid="tree-score">{{ m.score }}%</span>
+                    </div>
                   </td>
                 </tr>
               }

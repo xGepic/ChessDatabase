@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +20,7 @@ import { Scoresheet, TreeAction } from './scoresheet';
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, RouterLink],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },

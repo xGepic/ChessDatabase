@@ -270,7 +270,7 @@ app-eval-bar .eval-bar { flex: 1; }
 .tree-table { width: 100%; border-collapse: collapse; }
 .tree-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 4px 12px; border-bottom: 1px solid var(--rule); }
 .tree-table td { padding: 2px 12px; border-bottom: 1px solid var(--cream-deep); vertical-align: middle; }
-.tree-table td:last-child { display: flex; align-items: center; gap: 8px; }
+.score-cell { display: flex; align-items: center; gap: 8px; }
 .tree-move { background: transparent; border: none; padding: 3px 4px; font-weight: 600; color: var(--ink); }
 .tree-move:hover { background: var(--cream-deep) !important; }
 .score-bar { display: flex; flex: 1; height: 8px; border-radius: 4px; overflow: hidden; background: var(--rule); min-width: 60px; }
@@ -287,6 +287,21 @@ app-eval-bar .eval-bar { flex: 1; }
 .position-game:hover { background: var(--cream-deep) !important; }
 .position-game.current { font-weight: 600; }
 .tree-more { margin: 0 12px 8px; }
+
+/* ---------- Position Search and the position editor ---------- */
+.search-layout { display: grid; grid-template-columns: minmax(360px, 560px) 1fr; gap: 20px; align-items: start; }
+.search-editor-card .editor { padding: 12px 16px; display: grid; gap: 10px; }
+.palette { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.palette-piece.cg-wrap { position: relative; width: 44px; height: 44px; padding: 3px; background: var(--cream-deep); }
+.palette-piece.on { background: var(--boxwood); outline: 2px solid var(--wood-active); }
+.palette-piece piece { position: static; display: block; width: 100%; height: 100%; transform: none; }
+.palette-erase.on { background: var(--boxwood); outline: 2px solid var(--wood-active); }
+.editor-options { display: grid; gap: 10px; }
+.castling { display: flex; gap: 14px; flex-wrap: wrap; }
+.castling label { display: inline-flex; gap: 4px; align-items: center; }
+.editor-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.search-actions { display: flex; gap: 12px; align-items: center; padding: 0 16px 16px; flex-wrap: wrap; }
+@media (max-width: 1100px) { .search-layout { grid-template-columns: 1fr; } }
 
 /* ---------- Game Analysis queue: list selection and the strip under the top bar ---------- */
 .game-table .pick { width: 36px; padding-right: 0; }
