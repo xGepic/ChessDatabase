@@ -238,8 +238,12 @@ app-eval-bar .eval-bar { flex: 1; }
 .graph-current { stroke: var(--felt); stroke-width: 2; }
 .graph-dot { stroke: var(--mark); stroke-width: 8; stroke-linecap: round; }
 .classified { list-style: none; margin: 8px 0 0; padding: 0; }
+.classified-row { display: flex; align-items: center; padding-right: 12px; }
+.classified-row:has(.classified-move.current) { background: var(--boxwood); }
+.copy-move { padding: 2px 8px; font-size: 12px; }
+.copy-all { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; flex-wrap: wrap; }
 .classified-move {
-  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left;
   background: transparent; border: none; border-radius: 0; padding: 5px 16px; color: var(--ink);
 }
 .classified-move:hover:not(:disabled) { background: var(--cream-deep) !important; }
@@ -249,6 +253,7 @@ app-eval-bar .eval-bar { flex: 1; }
 .classified-best { margin-left: auto; color: var(--ink-soft); }
 .classified-best .mono { color: var(--ink); }
 .best-line { margin: 6px 16px 0; padding: 8px 10px; background: var(--cream-deep); border-radius: var(--radius); font-size: 13px; }
+.best-line p { margin: 0; }
 .assessment-note { margin: 0; padding: 4px 16px 8px; color: var(--ink-soft); }
 .assessment-note.error { color: var(--blood); }
 .assessment-note.warn { color: #8a5a00; padding-top: 8px; }

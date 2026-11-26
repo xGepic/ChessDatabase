@@ -46,6 +46,7 @@
       <app-annotation-card [game]="g" [node]="current()" (saved)="onDetailsSaved($event)" />
       <app-assessment-card [gameId]="g.id" [assessment]="assessment()" [queue]="queue.status()" [error]="analysisError()"
                            [ownerColour]="g.ownerColour" [currentId]="currentId()"
+                           [copyMessage]="copyMessage()" (copy)="onCopy($event)" (copyAll)="onCopyAll()"
                            (analyse)="onAnalyse($event)" (goToPly)="onGoToPly($event)" />
       <app-game-details [game]="g" (saved)="onDetailsSaved($event)" (deleted)="onDelete()" />
     </div>

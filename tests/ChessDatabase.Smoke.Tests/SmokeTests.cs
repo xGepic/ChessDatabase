@@ -393,6 +393,13 @@ owhere\stockfish.exe");
         await Page.ReloadAsync();
         await Expect(Page.GetByTestId("accuracy-white")).ToHaveTextAsync("88.0%");
         await Expect(Page.GetByTestId("analyse-game")).ToHaveTextAsync("Analyse again");
+        await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Nf6" })).ToHaveTextAsync("Nf6"); // no symbol yet
+
+        // Copying mistakes and blunders writes the symbol and the Engine line into the Game.
+        await Page.GetByTestId("copy-all").ClickAsync();
+        await Expect(Page.GetByTestId("copy-status")).ToHaveTextAsync("Copied 1 move into the Game.");
+        await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Nf6??" })).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("variation")).ToContainTextAsync("3...g6 4.Qf3 Nf6");
     }
 
     [Fact]

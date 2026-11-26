@@ -73,6 +73,25 @@ public static class MoveTreeEndpoints
             position = position.Play(move);
         }
 
+        var (last, added) = AddLine(game, tree, parentId, line);
+
+        if (added)
+        {
+            await db.SaveChangesAsync();
+            await MainLine.RefreshAsync(db, openings, gameId);
+        }
+        return Results.Ok(new AddMoveResponse(last.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
+    }
+
+    /// <summary>
+    /// Adds checked moves (UCI and SAN) to the Game's tracked nodes, one after another from the parent:
+    /// a move already recorded there is followed, the first new one starts a new line after the
+    /// existing continuations. Nothing is saved. Returns the line's last node and whether anything is new.
+    /// </summary>
+    public static (MoveNodeRecord Last, bool Added) AddLine(
+        GameRecord game, MoveTree tree, int? parentId, IReadOnlyList<(string Uci, string San)> line)
+    {
+        if (line.Count == 0) throw new ArgumentException("A line has at least one move.", nameof(line));
         int? at = parentId;
         MoveNodeRecord? last = null, firstNew = null;
         foreach (var (uci, san) in line)
@@ -83,7 +102,7 @@ public static class MoveTreeEndpoints
                 at = existing.Id;
                 continue;
             }
-            var node = new MoveNodeRecord { GameId = gameId, Uci = uci, San = san };
+            var node = new MoveNodeRecord { GameId = game.Id, Uci = uci, San = san };
             if (firstNew is null)
             {
                 var siblings = tree.ChildrenOf(at);
@@ -95,13 +114,7 @@ public static class MoveTreeEndpoints
             game.MoveNodes.Add(node);
             last = node;
         }
-
-        if (firstNew is not null)
-        {
-            await db.SaveChangesAsync();
-            await MainLine.RefreshAsync(db, openings, gameId);
-        }
-        return Results.Ok(new AddMoveResponse(last!.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
+        return (last!, firstNew is not null);
     }
 
     /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>

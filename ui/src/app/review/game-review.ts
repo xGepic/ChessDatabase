@@ -44,6 +44,7 @@ export class GameReview {
   /** The Game's Engine Assessment, if it has one. */
   protected readonly assessment = signal<EngineAssessment | null>(null);
   protected readonly analysisError = signal('');
+  protected readonly copyMessage = signal('');
   /** Move Classifications by move, for the scoresheet. */
   protected readonly marks = computed(
     () =>
@@ -126,6 +127,31 @@ export class GameReview {
     this.api.analyseGame(game.id, secondsPerMove).subscribe({
       next: (status) => this.queue.set(status),
       error: (e) => this.analysisError.set(problemMessage(e)),
+    });
+  }
+
+  /** Copies one classified move into the Game (ADR 0003: only ever on the Owner's request). */
+  protected onCopy(ply: number) {
+    const game = this.game();
+    if (!game) return;
+    this.api.copyAssessedMove(game.id, ply).subscribe({
+      next: (updated) => {
+        this.game.set(updated);
+        this.copyMessage.set('Copied into the Game.');
+      },
+      error: (e) => this.copyMessage.set(problemMessage(e)),
+    });
+  }
+
+  protected onCopyAll() {
+    const game = this.game();
+    if (!game) return;
+    this.api.copyMistakesAndBlunders(game.id).subscribe({
+      next: ({ copied, game: updated }) => {
+        this.game.set(updated);
+        this.copyMessage.set(copied === 1 ? 'Copied 1 move into the Game.' : `Copied ${copied} moves into the Game.`);
+      },
+      error: (e) => this.copyMessage.set(problemMessage(e)),
     });
   }
 

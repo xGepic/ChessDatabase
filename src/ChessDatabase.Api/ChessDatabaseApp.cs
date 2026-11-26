@@ -58,6 +58,7 @@ public static class ChessDatabaseApp
         app.MapBackupEndpoints();
         app.MapEngineEndpoints();
         app.MapAnalysisEndpoints();
+        app.MapCopyAssessmentEndpoints();
         app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.

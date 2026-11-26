@@ -38,7 +38,7 @@ import { EvalGraph } from './eval-graph';
         @if (classified().length) {
           <ul class="classified" data-testid="classified-moves">
             @for (m of classified(); track m.ply) {
-              <li>
+              <li class="classified-row">
                 <button type="button" class="classified-move" [class.current]="m.nodeId !== null && m.nodeId === currentId()"
                         [attr.data-mark]="m.classification" data-testid="classified-move" [disabled]="m.nodeId === null"
                         (click)="goToPly.emit(m.ply)">
@@ -47,6 +47,9 @@ import { EvalGraph } from './eval-graph';
                   <span class="classified-kind">{{ m.classification }}</span>
                   @if (m.bestSan) { <span class="classified-best">best <span class="mono" data-testid="best-move">{{ label(m.ply, m.bestSan) }}</span></span> }
                 </button>
+                <button type="button" class="copy-move" data-testid="copy-move" [disabled]="m.nodeId === null"
+                        [attr.aria-label]="'Copy ' + label(m.ply, m.san) + ' into the Game'"
+                        title="Copy into the Game: the symbol and the Engine line as a Variation" (click)="copy.emit(m.ply)">Copy</button>
               </li>
             }
           </ul>
@@ -54,8 +57,18 @@ import { EvalGraph } from './eval-graph';
           <p class="assessment-note">No inaccuracies, mistakes or blunders.</p>
         }
         @if (selected(); as m) {
-          <p class="best-line" data-testid="best-line">Instead of <span class="mono">{{ label(m.ply, m.san) }}</span>, the Engine
-            plays <span class="mono">{{ bestLine(m) }}</span></p>
+          <div class="best-line" data-testid="best-line">
+            <p>Instead of <span class="mono">{{ label(m.ply, m.san) }}</span>, the Engine plays <span class="mono">{{ bestLine(m) }}</span></p>
+          </div>
+        }
+        @if (hasMistakes()) {
+          <div class="copy-all">
+            <button type="button" data-testid="copy-all" (click)="copyAll.emit()"
+                    title="Adds ? and ?? where you have no symbol yet, and the Engine lines as Variations">Copy all mistakes and blunders</button>
+            @if (copyMessage()) { <span class="status" role="status" data-testid="copy-status">{{ copyMessage() }}</span> }
+          </div>
+        } @else if (copyMessage()) {
+          <p class="assessment-note" role="status" data-testid="copy-status">{{ copyMessage() }}</p>
         }
         @if (a.stale) {
           <p class="assessment-note warn" data-testid="assessment-stale">The moves have changed since this analysis. Analyse again to bring it up to date.</p>
@@ -91,6 +104,11 @@ export class AssessmentCard {
   readonly currentId = input<number | null>(null);
   readonly analyse = output<number | undefined>();
   readonly goToPly = output<number>();
+  /** Copy one classified move (by ply) into the Game. */
+  readonly copy = output<number>();
+  readonly copyAll = output<void>();
+  /** The outcome of the last copy. */
+  readonly copyMessage = input('');
 
   protected readonly defaultSeconds = signal(2);
 
@@ -104,6 +122,9 @@ export class AssessmentCard {
   });
   protected readonly waiting = computed(() => this.queue().queued.includes(this.gameId()));
   protected readonly classified = computed(() => (this.assessment()?.moves ?? []).filter((m) => m.classification));
+  protected readonly hasMistakes = computed(() =>
+    this.classified().some((m) => m.nodeId !== null && (m.classification === 'mistake' || m.classification === 'blunder')),
+  );
   protected readonly currentPly = computed(() => {
     const id = this.currentId();
     if (id === null) return 0;

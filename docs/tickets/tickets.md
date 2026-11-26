@@ -21,7 +21,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | **Done** |
 | 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | **Done** |
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | **Done** |
-| 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
+| 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | **Done** |
 | 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
 | 16 | [Opening Tree from my Games](#16-opening-tree-from-my-games) | 04 | Open |
 | 17 | [Position Search](#17-position-search) | 16 | Open |
@@ -274,13 +274,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 05 (Annotate moves), 12 (Game Analysis of a single Game).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Per-move "copy to Game" adds the symbol and the best line as a Variation
-- [ ] "Copy all mistakes and blunders" does the same for every qualifying move
-- [ ] An existing Owner symbol or comment on that move is never replaced
-- [ ] Copying the same move twice doesn't create a duplicate Variation
-- [ ] API tests cover single copy, bulk copy and the no-overwrite rule
+- [x] Per-move "copy to Game" adds the symbol and the best line as a Variation
+- [x] "Copy all mistakes and blunders" does the same for every qualifying move
+- [x] An existing Owner symbol or comment on that move is never replaced
+- [x] Copying the same move twice doesn't create a duplicate Variation
+- [x] API tests cover single copy, bulk copy and the no-overwrite rule
 
 ---
 

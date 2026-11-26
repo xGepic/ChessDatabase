@@ -349,6 +349,14 @@ export class Api {
   cancelAnalysis(): Observable<AnalysisQueue> {
     return this.http.delete<AnalysisQueue>('/api/analysis/queue');
   }
+  /** Copies a classified move into the Game: its symbol (unless one is set) and the Engine line as a Variation. */
+  copyAssessedMove(gameId: number, ply: number): Observable<Game> {
+    return this.http.post<Game>(`/api/games/${gameId}/assessment/moves/${ply}/copy`, null);
+  }
+  /** Copies every mistake and blunder the same way. */
+  copyMistakesAndBlunders(gameId: number): Observable<{ copied: number; game: Game }> {
+    return this.http.post<{ copied: number; game: Game }>(`/api/games/${gameId}/assessment/copy`, null);
+  }
   /** 404 when the Game has no Engine Assessment. */
   getAssessment(gameId: number): Observable<EngineAssessment> {
     return this.http.get<EngineAssessment>(`/api/games/${gameId}/assessment`);
