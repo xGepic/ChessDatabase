@@ -19,7 +19,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | **Done** |
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | **Done** |
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | **Done** |
-| 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | Open |
+| 12 | [Game Analysis of a single Game](#12-game-analysis-of-a-single-game) | 11 | **Done** |
 | 13 | [Game Analysis queue, re-run and analysed indicator](#13-game-analysis-queue-re-run-and-analysed-indicator) | 12 | Open |
 | 14 | [Copy Engine Assessment into the Game](#14-copy-engine-assessment-into-the-game) | 05, 12 | Open |
 | 15 | [Daily backups](#15-daily-backups) | 01 | **Done** |
@@ -239,16 +239,16 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 11 (Interactive Analysis with Stockfish).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Game Analysis runs in the background with progress shown; the UI stays usable
-- [ ] The Engine Assessment is saved and shown again on reopening, without re-analysis
-- [ ] The evaluation graph covers the whole Game and is clickable
-- [ ] Classified moves show their marker and the Engine's best move
-- [ ] Accuracy is shown for both sides
-- [ ] The move tree and the Owner's Annotations are unchanged by analysis
-- [ ] Assessment tests with fixed evaluations verify winning-chance conversion (including mate scores), each classification threshold, a large swing inside an already-won position not being a blunder, and Accuracy values
-- [ ] An end-to-end API test with the fake UCI engine produces an exact, expected Engine Assessment
+- [x] Game Analysis runs in the background with progress shown; the UI stays usable
+- [x] The Engine Assessment is saved and shown again on reopening, without re-analysis
+- [x] The evaluation graph covers the whole Game and is clickable
+- [x] Classified moves show their marker and the Engine's best move
+- [x] Accuracy is shown for both sides
+- [x] The move tree and the Owner's Annotations are unchanged by analysis
+- [x] Assessment tests with fixed evaluations verify winning-chance conversion (including mate scores), each classification threshold, a large swing inside an already-won position not being a blunder, and Accuracy values
+- [x] An end-to-end API test with the fake UCI engine produces an exact, expected Engine Assessment
 
 ---
 

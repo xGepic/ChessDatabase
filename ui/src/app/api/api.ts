@@ -95,6 +95,8 @@ export interface Engine {
   hashMb: number;
   /** Lines shown in Interactive Analysis. */
   multiPv: number;
+  /** Game Analysis time per position. */
+  analysisSecondsPerMove: number;
   /** What the program called itself, e.g. "Stockfish 17.1". */
   reportedName: string | null;
 }
@@ -114,6 +116,59 @@ export interface AnalysisUpdate {
   requestId: number;
   /** Empty when the position has no legal moves. */
   lines: AnalysisLine[];
+}
+
+export type Classification = 'inaccuracy' | 'mistake' | 'blunder';
+
+/** A position's evaluation from White's side. mate 0: the side to move is checkmated. */
+export interface AssessedPosition {
+  ply: number;
+  whitePercent: number;
+  cp: number | null;
+  mate: number | null;
+}
+
+export interface AssessedMove {
+  ply: number;
+  /** The move in the Game; null if the main line has changed there since the analysis. */
+  nodeId: number | null;
+  san: string;
+  classification: Classification | null;
+  /** Winning chance given away, in points (Lichess scale). */
+  loss: number;
+  accuracy: number;
+  /** The Engine's move in the position before, and its line. */
+  bestSan: string | null;
+  bestLineSan: string[];
+  bestLineUci: string[];
+}
+
+/** Game Analysis output, kept apart from the Owner's Annotations. */
+export interface EngineAssessment {
+  gameId: number;
+  engineName: string;
+  threads: number;
+  hashMb: number;
+  secondsPerMove: number;
+  analysedAt: string;
+  /** The main line changed since the analysis. */
+  stale: boolean;
+  whiteAccuracy: number | null;
+  blackAccuracy: number | null;
+  positions: AssessedPosition[];
+  moves: AssessedMove[];
+}
+
+export interface AnalysisQueue {
+  running: { gameId: number; done: number; total: number } | null;
+  queued: number[];
+  batchDone: number;
+  batchTotal: number;
+}
+
+export interface AnalysisFinished {
+  gameId: number;
+  error: string | null;
 }
 
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
@@ -279,8 +334,25 @@ export class Api {
   getEngines(): Observable<Engine[]> {
     return this.http.get<Engine[]>('/api/engines');
   }
+  /** Queues Game Analysis of one Game; secondsPerMove overrides the time per position from Settings. */
+  analyseGame(gameId: number, secondsPerMove?: number): Observable<AnalysisQueue> {
+    return this.http.post<AnalysisQueue>(`/api/games/${gameId}/analysis`, { secondsPerMove: secondsPerMove ?? null });
+  }
+  queueAnalysis(gameIds: number[], secondsPerMove?: number): Observable<AnalysisQueue> {
+    return this.http.post<AnalysisQueue>('/api/analysis/queue', { gameIds, secondsPerMove: secondsPerMove ?? null });
+  }
+  analysisQueue(): Observable<AnalysisQueue> {
+    return this.http.get<AnalysisQueue>('/api/analysis/queue');
+  }
+  cancelAnalysis(): Observable<AnalysisQueue> {
+    return this.http.delete<AnalysisQueue>('/api/analysis/queue');
+  }
+  /** 404 when the Game has no Engine Assessment. */
+  getAssessment(gameId: number): Observable<EngineAssessment> {
+    return this.http.get<EngineAssessment>(`/api/games/${gameId}/assessment`);
+  }
   /** Saving a path starts the program once to check it is a UCI engine. */
-  saveEngine(engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv'>): Observable<Engine> {
+  saveEngine(engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv' | 'analysisSecondsPerMove'>): Observable<Engine> {
     const { id, ...body } = engine;
     return this.http.put<Engine>(`/api/engines/${id}`, body);
   }

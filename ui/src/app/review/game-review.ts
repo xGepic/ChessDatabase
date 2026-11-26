@@ -1,7 +1,11 @@
 import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { AnalysisLine, Api, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AnalysisLine, Api, Classification, EngineAssessment, Game, MoveNode, eloLabel, problemMessage, resultLabel } from '../api/api';
+import { AnalysisQueueService } from '../engine/analysis-queue';
+import { AssessmentCard } from '../engine/assessment-card';
 import { EnginePanel } from '../engine/engine-panel';
 import { EngineSession } from '../engine/engine-session';
 import { EvalBar } from '../engine/eval-bar';
@@ -13,7 +17,7 @@ import { Scoresheet, TreeAction } from './scoresheet';
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },
@@ -22,6 +26,7 @@ export class GameReview {
   private readonly api = inject(Api);
   private readonly router = inject(Router);
   protected readonly engine = inject(EngineSession);
+  protected readonly queue = inject(AnalysisQueueService);
 
   /** Route parameter. */
   readonly id = input.required<string>();
@@ -35,6 +40,19 @@ export class GameReview {
   protected readonly resultLabel = resultLabel;
 
   private readonly board = viewChild(Board);
+
+  /** The Game's Engine Assessment, if it has one. */
+  protected readonly assessment = signal<EngineAssessment | null>(null);
+  protected readonly analysisError = signal('');
+  /** Move Classifications by move, for the scoresheet. */
+  protected readonly marks = computed(
+    () =>
+      new Map(
+        (this.assessment()?.moves ?? [])
+          .filter((m) => m.nodeId !== null && m.classification)
+          .map((m) => [m.nodeId!, m.classification as Classification]),
+      ),
+  );
 
   protected readonly nodes = computed(() => new Map((this.game()?.nodes ?? []).map((n) => [n.id, n])));
   protected readonly current = computed<MoveNode | null>(() => {
@@ -70,16 +88,55 @@ export class GameReview {
       followTimer = setTimeout(() => this.engine.analyse(moves), 80);
     });
 
+    this.queue.watch();
+    this.queue.finished.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.gameId !== this.game()?.id) return;
+      this.analysisError.set(event.error ?? '');
+      if (!event.error) this.loadAssessment(event.gameId);
+    });
+
     effect(() => {
       const id = Number(this.id());
       this.api.getGame(id).subscribe({
         next: (game) => {
           this.game.set(game);
           this.currentId.set(this.lineEnd(null));
+          this.loadAssessment(game.id);
         },
         error: () => this.router.navigate(['/games']),
       });
     });
+  }
+
+  // ---------------------------------------------------------------- Game Analysis
+
+  private loadAssessment(gameId: number) {
+    this.api.getAssessment(gameId).subscribe({
+      next: (a) => this.assessment.set(a),
+      error: (e: HttpErrorResponse) => {
+        if (e.status === 404) this.assessment.set(null);
+      },
+    });
+  }
+
+  protected onAnalyse(secondsPerMove: number | undefined) {
+    const game = this.game();
+    if (!game) return;
+    this.analysisError.set('');
+    this.api.analyseGame(game.id, secondsPerMove).subscribe({
+      next: (status) => this.queue.set(status),
+      error: (e) => this.analysisError.set(problemMessage(e)),
+    });
+  }
+
+  /** From the evaluation graph or the list of classified moves. */
+  protected onGoToPly(ply: number) {
+    if (ply === 0) {
+      this.goTo(null);
+      return;
+    }
+    const nodeId = this.assessment()?.moves[ply - 1]?.nodeId;
+    if (nodeId !== null && nodeId !== undefined) this.goTo(nodeId);
   }
 
   // ---------------------------------------------------------------- navigation

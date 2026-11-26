@@ -173,6 +173,8 @@ a { color: var(--wood-active); }
 
 /* ---------- engine: evaluation bar and lines ---------- */
 .board-with-bar { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: stretch; }
+app-eval-bar { display: flex; }
+app-eval-bar .eval-bar { flex: 1; }
 .eval-bar {
   position: relative; border-radius: 3px; overflow: hidden;
   background: var(--ink); border: 1px solid var(--frame-dark);
@@ -215,6 +217,48 @@ a { color: var(--wood-active); }
 .engine-moves { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .engine-message { margin: 0; padding: 10px 12px; color: var(--ink-soft); }
 .engine-message.error { color: var(--blood); }
+
+/* ---------- Game Analysis: Engine Assessment ---------- */
+:root { --mark-inaccuracy: #c28a1e; --mark-mistake: #c4622d; --mark-blunder: #a3271b; }
+.move[data-mark] { box-shadow: inset 0 -3px 0 var(--mark); }
+.move[data-mark="inaccuracy"], .classified-move[data-mark="inaccuracy"], .graph-dot.inaccuracy { --mark: var(--mark-inaccuracy); }
+.move[data-mark="mistake"], .classified-move[data-mark="mistake"], .graph-dot.mistake { --mark: var(--mark-mistake); }
+.move[data-mark="blunder"], .classified-move[data-mark="blunder"], .graph-dot.blunder { --mark: var(--mark-blunder); }
+
+.assessment-card .card-head { padding-bottom: 8px; }
+.accuracy { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding: 4px 16px 10px; }
+.accuracy > div { display: flex; align-items: baseline; gap: 6px; }
+.accuracy strong { margin-left: auto; font-size: 18px; }
+.accuracy .owner { font-weight: 600; }
+.accuracy-label { grid-column: 1 / -1; color: var(--ink-soft); font-size: 12px; }
+.eval-graph { display: block; width: calc(100% - 32px); height: 96px; margin: 0 16px; cursor: pointer; border-radius: 3px; border: 1px solid var(--rule); }
+.graph-black { fill: #4a3526; }
+.graph-white { fill: #f7efe0; }
+.graph-mid { stroke: var(--rosewood); stroke-width: 1; stroke-dasharray: 3 3; }
+.graph-current { stroke: var(--felt); stroke-width: 2; }
+.graph-dot { stroke: var(--mark); stroke-width: 8; stroke-linecap: round; }
+.classified { list-style: none; margin: 8px 0 0; padding: 0; }
+.classified-move {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: transparent; border: none; border-radius: 0; padding: 5px 16px; color: var(--ink);
+}
+.classified-move:hover:not(:disabled) { background: var(--cream-deep) !important; }
+.classified-move.current { background: var(--boxwood); }
+.mark-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mark); flex: none; }
+.classified-kind { color: var(--ink-soft); }
+.classified-best { margin-left: auto; color: var(--ink-soft); }
+.classified-best .mono { color: var(--ink); }
+.best-line { margin: 6px 16px 0; padding: 8px 10px; background: var(--cream-deep); border-radius: var(--radius); font-size: 13px; }
+.assessment-note { margin: 0; padding: 4px 16px 8px; color: var(--ink-soft); }
+.assessment-note.error { color: var(--blood); }
+.assessment-note.warn { color: #8a5a00; padding-top: 8px; }
+.assessment-meta { margin: 8px 16px 0; color: var(--ink-soft); font-size: 12px; }
+.analysis-progress { display: grid; gap: 4px; padding: 0 16px 10px; }
+.analysis-progress progress { width: 100%; accent-color: var(--felt); }
+.analysis-start { display: flex; align-items: center; gap: 8px; padding: 12px 16px 14px; flex-wrap: wrap; }
+.analysis-start label { color: var(--ink-soft); }
+.analysis-start .elo { width: 72px; }
+.analysis-start button { margin-left: auto; }
 
 .board-frame {
   position: relative; padding: 18px; border-radius: 6px;

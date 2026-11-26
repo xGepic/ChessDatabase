@@ -56,7 +56,8 @@ public sealed class FakeEngine : IDisposable
     public void Dispose() => CollectionFactory.DeleteDirectory(_directory);
 }
 
-public sealed record EngineDto(int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, string? ReportedName);
+public sealed record EngineDto(
+    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, double AnalysisSecondsPerMove, string? ReportedName);
 
 public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, List<string> San, List<string> Uci);
 

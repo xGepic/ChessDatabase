@@ -14,6 +14,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<SettingsRecord> Settings => Set<SettingsRecord>();
     public DbSet<ImportReviewItemRecord> ImportReviewItems => Set<ImportReviewItemRecord>();
     public DbSet<EngineRecord> Engines => Set<EngineRecord>();
+    public DbSet<EngineAssessmentRecord> EngineAssessments => Set<EngineAssessmentRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -46,6 +47,18 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             engine.Property(e => e.Arguments).HasMaxLength(2000);
             engine.Property(e => e.ReportedName).HasMaxLength(200);
             engine.HasData(EngineRecord.Stockfish());
+        });
+
+        model.Entity<EngineAssessmentRecord>(assessment =>
+        {
+            assessment.HasOne<GameRecord>().WithOne().HasForeignKey<EngineAssessmentRecord>(a => a.GameId).OnDelete(DeleteBehavior.Cascade);
+            assessment.Property(a => a.EngineName).HasMaxLength(200);
+            var json = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+            assessment.Property(a => a.Positions).HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, json),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<StoredEvaluation>>(v, json) ?? new List<StoredEvaluation>(),
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<StoredEvaluation>>(
+                    (a, b) => a!.SequenceEqual(b!), v => v.Count, v => v.ToList()));
         });
 
         model.Entity<MoveNodeRecord>(node =>
@@ -196,13 +209,43 @@ public sealed class EngineRecord
     /// <summary>Lines shown in Interactive Analysis. Game Analysis always uses one.</summary>
     public int MultiPv { get; set; }
 
+    /// <summary>Game Analysis time per position, in milliseconds.</summary>
+    public int AnalysisMsPerMove { get; set; }
+
     /// <summary>What the program called itself when the path was saved ("id name"), e.g. "Stockfish 17.1".</summary>
     public string? ReportedName { get; set; }
 
     /// <summary>The shipped definition, with the Interactive Analysis defaults.</summary>
     public static EngineRecord Stockfish() =>
-        new() { Id = StockfishId, Name = "Stockfish", Path = "", Threads = 16, HashMb = 8192, MultiPv = 3 };
+        new() { Id = StockfishId, Name = "Stockfish", Path = "", Threads = 16, HashMb = 8192, MultiPv = 3, AnalysisMsPerMove = 2000 };
 }
+
+/// <summary>
+/// The Engine's verdict on a Game's main line (ADR 0003: kept apart from the Owner's Annotations).
+/// Only the raw evaluations are stored; classifications and Accuracy are worked out from them when
+/// read. Re-running Game Analysis replaces it.
+/// </summary>
+public sealed class EngineAssessmentRecord
+{
+    public int Id { get; set; }
+    public int GameId { get; set; }
+
+    /// <summary>What the Engine called itself, version included, e.g. "Stockfish 17.1".</summary>
+    public string EngineName { get; set; } = "";
+    public int Threads { get; set; }
+    public int HashMb { get; set; }
+    public int MsPerMove { get; set; }
+    public DateTime AnalysedAt { get; set; }
+
+    /// <summary>The main line that was analysed, in UCI (the Game may have changed since).</summary>
+    public List<string> MainLine { get; set; } = [];
+
+    /// <summary>One per position of that line, the starting position first.</summary>
+    public List<StoredEvaluation> Positions { get; set; } = [];
+}
+
+/// <summary>The Engine's score (from the side to move, as UCI reports it) and best line (UCI).</summary>
+public sealed record StoredEvaluation(int? Cp, int? Mate, List<string> Line);
 
 /// <summary>
 /// A PGN entry held back from the Collection until the Owner resolves it: no side matched the Owner,

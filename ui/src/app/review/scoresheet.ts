@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
-import { Game, MoveNode, resultLabel } from '../api/api';
+import { Classification, Game, MoveNode, resultLabel } from '../api/api';
 import { annotatedSan, buildSheet, isOnMainLine } from './notation';
 
 export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
@@ -63,6 +63,7 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
 
     <ng-template #moveButton let-node let-label="label">
       <button type="button" class="move" [class.current]="node.id === currentId()" [attr.data-node]="node.id"
+              [attr.data-mark]="marks().get(node.id) ?? null" [attr.title]="markTitle(node.id)"
               data-testid="move" (click)="select.emit(node.id)" (contextmenu)="openMenu($event, node)">{{ label }}</button>
     </ng-template>
 
@@ -85,6 +86,8 @@ export class Scoresheet {
 
   readonly game = input.required<Game>();
   readonly currentId = input<number | null>(null);
+  /** Move Classifications from the Engine Assessment, by move. Shown as a coloured mark, never as a symbol. */
+  readonly marks = input<ReadonlyMap<number, Classification>>(new Map());
   readonly select = output<number | null>();
   readonly action = output<{ action: TreeAction; node: MoveNode }>();
 
@@ -102,6 +105,11 @@ export class Scoresheet {
         this.host.nativeElement.querySelector(`[data-node="${id}"]`)?.scrollIntoView({ block: 'nearest' }),
       );
     });
+  }
+
+  protected markTitle(id: number): string | null {
+    const mark = this.marks().get(id);
+    return mark ? `Engine: ${mark}` : null;
   }
 
   protected openMenu(event: MouseEvent, node: MoveNode) {

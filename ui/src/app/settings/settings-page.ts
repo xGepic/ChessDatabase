@@ -29,13 +29,20 @@ export class SettingsPage {
   }
 
   /** Saving checks the program by starting it once, so it happens on the button, not on every key. */
-  protected saveEngine(path: string, threads: string, hashMb: string, multiPv: string) {
+  protected saveEngine(path: string, threads: string, hashMb: string, multiPv: string, seconds: string) {
     const engine = this.engine();
     if (!engine) return;
     this.engineSaving.set(true);
     this.engineMessage.set('');
     this.api
-      .saveEngine({ id: engine.id, path, threads: Number(threads), hashMb: Number(hashMb), multiPv: Number(multiPv) })
+      .saveEngine({
+        id: engine.id,
+        path,
+        threads: Number(threads),
+        hashMb: Number(hashMb),
+        multiPv: Number(multiPv),
+        analysisSecondsPerMove: Number(seconds),
+      })
       .subscribe({
         next: (saved) => {
           this.engine.set(saved);

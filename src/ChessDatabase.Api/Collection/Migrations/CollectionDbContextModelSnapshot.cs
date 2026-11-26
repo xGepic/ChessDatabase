@@ -15,17 +15,62 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126153839_Engines";
+    public override string LastMigrationId => "20261126154910_GameAnalysis";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0");
 
+        modelBuilder.Entity("ChessDatabase.Api.Collection.EngineAssessmentRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<DateTime>("AnalysedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("EngineName")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("GameId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("HashMb")
+                    .HasColumnType("INTEGER");
+
+                b.PrimitiveCollection<string>("MainLine")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("MsPerMove")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Positions")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("Threads")
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("Id");
+
+                b.HasIndex("GameId")
+                    .IsUnique();
+
+                b.ToTable("EngineAssessments");
+            });
+
         modelBuilder.Entity("ChessDatabase.Api.Collection.EngineRecord", b =>
             {
                 b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("AnalysisMsPerMove")
                     .HasColumnType("INTEGER");
 
                 b.Property<string>("Arguments")
@@ -63,6 +108,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     new
                     {
                         Id = 1,
+                        AnalysisMsPerMove = 2000,
                         HashMb = 8192,
                         MultiPv = 3,
                         Name = "Stockfish",
@@ -298,6 +344,15 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.HasIndex("TagsId");
 
                 b.ToTable("GameRecordTagRecord");
+            });
+
+        modelBuilder.Entity("ChessDatabase.Api.Collection.EngineAssessmentRecord", b =>
+            {
+                b.HasOne("ChessDatabase.Api.Collection.GameRecord", null)
+                    .WithOne()
+                    .HasForeignKey("ChessDatabase.Api.Collection.EngineAssessmentRecord", "GameId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
             });
 
         modelBuilder.Entity("ChessDatabase.Api.Collection.GameRecord", b =>

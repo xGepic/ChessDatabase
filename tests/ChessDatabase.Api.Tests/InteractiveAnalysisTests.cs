@@ -18,7 +18,7 @@ public class EngineSettingsTests
 
         var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDto>>("/api/engines"))!);
 
-        Assert.Equal(new EngineDto(1, "Stockfish", "", 16, 8192, 3, null), engine);
+        Assert.Equal(new EngineDto(1, "Stockfish", "", 16, 8192, 3, 2.0, null), engine);
     }
 
     [Fact]

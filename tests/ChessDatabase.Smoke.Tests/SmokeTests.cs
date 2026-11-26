@@ -352,4 +352,53 @@ owhere\stockfish.exe");
         await Page.GetByTestId("engine-save").ClickAsync();
         await Expect(Page.GetByTestId("engine-status")).ToHaveTextAsync("Saved. Found Fake Engine 1.0.");
     }
+
+    [Fact]
+    public async Task Run_game_analysis_and_jump_to_the_blunder()
+    {
+        string[] moves = ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"];
+        var gameId = await _app.CreateGameAsync(moves);
+        await _app.UseFakeEngineAsync(new()
+        {
+            [Key()] = (["depth 20 multipv 1 score cp 30 pv e2e4 e7e5"], "e2e4"),
+            [Key(moves[..1])] = (["depth 20 multipv 1 score cp -30 pv e7e5 g1f3"], "e7e5"),
+            [Key(moves[..2])] = (["depth 20 multipv 1 score cp 30 pv g1f3 b8c6"], "g1f3"),
+            [Key(moves[..3])] = (["depth 20 multipv 1 score cp 40 pv b8c6 f1c4"], "b8c6"),
+            [Key(moves[..4])] = (["depth 20 multipv 1 score cp -40 pv f1c4 g7g6"], "f1c4"),
+            [Key(moves[..5])] = (["depth 20 multipv 1 score cp 30 pv g7g6 h5f3 g8f6"], "g7g6"),
+            [Key(moves[..6])] = (["depth 20 multipv 1 score mate 1 pv h5f7"], "h5f7"),
+        });
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("analyse-game").ClickAsync();
+
+        await Expect(Page.GetByTestId("accuracy-white")).ToHaveTextAsync("88.0%");
+        await Expect(Page.GetByTestId("accuracy-black")).ToHaveTextAsync("20.0%");
+        await Expect(Page.GetByTestId("classified-move")).ToHaveCountAsync(2);
+        await Expect(Page.GetByTestId("classified-move").Nth(1)).ToContainTextAsync("3...Nf6");
+        await Expect(Page.GetByTestId("classified-move").Nth(1)).ToContainTextAsync("blunder");
+        await Expect(Page.GetByTestId("best-move").Nth(1)).ToHaveTextAsync("3...g6");
+        await Expect(Page.Locator("[data-testid=move][data-mark=blunder]")).ToHaveTextAsync("Nf6");
+
+        await Page.GetByTestId("classified-move").Nth(1).ClickAsync();
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("Nf6");
+        await Expect(Page.GetByTestId("best-line")).ToContainTextAsync("3...g6 4.Qf3 Nf6");
+
+        // Clicking the start of the graph goes back to the starting position.
+        var graph = await Page.GetByTestId("eval-graph").BoundingBoxAsync();
+        await Page.Mouse.ClickAsync(graph!.X + 2, graph.Y + graph.Height / 2);
+        await Expect(Page.Locator("button.move.current")).ToHaveCountAsync(0);
+
+        // Reopening shows the saved Engine Assessment without analysing again.
+        await Page.ReloadAsync();
+        await Expect(Page.GetByTestId("accuracy-white")).ToHaveTextAsync("88.0%");
+        await Expect(Page.GetByTestId("analyse-game")).ToHaveTextAsync("Analyse again");
+    }
+
+    private static string Key(params string[] san)
+    {
+        var position = ChessDatabase.Rules.Position.Initial;
+        foreach (var move in san) position = position.Play(position.ParseSan(move));
+        return string.Join(' ', position.ToFen().Split(' ').Take(4));
+    }
 }
