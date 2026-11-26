@@ -18,15 +18,14 @@ public static class PgnWriter
     public static string Write(GameRecord game, string ownerName)
     {
         var sb = new StringBuilder();
-        var opponent = game.Opponent.Name;
-        var ownerIsWhite = game.OwnerColour == OwnerColour.White;
+        var (white, black) = PlayerSides.ToWhiteAndBlack(game.OwnerColour, ownerName, game.Opponent.Name);
 
         Tag(sb, "Event", game.Event?.Name ?? "?");
         Tag(sb, "Site", game.Site ?? "?");
-        Tag(sb, "Date", PgnValues.ToPgnDate(game.Date));
+        Tag(sb, "Date", GameDates.ToPgn(game.Date));
         Tag(sb, "Round", game.Round ?? "?");
-        Tag(sb, "White", ownerIsWhite ? ownerName : opponent);
-        Tag(sb, "Black", ownerIsWhite ? opponent : ownerName);
+        Tag(sb, "White", white);
+        Tag(sb, "Black", black);
         Tag(sb, "Result", game.Result.ToPgn());
         if (game.WhiteElo is { } whiteElo) Tag(sb, "WhiteElo", whiteElo.ToString());
         if (game.BlackElo is { } blackElo) Tag(sb, "BlackElo", blackElo.ToString());
@@ -112,8 +111,8 @@ public static class PgnWriter
         }
     }
 
-    /// <summary>A brace comment; a "}" inside would end it early, so it becomes ")".</summary>
-    private static string Comment(string text) => "{" + text.Replace('}', ')').Replace("\r\n", " ").Replace('\n', ' ') + "}";
+    /// <summary>A brace comment. Comments never contain "}": entering one is refused, and PGN comments cannot hold one.</summary>
+    private static string Comment(string text) => "{" + PgnValues.CommentToPgn(text) + "}";
 
     /// <summary>Joins tokens with spaces, breaking lines before 80 characters; "(" and ")" hug their moves.</summary>
     private static void AppendWrapped(StringBuilder sb, List<string> tokens)

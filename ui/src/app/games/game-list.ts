@@ -5,7 +5,7 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { Api, GameSummary, eloLabel, problemMessage, resultLabel } from '../api/api';
 
 /** The filter fields, as they appear in the URL and in the API's query parameters. */
-const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'colour', 'ecoFrom', 'ecoTo', 'tag', 'timeControl'];
+const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'ecoFrom', 'ecoTo', 'tag', 'timeControl'];
 
 interface Column {
   key: string;
@@ -38,7 +38,7 @@ export class GameList {
     { key: 'blackElo', label: 'Elo', numeric: true },
     { key: 'result', label: 'Result' },
     { key: 'opponent', label: 'Opponent' },
-    { key: 'colour', label: 'Colour' },
+    { key: 'ownerColour', label: 'Colour' },
     { key: 'event', label: 'Event' },
     { key: 'eco', label: 'ECO' },
   ];

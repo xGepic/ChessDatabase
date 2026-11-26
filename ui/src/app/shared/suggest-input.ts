@@ -1,5 +1,6 @@
 import { Component, effect, input, output, signal } from '@angular/core';
 import { Observable } from 'rxjs';
+import { sameName } from './names';
 
 /**
  * A text field that suggests values used before (Events, Sites, Tags). The value is committed
@@ -64,7 +65,7 @@ export class SuggestInput {
       const term = value.trim();
       if (!term) return this.suggestions.set([]);
       this.search()(term).subscribe((list) =>
-        this.suggestions.set(list.filter((s) => s.toLocaleLowerCase() !== term.toLocaleLowerCase()).slice(0, 8)),
+        this.suggestions.set(list.filter((s) => !sameName(s, term)).slice(0, 8)),
       );
     }, 150);
   }

@@ -39,10 +39,10 @@
       </select>
     </label>
     <label>I played
-      <select data-testid="filter-colour" (change)="setFilter('colour', $any($event.target).value)">
-        <option value="" [selected]="!value('colour')">Either</option>
-        <option value="white" [selected]="value('colour') === 'white'">White</option>
-        <option value="black" [selected]="value('colour') === 'black'">Black</option>
+      <select data-testid="filter-colour" (change)="setFilter('ownerColour', $any($event.target).value)">
+        <option value="" [selected]="!value('ownerColour')">Either</option>
+        <option value="white" [selected]="value('ownerColour') === 'white'">White</option>
+        <option value="black" [selected]="value('ownerColour') === 'black'">Black</option>
       </select>
     </label>
     <label>ECO

@@ -4,6 +4,7 @@ import { Api, Game, GameDetails, GameResult, OwnerColour, Player, RESULTS, probl
 import { PlayerPicker } from '../shared/player-picker';
 import { SuggestInput } from '../shared/suggest-input';
 import { parseElo } from '../shared/elo';
+import { sameName } from '../shared/names';
 
 const NOTES_DEBOUNCE_MS = 500;
 
@@ -176,7 +177,7 @@ export class GameDetailsCard implements OnDestroy {
 
   protected addTag(tag: string) {
     const tags = this.game().tags;
-    if (!tags.some((t) => t.toLocaleLowerCase() === tag.toLocaleLowerCase())) this.save({ tags: [...tags, tag] });
+    if (!tags.some((t) => sameName(t, tag))) this.save({ tags: [...tags, tag] });
   }
 
   protected removeTag(tag: string) {

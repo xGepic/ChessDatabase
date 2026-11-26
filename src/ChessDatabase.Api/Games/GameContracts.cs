@@ -17,12 +17,9 @@ public record GameSummaryDto(
     int? WhiteElo,
     int? BlackElo,
     string Result,
-    NamedDto? Event,
+    EventDto? Event,
     string? Eco,
     string? OpeningName);
-
-/// <summary>An Event or a Tag.</summary>
-public sealed record NamedDto(int Id, string Name);
 
 /// <summary>
 /// A Game with its move tree as a flat node list. <see cref="FirstMoves"/> are the children of the

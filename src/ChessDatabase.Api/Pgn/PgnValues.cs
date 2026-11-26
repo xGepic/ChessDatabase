@@ -3,46 +3,19 @@ using ChessDatabase.Api.Games;
 
 namespace ChessDatabase.Api.Pgn;
 
-/// <summary>Conversions between PGN tag values and the Collection's values.</summary>
+/// <summary>Conversions between PGN tag values and the Collection's values. Dates: see <see cref="GameDates"/>.</summary>
 public static class PgnValues
 {
-    /// <summary>"2024.03.15" → "2024-03-15", "2024.03.??" → "2024-03", "????.??.??" → null.</summary>
-    public static string? ToGameDate(string? pgnDate)
+    /// <summary>A tag's text, or null when it is empty or PGN's "unknown" ("?") or "not applicable" ("-").</summary>
+    public static string? OptionalTag(string? value)
     {
-        if (string.IsNullOrWhiteSpace(pgnDate)) return null;
-        var parts = pgnDate.Trim().Split('.');
-        var known = new List<string>();
-        foreach (var part in parts)
-        {
-            if (part.Length == 0 || part.All(c => c == '?')) break;
-            if (!part.All(char.IsAsciiDigit)) return null;
-            known.Add(part);
-        }
-        if (known.Count == 0 || known[0].Length != 4) return null;
-        var date = string.Join('-', known.Take(3).Select((p, i) => i == 0 ? p : p.PadLeft(2, '0')));
-        return GameEndpoints.IsValidDate(date) ? date : null;
-    }
-
-    /// <summary>"2024-03" → "2024.03.??", null → "????.??.??".</summary>
-    public static string ToPgnDate(string? gameDate)
-    {
-        var parts = (gameDate ?? "").Split('-', StringSplitOptions.RemoveEmptyEntries);
-        return string.Join('.',
-            parts.ElementAtOrDefault(0) ?? "????",
-            parts.ElementAtOrDefault(1) ?? "??",
-            parts.ElementAtOrDefault(2) ?? "??");
-    }
-
-    /// <summary>PGN uses "?" for unknown and "-" for not applicable; both mean "not set" here.</summary>
-    public static string? Text(string? value)
-    {
-        var text = GameEndpoints.Text(value);
+        var text = GameValues.OptionalText(value);
         return text is "?" or "-" ? null : text;
     }
 
     /// <summary>A missing, zero or unreadable Elo is unrated (null).</summary>
     public static int? Elo(string? value) =>
-        int.TryParse(value, out var elo) && elo is > 0 and <= GameEndpoints.MaxElo ? elo : null;
+        int.TryParse(value, out var elo) && elo is > 0 and <= GameValues.MaxElo ? elo : null;
 
     /// <summary>Escapes a tag value: backslash and quote as PGN does, and line breaks as backslash-n.</summary>
     public static string EscapeTag(string value)
@@ -78,5 +51,19 @@ public static class PgnValues
             }
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// A comment as PGN writes it. Programs wrap long comments over several lines, so a single line
+    /// break is just a space; a blank line is a real line break. Line breaks are written that way too.
+    /// </summary>
+    public static string CommentToPgn(string text) => text.Replace("\r\n", "\n").Replace("\n", "\n\n");
+
+    /// <summary>Reverses <see cref="CommentToPgn"/>: blank lines become line breaks, other whitespace one space.</summary>
+    public static string CommentFromPgn(string text)
+    {
+        var paragraphs = System.Text.RegularExpressions.Regex.Split(text.Replace("\r\n", "\n"), @"\n[ \t]*\n");
+        var lines = paragraphs.Select(p => string.Join(' ', p.Split((char[])[' ', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries)));
+        return string.Join('\n', lines).Trim();
     }
 }

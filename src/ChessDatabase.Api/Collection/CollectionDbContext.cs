@@ -162,8 +162,9 @@ public sealed class SettingsRecord
 }
 
 /// <summary>
-/// An imported Game held back from the Collection until the Owner resolves it: no side matched the
-/// Owner, or the result was missing. The Game is kept as its PGN text.
+/// A PGN entry held back from the Collection until the Owner resolves it: no side matched the Owner,
+/// the result was missing, or the Opponent only resembles an existing Player. Kept as its PGN text;
+/// it becomes a Game when resolved.
 /// </summary>
 public sealed class ImportReviewItemRecord
 {

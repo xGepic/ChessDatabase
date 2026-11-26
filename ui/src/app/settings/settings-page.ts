@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Api, problemMessage } from '../api/api';
+import { sameName } from '../shared/names';
 
 @Component({
   selector: 'app-settings-page',
@@ -29,7 +30,7 @@ export class SettingsPage {
   protected addAlias(input: HTMLInputElement) {
     const alias = input.value.trim();
     input.value = '';
-    if (!alias || this.aliases().some((a) => a.toLocaleLowerCase() === alias.toLocaleLowerCase())) return;
+    if (!alias || this.aliases().some((a) => sameName(a, alias))) return;
     this.aliases.update((list) => [...list, alias]);
     this.save();
   }

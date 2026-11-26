@@ -42,7 +42,7 @@ public static class MoveTreeEndpoints
                 await MainLine.RefreshAsync(db, openings, id);
             }
 
-            return Results.Ok(new AddMoveResponse(node.Id, (await GameEndpoints.LoadGameDtoAsync(db, id))!));
+            return Results.Ok(new AddMoveResponse(node.Id, (await GameQueries.LoadGameDtoAsync(db, id))!));
         });
 
         games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
@@ -51,7 +51,7 @@ public static class MoveTreeEndpoints
             tree.PromoteToMainLine(nodeId);
             await db.SaveChangesAsync();
             await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
 
         games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
@@ -61,7 +61,7 @@ public static class MoveTreeEndpoints
                 return Invalid("nodeId", "That move is on the main line, not in a Variation.");
             await DeleteSubtreeAsync(db, tree, start);
             await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
 
         // Delete from here: the move and everything after it. If it was the main continuation, the
@@ -71,7 +71,7 @@ public static class MoveTreeEndpoints
             if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
             await DeleteSubtreeAsync(db, tree, nodeId);
             await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
     }
 

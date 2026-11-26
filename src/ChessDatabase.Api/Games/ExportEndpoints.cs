@@ -14,9 +14,9 @@ public static class ExportEndpoints
     {
         games.MapGet("/{id:int}/pgn", async (int id, CollectionDbContext db) =>
         {
-            var game = await GamesForExport(db).SingleOrDefaultAsync(g => g.Id == id);
+            var game = await db.Games.WithDetails(withMoves: true).SingleOrDefaultAsync(g => g.Id == id);
             if (game is null) return Results.NotFound();
-            var pgn = PgnWriter.Write(game, await GameEndpoints.OwnerNameAsync(db));
+            var pgn = PgnWriter.Write(game, await GameQueries.OwnerNameAsync(db));
             return File(pgn, $"{FileNamePart(game.Date ?? "")} {FileNamePart(game.Opponent.Name)}.pgn".Trim());
         });
 
@@ -26,15 +26,10 @@ public static class ExportEndpoints
             var errors = query.Validate();
             if (errors.Count > 0) return Results.ValidationProblem(errors);
             var rows = await query.RunAsync(db, withMoves: true);
-            var pgn = PgnWriter.WriteMany(rows.Select(r => r.Game), await GameEndpoints.OwnerNameAsync(db));
+            var pgn = PgnWriter.WriteMany(rows.Select(r => r.Game), await GameQueries.OwnerNameAsync(db));
             return File(pgn, $"Chess Database {DateTime.Now:yyyy-MM-dd}.pgn");
         });
     }
-
-    private static IQueryable<GameRecord> GamesForExport(CollectionDbContext db) =>
-        db.Games.AsNoTracking()
-            .Include(g => g.Opponent).Include(g => g.Event).Include(g => g.Tags).Include(g => g.MoveNodes)
-            .AsSplitQuery();
 
     private static IResult File(string pgn, string fileName) =>
         Results.File(Encoding.UTF8.GetBytes(pgn), PgnContentType, fileName);

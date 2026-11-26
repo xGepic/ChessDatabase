@@ -15,8 +15,11 @@ public sealed class PgnMove(string san)
     public List<List<PgnMove>> Variations { get; } = [];
 }
 
-/// <summary>One Game from a PGN file: its tags and its moves (not yet checked against Chess Rules).</summary>
-public sealed class PgnGame
+/// <summary>
+/// One entry of a PGN file: its tags and its moves, not yet checked against Chess Rules. It becomes
+/// a Game only once it is complete (both names, a result) and assigned to the Owner.
+/// </summary>
+public sealed class PgnEntry
 {
     public Dictionary<string, string> Tags { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<PgnMove> Moves { get; } = [];
@@ -31,7 +34,8 @@ public sealed class PgnGame
 }
 
 /// <summary>A Game that could be read, or the reason it could not.</summary>
-public sealed record PgnReadResult(int Index, PgnGame? Game, string? Error, string Source);
+/// <summary>An entry that could be read, or the reason it could not.</summary>
+public sealed record PgnReadResult(int Index, PgnEntry? Entry, string? Error, string Source);
 
 /// <summary>
 /// Reads PGN text with any number of Games. Each Game is read on its own, so one malformed Game
@@ -104,9 +108,9 @@ public static partial class PgnReader
         return inComment;
     }
 
-    private static PgnGame ParseGame(string chunk)
+    private static PgnEntry ParseGame(string chunk)
     {
-        var game = new PgnGame { Source = chunk.Trim() };
+        var game = new PgnEntry { Source = chunk.Trim() };
         var movetext = new StringBuilder();
         var inTags = true;
         foreach (var line in chunk.Split('\n'))
@@ -133,7 +137,7 @@ public static partial class PgnReader
     private static partial Regex TagPattern();
 
     /// <summary>Reads move text: moves, numbers, comments, NAGs, Variations and the result.</summary>
-    private sealed class MovetextParser(string text, PgnGame game)
+    private sealed class MovetextParser(string text, PgnEntry game)
     {
         private int _pos;
 
@@ -243,7 +247,7 @@ public static partial class PgnReader
             if (end < 0) throw new FormatException("A comment is missing its closing '}'.");
             var comment = text[(_pos + 1)..end];
             _pos = end + 1;
-            return WhitespacePattern().Replace(comment, " ").Trim();
+            return PgnValues.CommentFromPgn(comment);
         }
 
         private string ReadWhile(Func<char, bool> predicate)
@@ -270,7 +274,4 @@ public static partial class PgnReader
 
     [GeneratedRegex(@"[!?]+$")]
     private static partial Regex SuffixPattern();
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex WhitespacePattern();
 }

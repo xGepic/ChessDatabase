@@ -48,7 +48,7 @@ public class GameListFilterTests
         var client = await SeededAsync(factory);
         var league = (await client.GetFromJsonAsync<List<NamedDto>>("/api/events?search=Club League"))!.Single();
 
-        var games = await OpponentsAsync(client, $"result=loss&colour=black&eventId={league.Id}&from=2025&to=2025");
+        var games = await OpponentsAsync(client, $"result=loss&ownerColour=black&eventId={league.Id}&from=2025&to=2025");
 
         Assert.Equal(["Berger, Anna 2025-03-12"], games);
     }
@@ -57,7 +57,7 @@ public class GameListFilterTests
     [InlineData("result=win", "Berger, Anna 2025")]
     [InlineData("result=draw", "Schuster, Paul 2025-07")]
     [InlineData("result=loss", "Berger, Anna 2025-03-12|Huber, Thomas 2025-02-10|Huber, Thomas 2024-11-05")]
-    [InlineData("colour=white", "Huber, Thomas 2025-02-10|Berger, Anna 2025")]
+    [InlineData("ownerColour=white", "Huber, Thomas 2025-02-10|Berger, Anna 2025")]
     [InlineData("from=2025-03&to=2025-07-15", "Schuster, Paul 2025-07|Berger, Anna 2025-03-12|Berger, Anna 2025")]
     [InlineData("from=2025-03", "Schuster, Paul 2025-07|Berger, Anna 2025-03-12|Berger, Anna 2025")]
     [InlineData("to=2024-12-31", "Huber, Thomas 2024-11-05")]
@@ -118,7 +118,7 @@ public class GameListFilterTests
     [InlineData("black")]
     [InlineData("blackElo")]
     [InlineData("result")]
-    [InlineData("colour")]
+    [InlineData("ownerColour")]
     public async Task The_remaining_columns_sort_too(string sort)
     {
         using var factory = new CollectionFactory();
@@ -133,7 +133,7 @@ public class GameListFilterTests
 
     [Theory]
     [InlineData("result=maybe")]
-    [InlineData("colour=green")]
+    [InlineData("ownerColour=green")]
     [InlineData("from=March")]
     [InlineData("sort=height")]
     [InlineData("direction=up")]
@@ -152,7 +152,7 @@ public class GameListFilterTests
     {
         using var factory = new CollectionFactory();
         var client = await SeededAsync(factory);
-        const string query = "colour=black&result=loss";
+        const string query = "ownerColour=black&result=loss";
 
         var shown = (await client.GetFromJsonAsync<List<GameSummaryDto>>($"/api/games?{query}"))!;
         var pgn = await client.GetStringAsync($"/api/games/pgn?{query}");

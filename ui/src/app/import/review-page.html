@@ -56,7 +56,11 @@
           <button type="button" class="primary" data-testid="review-resolve" [disabled]="!ready(item)" (click)="resolve(item)">
             Add to Collection</button>
           <button type="button" class="danger" data-testid="review-discard" (click)="discard(item)">Discard</button>
-          @if (errors()[item.id]; as e) { <span class="field-error">{{ e }}</span> }
+          @if (errors()[item.id]; as e) { <span class="field-error" data-testid="review-error">{{ e }}</span> }
+          @if (item.id in duplicates()) {
+            @if (duplicates()[item.id]; as existing) { <a [routerLink]="['/games', existing]">Open it</a> }
+            <button type="button" class="link-button" data-testid="review-add-anyway" (click)="resolve(item, true)">Add anyway</button>
+          }
         </footer>
       </article>
     }

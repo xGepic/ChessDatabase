@@ -206,8 +206,15 @@ export class Api {
   reviewList(): Observable<ReviewItem[]> {
     return this.http.get<ReviewItem[]>('/api/import/review');
   }
-  resolveReview(id: number, ownerColour: OwnerColour, result: GameResult, opponentPlayerId: number | null): Observable<Game> {
-    return this.http.post<Game>(`/api/import/review/${id}/resolve`, { ownerColour, result, opponentPlayerId });
+  /** Fails with 409 when the Collection already has this Game, unless allowDuplicate is set. */
+  resolveReview(
+    id: number,
+    ownerColour: OwnerColour,
+    result: GameResult,
+    opponentPlayerId: number | null,
+    allowDuplicate = false,
+  ): Observable<Game> {
+    return this.http.post<Game>(`/api/import/review/${id}/resolve`, { ownerColour, result, opponentPlayerId, allowDuplicate });
   }
   discardReview(id: number): Observable<void> {
     return this.http.delete<void>(`/api/import/review/${id}`);

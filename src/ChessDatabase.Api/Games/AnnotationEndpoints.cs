@@ -17,12 +17,14 @@ public static class AnnotationEndpoints
             var text = body.Text?.Trim();
             if (text?.Length > MaxCommentLength)
                 return Invalid("text", $"A comment can be at most {MaxCommentLength} characters long.");
+            if (text?.Contains('}') == true)
+                return Invalid("text", "A comment cannot contain \"}\": PGN has no way to write it.");
 
             var value = string.IsNullOrEmpty(text) ? null : text;
             if (body.Placement == CommentPlacement.Before) node.CommentBefore = value;
             else node.CommentAfter = value;
             await db.SaveChangesAsync();
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
 
         games.MapPut("/{id:int}/moves/{nodeId:int}/nags", async (int id, int nodeId, SetNagsRequest body, CollectionDbContext db) =>
@@ -33,7 +35,7 @@ public static class AnnotationEndpoints
 
             node.Nags = [.. nags.Distinct()];
             await db.SaveChangesAsync();
-            return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
+            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
     }
 

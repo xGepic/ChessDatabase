@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { Api, Player, problemMessage } from '../api/api';
+import { sameName } from './names';
 
 /**
  * Opponent autocomplete: suggests existing Players as you type and offers to create a new
@@ -67,7 +68,7 @@ export class PlayerPicker {
       label: p.name,
       player: p,
     }));
-    const exact = this.suggestions().some((p) => p.name.toLocaleLowerCase() === typed.toLocaleLowerCase());
+    const exact = this.suggestions().some((p) => sameName(p.name, typed));
     if (typed && !exact) list.push({ key: 'new', label: typed, player: null });
     return list;
   });

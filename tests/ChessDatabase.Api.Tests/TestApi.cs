@@ -45,9 +45,9 @@ public static class TestApi
         (await client.PutAsJsonAsync($"/api/games/{game.Id}", body)).EnsureSuccessStatusCode();
     }
 
-    public static async Task<ImportSummaryDto> ImportTextAsync(this HttpClient client, string pgn)
+    public static async Task<ImportSummaryDto> ImportTextAsync(this HttpClient client, string pgn, bool allowDuplicates = false)
     {
-        var response = await client.PostAsJsonAsync("/api/import/text", new { pgn });
+        var response = await client.PostAsJsonAsync("/api/import/text", new { pgn, allowDuplicates });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ImportSummaryDto>())!;
     }

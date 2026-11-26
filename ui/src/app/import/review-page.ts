@@ -1,8 +1,9 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, GameResult, OwnerColour, Player, RESULTS, ReviewItem, problemMessage } from '../api/api';
 
-/** What the Owner has chosen so far for one held-back Game. */
+/** What the Owner has chosen so far for one held-back import. */
 interface Draft {
   ownerColour: OwnerColour | null;
   result: GameResult | null;
@@ -11,7 +12,7 @@ interface Draft {
 }
 
 /**
- * The import review list: Games held back because no side matched the Owner, the result was
+ * The import review list: imported entries held back because no side matched the Owner, the result was
  * missing, or the Opponent only resembles an existing Player. Nothing is linked without a choice.
  */
 @Component({
@@ -26,6 +27,8 @@ export class ReviewPage {
   protected readonly items = signal<ReviewItem[] | null>(null);
   protected readonly drafts = signal<Record<number, Draft>>({});
   protected readonly errors = signal<Record<number, string>>({});
+  /** Items the Collection already has, with the existing Game, so the Owner can open it or add anyway. */
+  protected readonly duplicates = signal<Record<number, number | null>>({});
 
   constructor() {
     this.load();
@@ -66,13 +69,20 @@ export class ReviewPage {
     return !!d.ownerColour && !!d.result && (!this.suggestion(item) || d.sameAsSuggestion !== null);
   }
 
-  protected resolve(item: ReviewItem) {
+  protected resolve(item: ReviewItem, allowDuplicate = false) {
     const d = this.draft(item);
     if (!d.ownerColour || !d.result) return;
     const link = this.suggestion(item) && d.sameAsSuggestion ? this.suggestion(item)!.id : null;
-    this.api.resolveReview(item.id, d.ownerColour, d.result, link).subscribe({
+    this.api.resolveReview(item.id, d.ownerColour, d.result, link, allowDuplicate).subscribe({
       next: () => this.remove(item),
-      error: (e) => this.errors.update((x) => ({ ...x, [item.id]: problemMessage(e) })),
+      error: (e: HttpErrorResponse) => {
+        if (e.status === 409) {
+          this.duplicates.update((x) => ({ ...x, [item.id]: e.error?.existingGameId ?? null }));
+          this.errors.update((x) => ({ ...x, [item.id]: 'This Game is already in your Collection.' }));
+        } else {
+          this.errors.update((x) => ({ ...x, [item.id]: problemMessage(e) }));
+        }
+      },
     });
   }
 
