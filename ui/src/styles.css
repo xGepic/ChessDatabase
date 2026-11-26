@@ -276,3 +276,14 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .import-summary tbody tr { cursor: default; }
 .import-failed td:nth-child(4) { color: var(--blood); font-weight: 600; }
 .import-needsReview td:nth-child(4) { color: #8a5a00; font-weight: 600; }
+
+/* ---------- import review ---------- */
+.review-item { padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+.review-item-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.review-item-head .vs { color: var(--ink-soft); margin: 0 4px; }
+.review-reason { margin: 4px 0 8px; color: #8a5a00; }
+.review-form { padding: 4px 0; max-width: 640px; }
+.suggestion { margin: 0 0 6px; }
+.review-actions { display: flex; gap: 8px; align-items: center; }
+.link-button { border: none; background: none; padding: 0 4px; color: var(--wood-active); text-decoration: underline; }
+.link-button:hover { background: none !important; color: var(--ink); }

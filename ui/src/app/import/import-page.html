@@ -1,5 +1,9 @@
 <section class="card list-card">
-  <header class="card-head"><h1>Import PGN</h1></header>
+  <header class="card-head">
+    <h1>Import PGN</h1>
+    <span class="spacer"></span>
+    <a routerLink="/import/review" data-testid="review-link">Review list</a>
+  </header>
   <div class="import-body">
     <div class="import-file">
       <label class="button primary" for="pgn-file">Choose PGN file…</label>
@@ -24,7 +28,9 @@
       <p>
         <strong data-testid="count-imported">{{ s.imported }}</strong> imported ·
         <strong data-testid="count-review">{{ s.needsReview }}</strong> need review ·
+        <strong data-testid="count-duplicates">{{ s.duplicates }}</strong> duplicates ·
         <strong data-testid="count-failed">{{ s.failed }}</strong> failed
+        @if (s.needsReview > 0) { · <a routerLink="/import/review">Review them now</a> }
       </p>
       <table class="game-table">
         <thead><tr><th class="num">#</th><th>White</th><th>Black</th><th>Status</th><th>Details</th></tr></thead>
@@ -36,7 +42,11 @@
               <td>{{ g.black ?? '?' }}</td>
               <td>{{ statusLabels[g.status] }}</td>
               <td>
-                @if (g.gameId) {
+                @if (g.status === 'duplicate') {
+                  {{ g.reason }}
+                  @if (g.gameId) { <a [routerLink]="['/games', g.gameId]">Open existing</a> }
+                  <button type="button" class="link-button" data-testid="import-anyway" (click)="importAnyway(g)">Import anyway</button>
+                } @else if (g.gameId) {
                   <a [routerLink]="['/games', g.gameId]">Open</a>
                 } @else {
                   {{ g.reason }}

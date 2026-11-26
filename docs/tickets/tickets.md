@@ -15,7 +15,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | **Done** |
 | 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | **Done** |
 | 07 | [Import PGN](#07-import-pgn) | 05, 06 | **Done** |
-| 08 | [Import review list](#08-import-review-list) | 07 | Open |
+| 08 | [Import review list](#08-import-review-list) | 07 | **Done** |
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | Open |
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | Open |
 | 11 | [Interactive Analysis with Stockfish](#11-interactive-analysis-with-stockfish) | 04 | Open |
@@ -173,14 +173,14 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 07 (Import PGN).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Held-back Games appear in a review list; choosing the Owner's side and/or a result moves them into the Collection
-- [ ] Close Opponent name matches are suggested with the existing Player shown; confirm links to that Player, reject creates a new Player
-- [ ] No Player is ever linked to a non-identical name without the Owner's confirmation
-- [ ] Importing the same file twice flags every Game as a duplicate and adds nothing by default
-- [ ] The summary reports imported, needs review, duplicates and failed
-- [ ] API tests cover each resolution path and duplicate detection
+- [x] Held-back Games appear in a review list; choosing the Owner's side and/or a result moves them into the Collection
+- [x] Close Opponent name matches are suggested with the existing Player shown; confirm links to that Player, reject creates a new Player
+- [x] No Player is ever linked to a non-identical name without the Owner's confirmation
+- [x] Importing the same file twice flags every Game as a duplicate and adds nothing by default
+- [x] The summary reports imported, needs review, duplicates and failed
+- [x] API tests cover each resolution path and duplicate detection
 
 ---
 

@@ -1,0 +1,66 @@
+<section class="card list-card">
+  <header class="card-head">
+    <h1>Review imported Games</h1>
+    <span class="spacer"></span>
+    <a routerLink="/import">Back to import</a>
+  </header>
+
+  @if (items(); as list) {
+    @if (list.length === 0) {
+      <p class="empty" data-testid="review-empty">Nothing to review. Every imported Game is in your Collection.</p>
+    }
+    @for (item of list; track item.id) {
+      <article class="review-item" data-testid="review-item">
+        <header class="review-item-head">
+          <span class="colour-dot"></span><strong>{{ item.white ?? '?' }}</strong>
+          <span class="vs">vs</span>
+          <span class="colour-dot black"></span><strong>{{ item.black ?? '?' }}</strong>
+          @if (item.date) { <span class="hint">{{ item.date }}</span> }
+        </header>
+        <p class="review-reason">{{ item.reason }}</p>
+
+        <div class="form-grid compact review-form">
+          <span class="label">I played</span>
+          <div class="segmented" role="radiogroup" aria-label="Your side">
+            <button type="button" role="radio" data-testid="review-white" [attr.aria-checked]="draft(item).ownerColour === 'white'"
+                    [class.on]="draft(item).ownerColour === 'white'" (click)="update(item, { ownerColour: 'white', sameAsSuggestion: null })">
+              White ({{ item.white ?? '?' }})</button>
+            <button type="button" role="radio" data-testid="review-black" [attr.aria-checked]="draft(item).ownerColour === 'black'"
+                    [class.on]="draft(item).ownerColour === 'black'" (click)="update(item, { ownerColour: 'black', sameAsSuggestion: null })">
+              Black ({{ item.black ?? '?' }})</button>
+          </div>
+
+          <span class="label">Result</span>
+          <div class="segmented" role="radiogroup" aria-label="Result">
+            @for (r of results; track r.value) {
+              <button type="button" role="radio" [attr.data-testid]="'review-result-' + r.label" [attr.aria-checked]="draft(item).result === r.value"
+                      [class.on]="draft(item).result === r.value" (click)="update(item, { result: r.value })">{{ r.label }}</button>
+            }
+          </div>
+
+          @if (suggestion(item); as s) {
+            <span class="label">Opponent</span>
+            <div>
+              <p class="suggestion">Is <strong>{{ opponentName(item) }}</strong> the same Player as <strong>{{ s.name }}</strong>?</p>
+              <div class="segmented" role="radiogroup" aria-label="Same Player?">
+                <button type="button" role="radio" data-testid="review-same-player" [attr.aria-checked]="draft(item).sameAsSuggestion === true"
+                        [class.on]="draft(item).sameAsSuggestion === true" (click)="update(item, { sameAsSuggestion: true })">Yes, same Player</button>
+                <button type="button" role="radio" data-testid="review-new-player" [attr.aria-checked]="draft(item).sameAsSuggestion === false"
+                        [class.on]="draft(item).sameAsSuggestion === false" (click)="update(item, { sameAsSuggestion: false })">No, a different Player</button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <footer class="review-actions">
+          <button type="button" class="primary" data-testid="review-resolve" [disabled]="!ready(item)" (click)="resolve(item)">
+            Add to Collection</button>
+          <button type="button" class="danger" data-testid="review-discard" (click)="discard(item)">Discard</button>
+          @if (errors()[item.id]; as e) { <span class="field-error">{{ e }}</span> }
+        </footer>
+      </article>
+    }
+  } @else {
+    <p class="empty">Loading…</p>
+  }
+</section>

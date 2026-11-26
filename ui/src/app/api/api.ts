@@ -78,7 +78,7 @@ export interface Settings {
   aliases: string[];
 }
 
-export type ImportStatus = 'imported' | 'needsReview' | 'failed';
+export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
   index: number;
@@ -86,12 +86,29 @@ export interface ImportedGame {
   reason: string | null;
   white: string | null;
   black: string | null;
+  /** The imported Game, or for a duplicate the existing one. */
   gameId: number | null;
+  /** For a duplicate: its PGN, to import it anyway. */
+  pgn: string | null;
+}
+
+/** A held-back imported Game. ownerColour and result are null while they still need choosing. */
+export interface ReviewItem {
+  id: number;
+  white: string | null;
+  black: string | null;
+  date: string | null;
+  reason: string;
+  ownerColour: OwnerColour | null;
+  result: GameResult | null;
+  whiteSuggestion: Player | null;
+  blackSuggestion: Player | null;
 }
 
 export interface ImportSummary {
   imported: number;
   needsReview: number;
+  duplicates: number;
   failed: number;
   games: ImportedGame[];
 }
@@ -182,8 +199,17 @@ export class Api {
   }
 
   // Import
-  importText(pgn: string): Observable<ImportSummary> {
-    return this.http.post<ImportSummary>('/api/import/text', { pgn });
+  importText(pgn: string, allowDuplicates = false): Observable<ImportSummary> {
+    return this.http.post<ImportSummary>('/api/import/text', { pgn, allowDuplicates });
+  }
+  reviewList(): Observable<ReviewItem[]> {
+    return this.http.get<ReviewItem[]>('/api/import/review');
+  }
+  resolveReview(id: number, ownerColour: OwnerColour, result: GameResult, opponentPlayerId: number | null): Observable<Game> {
+    return this.http.post<Game>(`/api/import/review/${id}/resolve`, { ownerColour, result, opponentPlayerId });
+  }
+  discardReview(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/import/review/${id}`);
   }
   importFile(file: File): Observable<ImportSummary> {
     const form = new FormData();

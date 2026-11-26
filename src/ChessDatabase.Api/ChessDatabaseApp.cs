@@ -42,6 +42,7 @@ public static class ChessDatabaseApp
         app.MapPlayerEndpoints();
         app.MapLookupEndpoints();
         app.MapImportEndpoints();
+        app.MapImportReviewEndpoints();
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.
         app.MapFallbackToFile("index.html");

@@ -278,8 +278,8 @@ public class ImportTests
     }
 }
 
-public sealed record ImportSummaryDto(int Imported, int NeedsReview, int Failed, List<ImportedGameDto> Games);
+public sealed record ImportSummaryDto(int Imported, int NeedsReview, int Duplicates, int Failed, List<ImportedGameDto> Games);
 
-public sealed record ImportedGameDto(int Index, string Status, string? Reason, string? White, string? Black, int? GameId);
+public sealed record ImportedGameDto(int Index, string Status, string? Reason, string? White, string? Black, int? GameId, string? Pgn);
 
 public sealed record SettingsWithAliasesDto(string OwnerName, List<string> Aliases);

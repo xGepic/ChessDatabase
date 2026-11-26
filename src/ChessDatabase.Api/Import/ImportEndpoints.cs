@@ -3,7 +3,8 @@ using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Import;
 
-public sealed record ImportTextRequest(string? Pgn);
+/// <param name="AllowDuplicates">Import Games even if they are already in the Collection ("import anyway").</param>
+public sealed record ImportTextRequest(string? Pgn, bool AllowDuplicates = false);
 
 public static class ImportEndpoints
 {
@@ -14,7 +15,7 @@ public static class ImportEndpoints
         import.MapPost("/text", async (ImportTextRequest body, PgnImporter importer) =>
             string.IsNullOrWhiteSpace(body.Pgn)
                 ? Invalid("pgn", "Paste the PGN of one or more Games.")
-                : Results.Ok(await importer.ImportAsync(body.Pgn)));
+                : Results.Ok(await importer.ImportAsync(body.Pgn, body.AllowDuplicates)));
 
         // A local desktop app with no cookies or logins, so there is nothing for antiforgery to protect.
         import.MapPost("/file", async (IFormFile? file, PgnImporter importer) =>

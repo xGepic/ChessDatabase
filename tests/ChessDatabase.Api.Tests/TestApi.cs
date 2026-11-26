@@ -52,6 +52,16 @@ public static class TestApi
         return (await response.Content.ReadFromJsonAsync<ImportSummaryDto>())!;
     }
 
+    public static async Task<List<ReviewItemDto>> ReviewListAsync(this HttpClient client) =>
+        (await client.GetFromJsonAsync<List<ReviewItemDto>>("/api/import/review"))!;
+
+    public static async Task<GameDto> ResolveAsync(this HttpClient client, int itemId, object resolution)
+    {
+        var response = await client.PostAsJsonAsync($"/api/import/review/{itemId}/resolve", resolution);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<GameDto>())!;
+    }
+
     public static async Task<GameDto> GetGameAsync(this HttpClient client, int id) =>
         (await client.GetFromJsonAsync<GameDto>($"/api/games/{id}"))!;
 

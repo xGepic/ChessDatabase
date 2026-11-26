@@ -163,6 +163,49 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Resolve_held_back_games_in_the_review_list()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        await _app.CreateGameAsync("e4");  // creates the Player "Fixture Opponent"
+        const string pgn = """
+            [White "Kasparow, Garri"]
+            [Black "Fixture Opponent"]
+            [Result "1-0"]
+
+            1. d4 1-0
+
+            [White "Owner, Smoke"]
+            [Black "Opponent F."]
+            [Result "0-1"]
+
+            1. c4 0-1
+            """;
+        await Page.GotoAsync($"{_app.BaseUrl}/import");
+        await Page.GetByTestId("pgn-text").FillAsync(pgn);
+        await Page.GetByTestId("import-pasted").ClickAsync();
+        await Expect(Page.GetByTestId("count-review")).ToHaveTextAsync("2");
+
+        await Page.GetByTestId("review-link").ClickAsync();
+        var items = Page.GetByTestId("review-item");
+        await Expect(items).ToHaveCountAsync(2);
+
+        // No side matched: I was White
+        await items.First.GetByTestId("review-white").ClickAsync();
+        await items.First.GetByTestId("review-resolve").ClickAsync();
+        await Expect(items).ToHaveCountAsync(1);
+
+        // "Opponent F." resembles "Fixture Opponent": confirm it is the same Player
+        await Expect(items.First).ToContainTextAsync("Fixture Opponent");
+        await Expect(items.First.GetByTestId("review-resolve")).ToBeDisabledAsync();
+        await items.First.GetByTestId("review-same-player").ClickAsync();
+        await items.First.GetByTestId("review-resolve").ClickAsync();
+        await Expect(Page.GetByTestId("review-empty")).ToBeVisibleAsync();
+
+        await Page.GetByTestId("tab-games").ClickAsync();
+        await Expect(Page.GetByTestId("game-opponent")).ToHaveTextAsync(["Fixture Opponent", "Fixture Opponent", "Fixture Opponent"]);
+    }
+
+    [Fact]
     public async Task Annotate_a_move_with_a_symbol_and_a_comment()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");
