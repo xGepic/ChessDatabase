@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
@@ -578,6 +579,42 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("tablebase-unavailable")).ToContainTextAsync("Tablebase unavailable");
         await Page.GetByTestId("search-position").ClickAsync();
         await Expect(Page.GetByTestId("search-empty")).ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task Open_a_players_dossier_from_the_list_and_record_a_club()
+    {
+        var first = await _app.CreateGameAsync("e4", "e5");
+        var second = await _app.CreateGameAsync("d4", "d5");
+        using (var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) })
+        {
+            foreach (var (id, date, elo) in new[] { (first, "2024-01-10", 1850), (second, "2024-05-02", 1910) })
+            {
+                var game = await http.GetFromJsonAsync<System.Text.Json.JsonElement>($"/api/games/{id}");
+                (await http.PutAsJsonAsync($"/api/games/{id}", new
+                {
+                    ownerColour = "white", opponentId = game.GetProperty("opponent").GetProperty("id").GetInt32(),
+                    result = "1-0", date, blackElo = elo,
+                })).EnsureSuccessStatusCode();
+            }
+        }
+
+        await Page.GotoAsync(_app.BaseUrl);
+        await Page.GetByTestId("game-opponent").First.GetByRole(AriaRole.Link).ClickAsync();
+        await Expect(Page.GetByTestId("dossier-name")).ToHaveTextAsync("Fixture Opponent");
+        await Expect(Page.GetByTestId("dossier-score")).ToHaveTextAsync("100%");
+        await Expect(Page.GetByTestId("dossier-game")).ToHaveCountAsync(2);
+        await Expect(Page.Locator("[data-testid=time-chart] circle")).ToHaveCountAsync(2);
+
+        await Page.GetByTestId("player-club").FillAsync("SK Neustadt");
+        await Page.GetByTestId("player-club").PressAsync("Tab");
+        await Expect(Page.GetByTestId("player-status")).ToHaveTextAsync("Saved");
+
+        await Page.GetByTestId("tab-players").ClickAsync();
+        await Expect(Page.GetByTestId("player-row")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("player-row")).ToContainTextAsync("SK Neustadt");
+        await Page.GetByTestId("player-search").FillAsync("nobody");
+        await Expect(Page.GetByTestId("player-row")).ToHaveCountAsync(0);
     }
 
     private static string Key(params string[] san)

@@ -27,7 +27,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 17 | [Position Search](#17-position-search) | 16 | **Done** |
 | 18 | [Masters source in the Opening Tree](#18-masters-source-in-the-opening-tree) | 16 | **Done** |
 | 19 | [Tablebase lookup](#19-tablebase-lookup) | 04 | **Done** |
-| 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | Open |
+| 20 | [Opponent Dossier](#20-opponent-dossier) | 06 | **Done** |
 | 21 | [Merge Players](#21-merge-players) | 20 | Open |
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | Open |
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | Open |
@@ -370,13 +370,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 06 (Game details, Tags and ECO).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A Players list with search links to each Dossier
-- [ ] Head-to-head score, rating history chart, openings and the Games list are correct for a seeded Collection
-- [ ] Unrated Games are left out of the rating history
-- [ ] FIDE ID and club can be edited
-- [ ] API tests cover the Dossier figures
+- [x] A Players list with search links to each Dossier
+- [x] Head-to-head score, rating history chart, openings and the Games list are correct for a seeded Collection
+- [x] Unrated Games are left out of the rating history
+- [x] FIDE ID and club can be edited
+- [x] API tests cover the Dossier figures
 
 ---
 

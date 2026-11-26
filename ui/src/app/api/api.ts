@@ -314,6 +314,50 @@ export interface PositionSearchResult {
   games: PositionGame[];
 }
 
+/** The Owner's score over some Games, from the Owner's side. percent: a draw counts half. */
+export interface Score {
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  percent: number;
+}
+
+export interface PlayerDetails {
+  id: number;
+  name: string;
+  fideId: string | null;
+  club: string | null;
+}
+
+/** A row of the Players list. lastDate: the newest dated Game against them. */
+export interface PlayerRow extends PlayerDetails {
+  score: Score;
+  lastDate: string | null;
+}
+
+/** A rating at a (possibly partial) date, from one Game. */
+export interface RatingPoint {
+  date: string;
+  elo: number;
+  gameId: number;
+}
+
+export interface OpeningScore {
+  eco: string | null;
+  name: string | null;
+  score: Score;
+}
+
+/** A Player's Dossier. ratingHistory leaves out unrated and undated Games; games are newest first. */
+export interface Dossier {
+  player: PlayerDetails;
+  score: Score;
+  ratingHistory: RatingPoint[];
+  openings: OpeningScore[];
+  games: GameSummary[];
+}
+
 export type ImportStatus = 'imported' | 'needsReview' | 'duplicate' | 'failed';
 
 export interface ImportedGame {
@@ -437,6 +481,16 @@ export class Api {
   }
   createPlayer(name: string): Observable<Player> {
     return this.http.post<Player>('/api/players', { name });
+  }
+  /** Every Player (matching the search) with the Owner's score against them. */
+  playerOverview(search = ''): Observable<PlayerRow[]> {
+    return this.http.get<PlayerRow[]>('/api/players/overview', { params: { search } });
+  }
+  dossier(playerId: number): Observable<Dossier> {
+    return this.http.get<Dossier>(`/api/players/${playerId}/dossier`);
+  }
+  updatePlayer(playerId: number, details: { name: string; fideId: string; club: string }): Observable<Player> {
+    return this.http.put<Player>(`/api/players/${playerId}`, details);
   }
 
   // Import

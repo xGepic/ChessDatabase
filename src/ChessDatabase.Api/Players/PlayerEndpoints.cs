@@ -8,6 +8,9 @@ public sealed record PlayerDto(int Id, string Name);
 
 public sealed record CreatePlayerRequest(string? Name);
 
+/// <param name="FideId">Digits only; empty removes it.</param>
+public sealed record UpdatePlayerRequest(string? Name, string? FideId, string? Club);
+
 public static class PlayerEndpoints
 {
     public static void MapPlayerEndpoints(this IEndpointRouteBuilder app)
@@ -41,6 +44,30 @@ public static class PlayerEndpoints
             db.Players.Add(player);
             await db.SaveChangesAsync();
             return Results.Created($"/api/players/{player.Id}", new PlayerDto(player.Id, player.Name));
+        });
+
+        players.MapPut("/{id:int}", async (int id, UpdatePlayerRequest body, CollectionDbContext db) =>
+        {
+            var all = await db.Players.ToListAsync();
+            if (all.FirstOrDefault(p => p.Id == id) is not { } player) return Results.NotFound();
+
+            var name = body.Name?.Trim() ?? "";
+            var fideId = body.FideId?.Trim() ?? "";
+            var club = body.Club?.Trim() ?? "";
+            var errors = new Dictionary<string, string[]>();
+            if (name.Length == 0) errors["name"] = ["A Player needs a name."];
+            else if (all.Any(p => p.Id != id && string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase)))
+                errors["name"] = ["Another Player already has that name. To make them one, merge the two Players."];
+            if (fideId.Length > 0 && (fideId.Length > PlayerRecord.MaxFideIdLength || !fideId.All(char.IsAsciiDigit)))
+                errors["fideId"] = [$"A FIDE ID is up to {PlayerRecord.MaxFideIdLength} digits."];
+            if (club.Length > PlayerRecord.MaxClubLength) errors["club"] = [$"At most {PlayerRecord.MaxClubLength} characters."];
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+
+            player.Name = name;
+            player.FideId = fideId.Length > 0 ? fideId : null;
+            player.Club = club.Length > 0 ? club : null;
+            await db.SaveChangesAsync();
+            return Results.Ok(new PlayerDto(player.Id, player.Name));
         });
     }
 }

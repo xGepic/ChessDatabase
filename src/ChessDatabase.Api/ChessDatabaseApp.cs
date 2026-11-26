@@ -8,6 +8,7 @@ using ChessDatabase.Api.Openings;
 using ChessDatabase.Api.Players;
 using ChessDatabase.Api.Research;
 using ChessDatabase.Api.Settings;
+using ChessDatabase.Api.Statistics;
 
 namespace ChessDatabase.Api;
 
@@ -69,6 +70,7 @@ public static class ChessDatabaseApp
         app.MapGameEndpoints();
         app.MapSettingsEndpoints();
         app.MapPlayerEndpoints();
+        app.MapDossierEndpoints();
         app.MapLookupEndpoints();
         app.MapImportEndpoints();
         app.MapImportReviewEndpoints();

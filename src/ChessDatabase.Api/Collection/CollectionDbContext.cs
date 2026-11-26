@@ -20,7 +20,12 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Entity<SettingsRecord>().Property(s => s.OwnerName).HasMaxLength(200);
-        model.Entity<PlayerRecord>().Property(p => p.Name).HasMaxLength(200);
+        model.Entity<PlayerRecord>(player =>
+        {
+            player.Property(p => p.Name).HasMaxLength(200);
+            player.Property(p => p.FideId).HasMaxLength(PlayerRecord.MaxFideIdLength);
+            player.Property(p => p.Club).HasMaxLength(PlayerRecord.MaxClubLength);
+        });
         model.Entity<EventRecord>().Property(e => e.Name).HasMaxLength(GameDetailLimits.Event);
         model.Entity<TagRecord>().Property(t => t.Name).HasMaxLength(GameDetailLimits.Tag);
 
@@ -201,8 +206,15 @@ public sealed class MoveNodeRecord
 /// <summary>A person the Owner has played against. The Owner is never a Player row.</summary>
 public sealed class PlayerRecord
 {
+    public const int MaxFideIdLength = 10, MaxClubLength = 100;
+
     public int Id { get; set; }
     public string Name { get; set; } = "";
+
+    /// <summary>The Player's FIDE ID (digits), if the Owner recorded it.</summary>
+    public string? FideId { get; set; }
+
+    public string? Club { get; set; }
 }
 
 /// <summary>The Owner's settings. There is exactly one row.</summary>

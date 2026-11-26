@@ -295,6 +295,38 @@ app-eval-bar .eval-bar { flex: 1; }
 .position-game.master-game { grid-template-columns: 44px 1fr auto; }
 .tree-table .other-moves td { font-size: 12px; }
 
+/* ---------- Players and Dossiers ---------- */
+.player-search { width: 240px; }
+.dossier { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 20px; align-items: start; }
+.dossier > .card:nth-child(n + 3) { grid-column: 1 / -1; }
+.card-body { padding: 8px 16px 14px; }
+.head-to-head { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; padding: 4px 16px 16px; }
+.head-to-head .hint { grid-column: 1 / -1; margin: 0; }
+.big-score { font-size: 28px; font-weight: 700; }
+.sheet-player a.name { color: inherit; }
+
+/* time charts: one series, recessive axes */
+.time-chart { position: relative; }
+.time-chart { max-width: 640px; }
+.time-chart svg { display: block; width: 100%; height: auto; cursor: crosshair; }
+.chart-grid { stroke: var(--rule); stroke-width: 1; }
+.chart-tick { fill: var(--ink-soft); font-size: 11px; font-family: var(--move-font); }
+.chart-line { fill: none; stroke: var(--wood-active); stroke-width: 2; stroke-linejoin: round; }
+.chart-point { fill: var(--wood-active); stroke: var(--cream); stroke-width: 2; }
+.chart-point.on { fill: var(--ink); }
+.chart-crosshair { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-tooltip {
+  position: absolute; transform: translate(-50%, calc(-100% - 10px)); pointer-events: none; white-space: nowrap;
+  background: #fffaf0; border: 1px solid var(--rule); border-radius: var(--radius); padding: 3px 8px; font-size: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
+.chart-table { margin-top: 6px; font-size: 12px; }
+.chart-table summary { cursor: pointer; color: var(--ink-soft); }
+.chart-table table { border-collapse: collapse; margin-top: 4px; }
+.chart-table td, .chart-table th { padding: 2px 12px 2px 0; text-align: left; }
+.chart-empty { margin: 0; padding: 8px 0; }
+@media (max-width: 1100px) { .dossier { grid-template-columns: 1fr; } }
+
 /* ---------- Tablebase ---------- */
 .tablebase-card { padding: 0; }
 .tablebase-verdict { font-weight: 600; }

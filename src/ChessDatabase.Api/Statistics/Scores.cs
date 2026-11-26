@@ -1,0 +1,63 @@
+using ChessDatabase.Api.Collection;
+using ChessDatabase.Api.Games;
+
+namespace ChessDatabase.Api.Statistics;
+
+/// <summary>The Owner's score over some Games: wins, draws and losses from the Owner's side.</summary>
+/// <param name="Percent">Points (a draw counts half) per Game, in percent; 0 when there are no Games.</param>
+public sealed record ScoreDto(int Games, int Wins, int Draws, int Losses, double Percent)
+{
+    public static ScoreDto Of(IEnumerable<GameRecord> games)
+    {
+        int wins = 0, draws = 0, losses = 0;
+        foreach (var game in games)
+        {
+            switch (game.ResultForOwner())
+            {
+                case OwnerResult.Win: wins++; break;
+                case OwnerResult.Draw: draws++; break;
+                default: losses++; break;
+            }
+        }
+        var count = wins + draws + losses;
+        return new ScoreDto(count, wins, draws, losses, count == 0 ? 0 : Math.Round((wins + draws / 2.0) / count * 100, 1));
+    }
+}
+
+/// <summary>A rating at a point in time, from the Elo recorded in one Game.</summary>
+/// <param name="Date">The Game's date as recorded ("2024-03-05", or partial).</param>
+public sealed record RatingPointDto(string Date, int Elo, int GameId);
+
+/// <summary>The Owner's score with one opening (by ECO); Name is the opening's name from the Owner's Games.</summary>
+public sealed record OpeningScoreDto(string? Eco, string? Name, ScoreDto Score);
+
+/// <summary>Figures shared by the Dossiers.</summary>
+public static class Figures
+{
+    /// <summary>
+    /// A rating over time from the Elo one side had in each Game. Unrated Games are left out, and
+    /// so are Games without a date: they can't be placed on the time line.
+    /// </summary>
+    public static List<RatingPointDto> RatingHistory(IEnumerable<GameRecord> games, Func<GameRecord, int?> elo) =>
+        [.. games
+            .Where(g => g.Date is not null && elo(g) is not null)
+            .OrderBy(g => g.Date, StringComparer.Ordinal).ThenBy(g => g.CreatedAt)
+            .Select(g => new RatingPointDto(g.Date!, elo(g)!.Value, g.Id))];
+
+    /// <summary>The Owner's score per opening (ECO), most played first; unclassified Games together under no ECO.</summary>
+    public static List<OpeningScoreDto> ByOpening(IEnumerable<GameRecord> games) =>
+        [.. games
+            .GroupBy(g => g.Eco)
+            .Select(g => new OpeningScoreDto(g.Key, g.Select(x => x.OpeningName).FirstOrDefault(n => n is not null), ScoreDto.Of(g)))
+            .OrderByDescending(o => o.Score.Games).ThenBy(o => o.Eco ?? "~", StringComparer.Ordinal)];
+
+    /// <summary>The Opponent's Elo in a Game (null when unrated).</summary>
+    public static int? OpponentElo(GameRecord game) => game.OwnerColour == OwnerColour.White ? game.BlackElo : game.WhiteElo;
+
+    /// <summary>The Owner's own Elo in a Game (null when unrated).</summary>
+    public static int? OwnerElo(GameRecord game) => game.OwnerColour == OwnerColour.White ? game.WhiteElo : game.BlackElo;
+
+    /// <summary>Newest first; Games without a date last.</summary>
+    public static IOrderedEnumerable<GameRecord> NewestFirst(IEnumerable<GameRecord> games) =>
+        games.OrderByDescending(g => g.Date ?? "", StringComparer.Ordinal).ThenByDescending(g => g.CreatedAt);
+}

@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126182402_LichessTokenOutOfCollection";
+    public override string LastMigrationId => "20261126202756_PlayerDetails";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -284,6 +284,14 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
                     .HasColumnType("INTEGER");
+
+                b.Property<string>("Club")
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("FideId")
+                    .HasMaxLength(10)
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("Name")
                     .IsRequired()
