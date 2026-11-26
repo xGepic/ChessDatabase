@@ -12,6 +12,7 @@ import { DossierPage } from './people/dossier-page';
 import { OwnerStatisticsPage } from './people/owner-statistics-page';
 import { RepertoirePage } from './training/repertoire-page';
 import { DeviationsPage } from './training/deviations-page';
+import { TrainingPage } from './training/training-page';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'games' },
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'repertoire', pathMatch: 'full', redirectTo: 'repertoire/white' },
   { path: 'repertoire/deviations', component: DeviationsPage, title: 'My Deviations · Chess Database' },
   { path: 'repertoire/:side', component: RepertoirePage, title: 'Repertoire · Chess Database' },
+  { path: 'training', component: TrainingPage, title: 'Training · Chess Database' },
   { path: 'statistics', component: OwnerStatisticsPage, title: 'My statistics · Chess Database' },
   { path: 'players', component: PlayersPage, title: 'Players · Chess Database' },
   { path: 'players/:id', component: DossierPage, title: 'Dossier · Chess Database' },

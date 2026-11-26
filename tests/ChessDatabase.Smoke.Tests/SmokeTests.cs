@@ -734,6 +734,36 @@ owhere\stockfish.exe");
         await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape($"/games/{gameId}?ply=3")));
     }
 
+    [Fact]
+    public async Task Repertoire_Training_asks_for_my_move_and_shows_the_right_one_when_I_miss()
+    {
+        await _app.AddRepertoireLineAsync("black", "e4", "c5", "Nf3", "d6");
+
+        await Page.GotoAsync(_app.BaseUrl);
+        await Page.GetByTestId("tab-training").ClickAsync();
+        await Expect(Page.GetByTestId("training-due")).ToHaveTextAsync("2 due today");
+        await Expect(Page.GetByTestId("training-line")).ToHaveTextAsync("1.e4");
+
+        await Expect(Page.GetByTestId("training-prompt")).ToBeVisibleAsync(); // after the Opponent's move is shown
+        await Page.PlayAsync("e7e5", flipped: true);
+        await Expect(Page.GetByTestId("training-verdict")).ToContainTextAsync("Your Repertoire plays 1...c5");
+        await Page.Keyboard.PressAsync("Enter");
+
+        await Expect(Page.GetByTestId("training-line")).ToHaveTextAsync("1.e4 c5 2.Nf3");
+        await Expect(Page.GetByTestId("training-prompt")).ToBeVisibleAsync();
+        await Page.PlayAsync("d7d6", flipped: true);
+        await Expect(Page.GetByTestId("training-verdict")).ToContainTextAsync("Right.");
+        await Page.GetByTestId("training-next").ClickAsync();
+
+        // The miss comes back in the same session.
+        await Expect(Page.GetByTestId("training-line")).ToHaveTextAsync("1.e4");
+        await Expect(Page.GetByTestId("training-prompt")).ToBeVisibleAsync();
+        await Page.PlayAsync("c7c5", flipped: true);
+        await Page.GetByTestId("training-next").ClickAsync();
+        await Expect(Page.GetByTestId("training-done")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("training-due")).ToHaveTextAsync("0 due today");
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

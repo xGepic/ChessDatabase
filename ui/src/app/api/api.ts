@@ -72,6 +72,24 @@ export interface Deviation {
   expected: string[];
 }
 
+/** A Repertoire position to answer; the line's last move is the Opponent's. */
+export interface RepertoireTrainingItem {
+  itemId: number;
+  side: OwnerColour;
+  fen: string;
+  line: { uci: string; san: string }[];
+  /** Never answered before. */
+  new: boolean;
+}
+
+/** Whether the answer was a Repertoire move, the Repertoire's moves there, and when the item comes back. */
+export interface TrainingAnswer {
+  correct: boolean;
+  expected: string[];
+  expectedUci: string[];
+  dueAt: string;
+}
+
 /** A Game where the Owner left their own Repertoire. */
 export interface OwnerDeviation {
   game: GameSummary;
@@ -619,6 +637,19 @@ export class Api {
   ownerDeviations(filters: Record<string, string>): Observable<OwnerDeviation[]> {
     return this.http.get<OwnerDeviation[]>('/api/repertoire/deviations', { params: filters });
   }
+  // Repertoire Training
+  /** Items due today and in all; keeps the items in step with the Repertoire. */
+  repertoireTrainingSummary(): Observable<{ due: number; total: number }> {
+    return this.http.get<{ due: number; total: number }>('/api/training/repertoire');
+  }
+  /** The item due first, or null when nothing is due today. */
+  nextRepertoireItem(): Observable<RepertoireTrainingItem | null> {
+    return this.http.get<RepertoireTrainingItem | null>('/api/training/repertoire/next');
+  }
+  answerRepertoireItem(itemId: number, move: string): Observable<TrainingAnswer> {
+    return this.http.post<TrainingAnswer>(`/api/training/repertoire/${itemId}/answer`, { move });
+  }
+
   repertoire(side: OwnerColour): Observable<Repertoire> {
     return this.http.get<Repertoire>(`/api/repertoire/${side}`);
   }

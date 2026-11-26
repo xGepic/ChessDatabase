@@ -45,7 +45,7 @@ export class Board implements OnDestroy {
   readonly fen = input.required<string>();
   readonly orientation = input<'white' | 'black'>('white');
   readonly lastMove = input<string | null>(null);
-  /** No moves can be made (e.g. a Master Game, which is only replayed). */
+  /** No moves can be made (e.g. a Master Game, which is only replayed); may change at any time. */
   readonly viewOnly = input(false);
   readonly move = output<string>();
 
@@ -109,8 +109,10 @@ export class Board implements OnDestroy {
       turnColor: turn,
       check: chess.inCheck(),
       lastMove: last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined,
+      // Not chessground's own viewOnly: that one can't be lifted after the board is created.
       movable: { color: this.viewOnly() ? undefined : turn, dests },
-      viewOnly: this.viewOnly(),
+      selectable: { enabled: !this.viewOnly() },
+      draggable: { enabled: !this.viewOnly(), showGhost: true },
     });
   }
 

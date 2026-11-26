@@ -17,6 +17,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<EngineAssessmentRecord> EngineAssessments => Set<EngineAssessmentRecord>();
     public DbSet<PositionIndexRecord> PositionIndex => Set<PositionIndexRecord>();
     public DbSet<RepertoireNodeRecord> RepertoireNodes => Set<RepertoireNodeRecord>();
+    public DbSet<TrainingItemRecord> TrainingItems => Set<TrainingItemRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -65,6 +66,14 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             node.Property(n => n.Comment).HasMaxLength(GameDetailLimits.Notes);
             node.HasOne(n => n.Parent).WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
             node.HasIndex(n => new { n.Side, n.ParentId, n.Order });
+        });
+
+        model.Entity<TrainingItemRecord>(item =>
+        {
+            item.Property(i => i.Kind).HasConversion<string>().HasMaxLength(20);
+            item.Property(i => i.Key).HasMaxLength(100);
+            item.HasIndex(i => new { i.Kind, i.Key }).IsUnique();
+            item.HasIndex(i => new { i.Kind, i.DueAt });
         });
 
         model.Entity<PositionIndexRecord>(position =>
@@ -170,6 +179,44 @@ public sealed class RepertoireNodeRecord : ITreeNode
     public string Uci { get; set; } = "";
     public string San { get; set; } = "";
     public string? Comment { get; set; }
+}
+
+/// <summary>What a training item drills.</summary>
+public enum TrainingKind
+{
+    /// <summary>A Repertoire position where the Owner must play the Repertoire move.</summary>
+    Repertoire,
+
+    /// <summary>A position from the Owner's Games where Game Analysis found a mistake or blunder.</summary>
+    Mistake,
+}
+
+/// <summary>
+/// One thing to remember, scheduled by spaced repetition (SM-2 style): Repertoire Training and
+/// Mistake Training share these records and the scheduler (see Training.SpacedRepetition).
+/// </summary>
+public sealed class TrainingItemRecord
+{
+    public int Id { get; set; }
+    public TrainingKind Kind { get; set; }
+
+    /// <summary>What the item is, unique within its kind, e.g. the Repertoire side and position.</summary>
+    public string Key { get; set; } = "";
+
+    /// <summary>Right answers in a row since the last wrong one.</summary>
+    public int Repetitions { get; set; }
+
+    /// <summary>The last interval in days (0 after a wrong answer).</summary>
+    public int IntervalDays { get; set; }
+
+    /// <summary>The SM-2 ease factor: how fast intervals grow (2.5 to start, never below 1.3).</summary>
+    public double Ease { get; set; } = 2.5;
+
+    /// <summary>UTC. A new item is due when it is created.</summary>
+    public DateTime DueAt { get; set; }
+
+    /// <summary>UTC; null for an item never answered.</summary>
+    public DateTime? ReviewedAt { get; set; }
 }
 
 /// <summary>

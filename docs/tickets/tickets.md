@@ -32,7 +32,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | **Done** |
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | **Done** |
 | 24 | [Deviation check](#24-deviation-check) | 23 | **Done** |
-| 25 | [Repertoire Training](#25-repertoire-training) | 23 | Open |
+| 25 | [Repertoire Training](#25-repertoire-training) | 23 | **Done** |
 | 26 | [Mistake Training](#26-mistake-training) | 12, 25 | Open |
 | 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | Open |
 | 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | Open |
@@ -446,12 +446,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 23 (Repertoire builder).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A session presents due items and checks the Owner's move against the Repertoire
-- [ ] A wrong answer shows the correct move and schedules the item sooner; a right answer schedules it later
-- [ ] The number of items due today is shown; new Repertoire lines become new items automatically
-- [ ] Scheduler tests with a controllable clock verify the interval progression and reset on failure
+- [x] A session presents due items and checks the Owner's move against the Repertoire
+- [x] A wrong answer shows the correct move and schedules the item sooner; a right answer schedules it later
+- [x] The number of items due today is shown; new Repertoire lines become new items automatically
+- [x] Scheduler tests with a controllable clock verify the interval progression and reset on failure
 
 ---
 

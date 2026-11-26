@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126203917_Repertoire";
+    public override string LastMigrationId => "20261126215117_TrainingItems";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -409,6 +409,47 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.HasKey("Id");
 
                 b.ToTable("Tags");
+            });
+
+        modelBuilder.Entity("ChessDatabase.Api.Collection.TrainingItemRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<DateTime>("DueAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<double>("Ease")
+                    .HasColumnType("REAL");
+
+                b.Property<int>("IntervalDays")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Key")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Kind")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("Repetitions")
+                    .HasColumnType("INTEGER");
+
+                b.Property<DateTime?>("ReviewedAt")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("Kind", "DueAt");
+
+                b.HasIndex("Kind", "Key")
+                    .IsUnique();
+
+                b.ToTable("TrainingItems");
             });
 
         modelBuilder.Entity("GameRecordTagRecord", b =>

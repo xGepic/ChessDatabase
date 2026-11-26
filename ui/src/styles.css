@@ -539,3 +539,13 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 }
 .sort-button:hover { background: none !important; color: var(--ink); }
 .filter-error { padding: 8px 16px 0; margin: 0; font-size: 13px; }
+
+/* Repertoire Training */
+.training {
+  --board: max(360px, min(calc(100vh - 150px), calc(100vw - 560px), 780px));
+  display: grid; grid-template-columns: var(--board) minmax(320px, 460px); gap: 20px; align-items: start;
+}
+.training-line { color: var(--ink-soft); margin: 0 0 8px; }
+.training-verdict { margin: 0 0 10px; padding: 6px 10px; border-radius: var(--radius); }
+.training-verdict.right { background: rgba(47, 93, 58, .12); color: var(--felt); }
+.training-verdict.wrong { background: rgba(154, 47, 30, .1); color: var(--blood); }
