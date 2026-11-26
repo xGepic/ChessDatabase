@@ -71,6 +71,23 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         }
     }
 
+    /// <summary>
+    /// Evaluates one position, the one after <paramref name="moves"/> (UCI) from the start, the way
+    /// Game Analysis evaluates each position: same Engine, same time, MultiPV 1.
+    /// </summary>
+    /// <exception cref="EngineException">The Engine could not be started, crashed or stopped answering.</exception>
+    public async Task<StoredEvaluation> EvaluateOnceAsync(IReadOnlyList<string> moves, CancellationToken cancellationToken = default)
+    {
+        EngineRecord definition;
+        using (var scope = scopes.CreateScope())
+            definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Engines.StockfishAsync(cancellationToken);
+        var position = Position.Initial;
+        foreach (var uci in moves) position = position.Play(ParseUci(uci));
+        await using var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken);
+        engine.Send("ucinewgame");
+        return await EvaluateAsync(engine, moves, position, definition.AnalysisMsPerMove, cancellationToken);
+    }
+
     private static async Task<StoredEvaluation> EvaluateAsync(
         UciEngine engine, IReadOnlyList<string> moves, Position position, int msPerMove, CancellationToken cancellationToken)
     {

@@ -95,6 +95,33 @@ export interface TrainingAnswer {
   dueAt: string;
 }
 
+/** A position from one of the Owner's analysed Games where the Owner made a mistake or blunder. */
+export interface MistakeItem {
+  itemId: number;
+  gameId: number;
+  /** The mistake's half-move; the position is the one before it. */
+  ply: number;
+  side: OwnerColour;
+  fen: string;
+  /** The Opponent's move that led here (UCI); null at the start. */
+  lastMove: string | null;
+  playedSan: string;
+  classification: 'mistake' | 'blunder';
+  opponent: string;
+  date: string | null;
+  new: boolean;
+}
+
+/** Whether the answer keeps the position, the Engine's best line, and what to show on the board. */
+export interface MistakeAnswer {
+  correct: boolean;
+  bestLineSan: string[];
+  bestLineUci: string[];
+  shown: string;
+  fenAfter: string;
+  dueAt: string;
+}
+
 /** A Game where the Owner left their own Repertoire. */
 export interface OwnerDeviation {
   game: GameSummary;
@@ -642,6 +669,18 @@ export class Api {
   ownerDeviations(filters: Record<string, string>): Observable<OwnerDeviation[]> {
     return this.http.get<OwnerDeviation[]>('/api/repertoire/deviations', { params: filters });
   }
+  // Mistake Training
+  mistakeTrainingSummary(): Observable<{ due: number; total: number }> {
+    return this.http.get<{ due: number; total: number }>('/api/training/mistakes');
+  }
+  nextMistake(): Observable<MistakeItem | null> {
+    return this.http.get<MistakeItem | null>('/api/training/mistakes/next');
+  }
+  /** Moves other than the best one are judged by the Engine, which takes a moment. */
+  answerMistake(itemId: number, move: string): Observable<MistakeAnswer> {
+    return this.http.post<MistakeAnswer>(`/api/training/mistakes/${itemId}/answer`, { move });
+  }
+
   // Repertoire Training
   /** Items due today and in all; keeps the items in step with the Repertoire. */
   repertoireTrainingSummary(): Observable<{ due: number; total: number }> {

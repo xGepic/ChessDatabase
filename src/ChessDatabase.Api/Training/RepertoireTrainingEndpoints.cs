@@ -2,14 +2,9 @@ using System.Globalization;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
 using ChessDatabase.Rules;
-using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Training;
-
-/// <param name="Due">Items due today (until local midnight).</param>
-/// <param name="Total">Every item, due or not.</param>
-public sealed record TrainingSummaryDto(int Due, int Total);
 
 /// <summary>A Repertoire position to answer.</summary>
 /// <param name="Fen">The position: the Owner is to move.</param>
@@ -53,9 +48,6 @@ public readonly record struct RepertoireItemKey(OwnerColour Side, long Position)
 /// </summary>
 public static class RepertoireTrainingEndpoints
 {
-    /// <summary>One request at a time brings the items in step, so two can't add the same item.</summary>
-    private static readonly SemaphoreSlim SyncGate = new(1, 1);
-
     /// <summary>Maps /api/training/repertoire: the summary, /next and /{itemId}/answer.</summary>
     public static void MapRepertoireTrainingEndpoints(this IEndpointRouteBuilder app)
     {
@@ -64,17 +56,14 @@ public static class RepertoireTrainingEndpoints
         training.MapGet("/", async (CollectionDbContext db, TimeProvider clock) =>
         {
             var (items, _) = await SyncAsync(db, clock);
-            var endOfToday = SpacedRepetition.EndOfToday(clock);
-            return Results.Ok(new TrainingSummaryDto(items.Count(i => i.DueAt < endOfToday), items.Count));
+            return Results.Ok(TrainingItems.Summary(items, clock));
         });
 
         // The item due first, or 204 when nothing is due today.
         training.MapGet("/next", async (CollectionDbContext db, TimeProvider clock) =>
         {
             var (items, repertoires) = await SyncAsync(db, clock);
-            var endOfToday = SpacedRepetition.EndOfToday(clock);
-            var next = items.Where(i => i.DueAt < endOfToday).OrderBy(i => i.DueAt).ThenBy(i => i.Id).FirstOrDefault();
-            if (next is null) return Results.NoContent();
+            if (TrainingItems.NextDue(items, clock) is not { } next) return Results.NoContent();
             var (side, position) = Locate(repertoires, next)!.Value;
             return Results.Ok(new RepertoireTrainingItemDto(
                 next.Id, side, position.Position.ToFen(), BeforeLastMove(position.Line)?.ToFen(), position.Line, next.ReviewedAt is null));
@@ -118,42 +107,19 @@ public static class RepertoireTrainingEndpoints
 
     /// <summary>
     /// Brings the items in step with both Repertoires and returns them (tracked) with the Repertoires.
-    /// New items are added shortest line first, so a new Repertoire is trained from the opening on.
+    /// New items come up shortest line first, so a new Repertoire is trained from the opening on.
     /// </summary>
     private static async Task<(List<TrainingItemRecord> Items, Dictionary<OwnerColour, RepertoireByPosition> Repertoires)> SyncAsync(
         CollectionDbContext db, TimeProvider clock)
     {
-        await SyncGate.WaitAsync();
-        try
-        {
-            var repertoires = await RepertoireByPosition.LoadBothAsync(db);
-            var wanted = repertoires
-                .SelectMany(r => r.Value.Positions
-                    .Where(p => p.Moves.Count > 0 && p.Position.SideToMove == (r.Key == OwnerColour.White ? Color.White : Color.Black))
-                    .Select(p => (Key: new RepertoireItemKey(r.Key, p.Key).ToString(), p.Line.Count)))
-                .OrderBy(p => p.Count)
-                .Select(p => p.Key)
-                .ToList();
-
-            var items = await db.TrainingItems.Where(i => i.Kind == TrainingKind.Repertoire).ToListAsync();
-            var wantedSet = wanted.ToHashSet();
-            var gone = items.Where(i => !wantedSet.Contains(i.Key)).ToList();
-            var have = items.Select(i => i.Key).ToHashSet();
-            var now = clock.GetUtcNow().UtcDateTime;
-            var added = wanted.Where(k => !have.Contains(k))
-                .Select(k => new TrainingItemRecord { Kind = TrainingKind.Repertoire, Key = k, Ease = SpacedRepetition.StartEase, DueAt = now })
-                .ToList();
-            if (gone.Count > 0 || added.Count > 0)
-            {
-                db.TrainingItems.RemoveRange(gone);
-                db.TrainingItems.AddRange(added);
-                await db.SaveChangesAsync();
-            }
-            return ([.. items.Except(gone), .. added], repertoires);
-        }
-        finally
-        {
-            SyncGate.Release();
-        }
+        var repertoires = await RepertoireByPosition.LoadBothAsync(db);
+        var wanted = repertoires
+            .SelectMany(r => r.Value.Positions
+                .Where(p => p.Moves.Count > 0 && p.Position.SideToMove == (r.Key == OwnerColour.White ? Color.White : Color.Black))
+                .Select(p => (Key: new RepertoireItemKey(r.Key, p.Key).ToString(), p.Line.Count)))
+            .OrderBy(p => p.Count)
+            .Select(p => p.Key)
+            .ToList();
+        return (await TrainingItems.SyncAsync(db, TrainingKind.Repertoire, wanted, clock), repertoires);
     }
 }

@@ -33,7 +33,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | **Done** |
 | 24 | [Deviation check](#24-deviation-check) | 23 | **Done** |
 | 25 | [Repertoire Training](#25-repertoire-training) | 23 | **Done** |
-| 26 | [Mistake Training](#26-mistake-training) | 12, 25 | Open |
+| 26 | [Mistake Training](#26-mistake-training) | 12, 25 | **Done** |
 | 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | Open |
 | 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | Open |
 | 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | Open |
@@ -461,13 +461,13 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 12 (Game Analysis of a single Game), 25 (Repertoire Training).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Analysed Games automatically yield items for the Owner's mistakes and blunders only
-- [ ] Answers within the margin of the best move count as correct; the Engine's best line is shown afterwards
-- [ ] Items follow spaced repetition; re-running Game Analysis updates the Game's items without losing progress on unchanged positions
-- [ ] "Open source Game" jumps to the position in context
-- [ ] API tests with the fake engine cover item creation, answer checking and the regeneration rule
+- [x] Analysed Games automatically yield items for the Owner's mistakes and blunders only
+- [x] Answers within the margin of the best move count as correct; the Engine's best line is shown afterwards
+- [x] Items follow spaced repetition; re-running Game Analysis updates the Game's items without losing progress on unchanged positions
+- [x] "Open source Game" jumps to the position in context
+- [x] API tests with the fake engine cover item creation, answer checking and the regeneration rule
 
 ---
 

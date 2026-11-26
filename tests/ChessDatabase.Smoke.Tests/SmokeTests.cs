@@ -764,6 +764,40 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("training-due")).ToHaveTextAsync("0 due today");
     }
 
+    [Fact]
+    public async Task Mistake_Training_asks_for_a_better_move_than_my_blunder_and_opens_the_Game_there()
+    {
+        // The Owner (White) blunders with 2.Qh5: the Engine wanted 2.Nf3.
+        string[] moves = ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"];
+        var gameId = await _app.CreateGameAsync(moves);
+        await _app.UseFakeEngineAsync(new()
+        {
+            [Key()] = (["depth 20 multipv 1 score cp 30 pv e2e4 e7e5"], "e2e4"),
+            [Key(moves[..1])] = (["depth 20 multipv 1 score cp -30 pv e7e5 g1f3"], "e7e5"),
+            [Key(moves[..2])] = (["depth 20 multipv 1 score cp 30 pv g1f3 b8c6"], "g1f3"),
+            [Key(moves[..3])] = (["depth 20 multipv 1 score cp 400 pv g8f6 h5e5"], "g8f6"),
+            [Key(moves[..4])] = (["depth 20 multipv 1 score cp 40 pv f1c4 g7g6"], "f1c4"),
+            [Key(moves[..5])] = (["depth 20 multipv 1 score cp 30 pv g7g6 h5f3"], "g7g6"),
+            [Key(moves[..6])] = (["depth 20 multipv 1 score mate 1 pv h5f7"], "h5f7"),
+        });
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Page.GetByTestId("analyse-game").ClickAsync();
+        await Expect(Page.GetByTestId("analyse-game")).ToHaveTextAsync("Analyse again");
+
+        await Page.GetByTestId("tab-training").ClickAsync();
+        await Page.GetByTestId("training-mistakes").ClickAsync();
+        await Expect(Page.GetByTestId("mistakes-due")).ToHaveTextAsync("1 due today");
+        await Expect(Page.GetByTestId("mistake-prompt")).ToContainTextAsync("You played 2.Qh5??");
+
+        await Page.PlayAsync("g1f3");
+        await Expect(Page.GetByTestId("mistake-verdict")).ToContainTextAsync("Right");
+        await Expect(Page.GetByTestId("mistake-best-line")).ToContainTextAsync("2.Nf3 Nc6");
+
+        await Page.GetByTestId("mistake-open-game").ClickAsync();
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape($"/games/{gameId}?ply=2")));
+        await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("e5");
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

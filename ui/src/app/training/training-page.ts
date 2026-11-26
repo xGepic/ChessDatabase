@@ -5,6 +5,7 @@ import { Api, RepertoireTrainingItem, TrainingAnswer, problemMessage } from '../
 import { numberedChoices, numberedLine } from '../engine/scores';
 import { Board } from '../review/board';
 import { INITIAL_FEN } from '../shared/chess';
+import { TrainingNav } from './training-nav';
 
 /** How long the Opponent's move takes to appear, so the Owner sees it played. */
 const OPPONENT_DELAY_MS = 450;
@@ -16,7 +17,7 @@ const OPPONENT_DELAY_MS = 450;
  */
 @Component({
   selector: 'app-training-page',
-  imports: [Board, RouterLink],
+  imports: [Board, RouterLink, TrainingNav],
   host: { '(document:keydown.enter)': 'onEnter($event)' },
   template: `
     <div class="training">
@@ -30,6 +31,7 @@ const OPPONENT_DELAY_MS = 450;
           <span class="spacer"></span>
           <span class="hint" data-testid="training-due">{{ dueLabel() }}</span>
         </header>
+        <app-training-nav />
         <div class="card-body">
           @if (error()) { <p class="board-error" role="alert">{{ error() }}</p> }
           @if (loading()) {
