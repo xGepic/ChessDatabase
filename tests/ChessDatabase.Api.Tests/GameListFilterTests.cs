@@ -38,8 +38,7 @@ public class GameListFilterTests
     }
 
     private static async Task<List<string>> OpponentsAsync(HttpClient client, string query) =>
-        (await client.GetFromJsonAsync<List<GameSummaryDto>>($"/api/games?{query}"))!
-            .Select(g => $"{g.Opponent.Name} {g.Date}").ToList();
+        [.. (await client.GetFromJsonAsync<List<GameSummaryDto>>($"/api/games?{query}"))!.Select(g => $"{g.Opponent.Name} {g.Date}")];
 
     [Fact]
     public async Task Combined_filters_answer_my_losses_with_black_in_the_club_league_in_2025()

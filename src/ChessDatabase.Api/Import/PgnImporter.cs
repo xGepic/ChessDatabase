@@ -66,7 +66,7 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
     {
         await LoadPlayersAndOwnerAsync();
         var items = await db.ImportReviewItems.AsNoTracking().OrderBy(i => i.Id).ToListAsync();
-        return items.Select(ToReviewItem).ToList();
+        return [.. items.Select(ToReviewItem)];
     }
 
     /// <summary>Adds a held-back entry to the Collection with the Owner's choices.</summary>
@@ -79,7 +79,7 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
             return new ResolveOutcome.Invalid("result", "Choose the result: 1-0, 0-1 or 1/2-1/2.");
 
         await LoadPlayersAndOwnerAsync();
-        var entry = PgnReader.Read(item.Pgn).FirstOrDefault()?.Entry;
+        var entry = PgnReader.Read(item.Pgn) is [var first, ..] ? first.Entry : null;
         var tree = entry is null ? null : TreeBuilder.Build(entry.Moves, out _);
         if (entry is null || tree is null) return new ResolveOutcome.Invalid("id", "The held-back entry can no longer be read.");
 
@@ -215,7 +215,7 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
 
     private ReviewItemDto ToReviewItem(ImportReviewItemRecord item)
     {
-        var entry = PgnReader.Read(item.Pgn).FirstOrDefault()?.Entry;
+        var entry = PgnReader.Read(item.Pgn) is [var first, ..] ? first.Entry : null;
         var result = entry is not null && GameResults.TryParsePgn(entry.Tag("Result") ?? entry.Termination, out var r)
             ? r.ToPgn()
             : null;

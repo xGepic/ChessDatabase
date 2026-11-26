@@ -63,7 +63,7 @@ public static class Assessor
             var before = whiteMoved ? whitePercents[i] : 100 - whitePercents[i];
             var after = whiteMoved ? whitePercents[i + 1] : 100 - whitePercents[i + 1];
             var loss = Math.Max(0, (before - after) * 2); // percent of winning chance → points on the −100…+100 scale
-            var playedBest = positions[i].Line.FirstOrDefault() == played[i];
+            var playedBest = positions[i].Line is [var best, ..] && best == played[i];
             moves.Add(new AssessedMove(i + 1, loss, playedBest ? null : Classify(loss), Accuracy.OfMove(before, after)));
         }
 

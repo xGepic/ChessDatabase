@@ -103,7 +103,7 @@ public static partial class MastersEndpoints
     /// <summary>The game's main line replayed by Chess Rules, or null if Lichess's PGN can't be read.</summary>
     private static MasterGameDto? ToGame(string id, string pgn, Position? asked)
     {
-        if (PgnReader.Read(pgn).FirstOrDefault()?.Entry is not { } entry) return null;
+        if (PgnReader.Read(pgn) is not [{ Entry: { } entry }, ..]) return null;
         var position = Position.Initial;
         var moves = new List<MasterMoveDto>();
         int? ply = asked is not null && position.Hash == asked.Hash ? 0 : null;

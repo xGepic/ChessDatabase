@@ -59,7 +59,7 @@ public static class AssessmentQueries
             var move = assessment.Moves[ply];
             moves.Add(new AssessedMoveDto(
                 ply + 1, matching ? current[ply].Id : null, position.ToSan(played), move.Classification,
-                Round(move.Loss), Round(move.Accuracy), bestSan.FirstOrDefault(), bestSan, [.. bestMoves.Select(b => b.ToUci())]));
+                Round(move.Loss), Round(move.Accuracy), bestSan is [var best, ..] ? best : null, bestSan, [.. bestMoves.Select(b => b.ToUci())]));
             position = position.Play(played);
         }
 

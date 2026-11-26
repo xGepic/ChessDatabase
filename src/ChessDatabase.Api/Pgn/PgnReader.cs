@@ -21,7 +21,7 @@ public sealed class PgnMove(string san)
 /// </summary>
 public sealed class PgnEntry
 {
-    public Dictionary<string, string> Tags { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Tags { get; } = [with(StringComparer.OrdinalIgnoreCase)];
     public List<PgnMove> Moves { get; } = [];
 
     /// <summary>The result written after the moves ("1-0", "0-1", "1/2-1/2", "*"), if any.</summary>

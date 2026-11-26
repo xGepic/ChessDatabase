@@ -21,8 +21,8 @@ public sealed record PersonName(string Surname, IReadOnlyList<string> Given)
         if (words.Count == 1) return new PersonName(words[0], []);
 
         // "Mustermann M." puts the initials last; "Max Mustermann" puts the surname last.
-        if (words.Skip(1).All(IsInitial)) return new PersonName(words[0], words.Skip(1).ToList());
-        return new PersonName(words[^1], words.Take(words.Count - 1).ToList());
+        if (words.Skip(1).All(IsInitial)) return new PersonName(words[0], [.. words.Skip(1)]);
+        return new PersonName(words[^1], [.. words.Take(words.Count - 1)]);
     }
 
     /// <summary>

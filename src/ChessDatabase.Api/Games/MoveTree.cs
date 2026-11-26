@@ -167,7 +167,7 @@ public sealed class MoveTree(IEnumerable<MoveNodeRecord> nodes) : MoveTree<MoveN
     public IReadOnlyList<MoveNodeRecord> MainLine()
     {
         var line = new List<MoveNodeRecord>();
-        for (var next = ChildrenOf(null).FirstOrDefault(); next is not null; next = ChildrenOf(next.Id).FirstOrDefault())
+        for (var children = ChildrenOf(null); children is [var next, ..]; children = ChildrenOf(next.Id))
             line.Add(next);
         return line;
     }

@@ -45,10 +45,9 @@ public static class EventsAndTags
     public static List<T> Search<T>(IEnumerable<T> all, Func<T, string> name, string? search)
     {
         var term = search?.Trim() ?? "";
-        return all
+        return [.. all
             .Where(x => term.Length == 0 || name(x).Contains(term, StringComparison.CurrentCultureIgnoreCase))
             .OrderBy(name, StringComparer.CurrentCultureIgnoreCase)
-            .Take(term.Length == 0 ? int.MaxValue : SuggestionLimit)
-            .ToList();
+            .Take(term.Length == 0 ? int.MaxValue : SuggestionLimit)];
     }
 }
