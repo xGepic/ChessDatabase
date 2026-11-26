@@ -33,8 +33,12 @@ public sealed record UciInfo(int Depth, int MultiPv, EngineScore Score, IReadOnl
         {
             switch (words[i])
             {
-                case "depth" when i + 1 < words.Length: int.TryParse(words[++i], out depth); break;
-                case "multipv" when i + 1 < words.Length: int.TryParse(words[++i], out multiPv); break;
+                case "depth" when i + 1 < words.Length:
+                    if (!int.TryParse(words[++i], out depth)) return false;
+                    break;
+                case "multipv" when i + 1 < words.Length:
+                    if (!int.TryParse(words[++i], out multiPv)) return false;
+                    break;
                 case "score" when i + 2 < words.Length:
                     if (!int.TryParse(words[i + 2], out var value)) return false;
                     if (words[i + 1] == "cp") cp = value;

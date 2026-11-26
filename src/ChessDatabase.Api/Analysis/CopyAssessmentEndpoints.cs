@@ -43,7 +43,7 @@ public static class CopyAssessmentEndpoints
     }
 
     /// <summary>Copies the moves and returns how many of them changed anything.</summary>
-    private static async Task<int> CopyAsync(CollectionDbContext db, int gameId, IReadOnlyList<AssessedMoveDto> moves)
+    private static async Task<int> CopyAsync(CollectionDbContext db, int gameId, List<AssessedMoveDto> moves)
     {
         if (moves.Count == 0) return 0;
         var game = await db.Games.Include(g => g.MoveNodes).SingleAsync(g => g.Id == gameId);

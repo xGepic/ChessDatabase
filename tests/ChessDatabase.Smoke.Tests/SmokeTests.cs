@@ -124,7 +124,7 @@ public class SmokeTests : IAsyncLifetime
 
         await Page.GetByTestId("tag-input").FillAsync("open tournament");
         await Page.GetByTestId("tag-input").PressAsync("Enter");
-        await Expect(Page.GetByTestId("tag")).ToHaveTextAsync([new System.Text.RegularExpressions.Regex("open tournament")]);
+        await Expect(Page.GetByTestId("tag")).ToContainTextAsync("open tournament");
 
         await Page.GetByTestId("tab-games").ClickAsync();
         await Expect(Page.GetByTestId("game-event")).ToHaveTextAsync("Vienna Open");

@@ -38,7 +38,7 @@ public class GameEndTests
     [Fact]
     public void Playing_an_illegal_move_throws()
     {
-        Move.TryParseUci("e2e5", out var move);
+        Assert.True(Move.TryParseUci("e2e5", out var move));
 
         Assert.Throws<IllegalMoveException>(() => Position.Initial.Play(move));
     }

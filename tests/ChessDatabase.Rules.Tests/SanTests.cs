@@ -40,7 +40,7 @@ public class SanTests
     public void Formats_known_san(string fen, string uci, string expectedSan)
     {
         var position = Position.FromFen(fen);
-        Move.TryParseUci(uci, out var move);
+        Assert.True(Move.TryParseUci(uci, out var move));
 
         Assert.Equal(expectedSan, position.ToSan(move));
         Assert.Equal(move, position.ParseSan(expectedSan));
@@ -76,7 +76,7 @@ public class SanTests
     public void Accepts_common_variants(string san, string uci)
     {
         var position = Position.FromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq - 0 1");
-        Move.TryParseUci(uci, out var move);
+        Assert.True(Move.TryParseUci(uci, out var move));
 
         Assert.Equal(move, position.ParseSan(san));
     }

@@ -1,10 +1,11 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using ChessDatabase.Api.Games;
 
 namespace ChessDatabase.Api.Pgn;
 
 /// <summary>Conversions between PGN tag values and the Collection's values. Dates: see <see cref="GameDates"/>.</summary>
-public static class PgnValues
+public static partial class PgnValues
 {
     /// <summary>A tag's text, or null when it is empty or PGN's "unknown" ("?") or "not applicable" ("-").</summary>
     public static string? OptionalTag(string? value)
@@ -62,8 +63,12 @@ public static class PgnValues
     /// <summary>Reverses <see cref="CommentToPgn"/>: blank lines become line breaks, other whitespace one space.</summary>
     public static string CommentFromPgn(string text)
     {
-        var paragraphs = System.Text.RegularExpressions.Regex.Split(text.Replace("\r\n", "\n"), @"\n[ \t]*\n");
+        var paragraphs = BlankLine().Split(text.Replace("\r\n", "\n"));
         var lines = paragraphs.Select(p => string.Join(' ', p.Split((char[])[' ', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries)));
         return string.Join('\n', lines).Trim();
     }
+
+    /// <summary>A blank line: a line break, maybe spaces or tabs, another line break.</summary>
+    [GeneratedRegex(@"\n[ \t]*\n")]
+    private static partial Regex BlankLine();
 }

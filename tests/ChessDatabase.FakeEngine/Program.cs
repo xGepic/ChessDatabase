@@ -98,11 +98,11 @@ async Task SearchAsync(Answer answer, bool infinite, CancellationToken stop)
     {
         if (stop.IsCancellationRequested) break;
         if (script.LineDelayMs > 0)
-            await Task.Delay(script.LineDelayMs, stop).ContinueWith(_ => { });
+            await Task.Delay(script.LineDelayMs, stop).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         if (stop.IsCancellationRequested) break;
         Send("info " + info);
     }
-    if (infinite) await Task.Delay(Timeout.Infinite, stop).ContinueWith(_ => { });
+    if (infinite) await Task.Delay(Timeout.Infinite, stop).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     Send("bestmove " + answer.Bestmove);
 }
 
