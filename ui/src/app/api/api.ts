@@ -58,6 +58,29 @@ export interface Repertoire extends MoveTreeView {
   side: OwnerColour;
 }
 
+/**
+ * Where a Game left the Owner's Repertoire for the Owner's colour. "endOfRepertoire": the
+ * Repertoire had no move for the position at ply; "gameEnded": still in the Repertoire at the end.
+ */
+export interface Deviation {
+  status: 'deviation' | 'endOfRepertoire' | 'gameEnded';
+  ply: number | null;
+  nodeId: number | null;
+  by: 'owner' | 'opponent' | null;
+  san: string | null;
+  /** What the Repertoire plays there, main continuation first. */
+  expected: string[];
+}
+
+/** A Game where the Owner left their own Repertoire. */
+export interface OwnerDeviation {
+  game: GameSummary;
+  ply: number;
+  nodeId: number;
+  san: string;
+  expected: string[];
+}
+
 export interface Game extends GameSummary {
   site: string | null;
   round: string | null;
@@ -589,6 +612,13 @@ export class Api {
   }
 
   // Repertoire
+  deviation(gameId: number): Observable<Deviation> {
+    return this.http.get<Deviation>(`/api/games/${gameId}/deviation`);
+  }
+  /** The Owner's own Deviations; the filters are the game list's. */
+  ownerDeviations(filters: Record<string, string>): Observable<OwnerDeviation[]> {
+    return this.http.get<OwnerDeviation[]>('/api/repertoire/deviations', { params: filters });
+  }
   repertoire(side: OwnerColour): Observable<Repertoire> {
     return this.http.get<Repertoire>(`/api/repertoire/${side}`);
   }

@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  AnalysisLine, Api, BoardMove, Classification, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
+  AnalysisLine, Api, BoardMove, Classification, Deviation, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
 import { nextPly, numberedLine } from '../engine/scores';
 import { continuations, lineEnd, pathTo } from './notation';
@@ -309,6 +309,41 @@ export class GameReview {
 
   // ---------------------------------------------------------------- Repertoire
 
+  // ---------------------------------------------------------------- Deviation
+
+  protected readonly deviation = signal<Deviation | null>(null);
+  /** The main line as text: the Deviation is looked up again whenever it changes. */
+  private readonly mainLineKey = computed(() => {
+    const game = this.game();
+    if (!game) return null;
+    const moves = pathTo(this.nodes(), lineEnd(game, this.nodes(), null));
+    return `${game.id}:${game.ownerColour}:${moves.join(' ')}`;
+  });
+  private readonly loadDeviationOnChange = effect(() => {
+    if (this.mainLineKey() !== null) untracked(() => this.loadDeviation());
+  });
+
+  private loadDeviation() {
+    const game = this.game();
+    if (!game) return;
+    this.api.deviation(game.id).subscribe({ next: (d) => this.deviation.set(d), error: () => this.deviation.set(null) });
+  }
+
+  /** "You left your Repertoire with 3.Bc4 (your Repertoire: 3.Nf3)" and the like. */
+  protected readonly deviationText = computed(() => {
+    const d = this.deviation();
+    const game = this.game();
+    if (!d || !game) return null;
+    const colour = game.ownerColour === 'white' ? 'White' : 'Black';
+    if (d.status === 'gameEnded') return `In your ${colour} Repertoire to the end.`;
+    const played = numberedLine(d.ply!, [d.san!]);
+    if (d.status === 'endOfRepertoire')
+      return d.ply === 1 ? `Your ${colour} Repertoire has no moves yet.` : `End of your ${colour} Repertoire at ${played}.`;
+    const expected = d.expected.map((san) => numberedLine(d.ply!, [san])).join(' or ');
+    const who = d.by === 'owner' ? 'You' : 'Your Opponent';
+    return `${who} left your Repertoire with ${played} (your Repertoire: ${expected}).`;
+  });
+
   protected readonly repertoireMessage = signal('');
   /** The note is about the position it was added at; it goes when the board shows another. */
   private readonly clearRepertoireMessage = effect(() => {
@@ -323,7 +358,10 @@ export class GameReview {
     if (!game || !moves.length) return;
     const side = game.ownerColour;
     this.api.addRepertoireLine(side, null, moves).subscribe({
-      next: () => this.repertoireMessage.set(`Added to your ${side === 'white' ? 'White' : 'Black'} Repertoire.`),
+      next: () => {
+        this.repertoireMessage.set(`Added to your ${side === 'white' ? 'White' : 'Black'} Repertoire.`);
+        this.loadDeviation();
+      },
       error: (e) => this.repertoireMessage.set(problemMessage(e)),
     });
   }

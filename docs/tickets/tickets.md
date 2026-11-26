@@ -31,7 +31,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 21 | [Merge Players](#21-merge-players) | 20 | **Done** |
 | 22 | [Owner Dossier and statistics](#22-owner-dossier-and-statistics) | 12, 20 | **Done** |
 | 23 | [Repertoire builder](#23-repertoire-builder) | 16 | **Done** |
-| 24 | [Deviation check](#24-deviation-check) | 23 | Open |
+| 24 | [Deviation check](#24-deviation-check) | 23 | **Done** |
 | 25 | [Repertoire Training](#25-repertoire-training) | 23 | Open |
 | 26 | [Mistake Training](#26-mistake-training) | 12, 25 | Open |
 | 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | Open |
@@ -431,12 +431,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 23 (Repertoire builder).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Game view marks the Deviation move and says who deviated
-- [ ] Games that never left the Repertoire before it ran out are shown as "end of Repertoire" rather than a Deviation
-- [ ] A list of the Owner's own Deviations, with the expected Repertoire move, is available and filterable
-- [ ] API tests cover Owner Deviation, Opponent Deviation, end of Repertoire and a transposition
+- [x] The Game view marks the Deviation move and says who deviated
+- [x] Games that never left the Repertoire before it ran out are shown as "end of Repertoire" rather than a Deviation
+- [x] A list of the Owner's own Deviations, with the expected Repertoire move, is available and filterable
+- [x] API tests cover Owner Deviation, Opponent Deviation, end of Repertoire and a transposition
 
 ---
 

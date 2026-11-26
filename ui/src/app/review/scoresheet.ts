@@ -64,6 +64,7 @@ export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
     <ng-template #moveButton let-node let-label="label">
       <button type="button" class="move" [class.current]="node.id === currentId()" [attr.data-node]="node.id"
               [attr.data-mark]="marks().get(node.id) ?? null" [attr.title]="markTitle(node.id)"
+              [attr.data-deviation]="node.id === deviationId() ? '' : null"
               data-testid="move" (click)="select.emit(node.id)" (contextmenu)="openMenu($event, node)">{{ label }}</button>
     </ng-template>
 
@@ -89,6 +90,8 @@ export class Scoresheet {
   readonly currentId = input<number | null>(null);
   /** Move Classifications from the Engine Assessment, by move. Shown as a coloured mark, never as a symbol. */
   readonly marks = input<ReadonlyMap<number, Classification>>(new Map());
+  /** The Deviation: the move where the Game left the Owner's Repertoire. */
+  readonly deviationId = input<number | null>(null);
   readonly select = output<number | null>();
   readonly action = output<{ action: TreeAction; node: MoveNode }>();
 
@@ -110,7 +113,8 @@ export class Scoresheet {
 
   protected markTitle(id: number): string | null {
     const mark = this.marks().get(id);
-    return mark ? `Engine: ${mark}` : null;
+    const titles = [mark ? `Engine: ${mark}` : null, id === this.deviationId() ? 'Left the Repertoire here' : null];
+    return titles.filter((t) => t).join(' · ') || null;
   }
 
   protected openMenu(event: MouseEvent, node: MoveNode) {

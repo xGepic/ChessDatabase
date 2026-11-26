@@ -57,8 +57,15 @@
         @if (g.eco) {
           <div class="sheet-opening" data-testid="opening"><span class="mono">{{ g.eco }}</span> {{ g.openingName }}</div>
         }
+        @if (deviationText(); as text) {
+          <div class="sheet-deviation" data-testid="deviation" [attr.data-by]="deviation()?.by">
+            @if (deviation()?.nodeId; as nodeId) {
+              <button type="button" class="link-button" (click)="goTo(nodeId)" title="Show the move">{{ text }}</button>
+            } @else { {{ text }} }
+          </div>
+        }
       </header>
-      <app-scoresheet [game]="g" [currentId]="currentId()" [marks]="marks()" (select)="currentId.set($event)" (action)="onTreeAction($event)" />
+      <app-scoresheet [game]="g" [currentId]="currentId()" [marks]="marks()" [deviationId]="deviation()?.nodeId ?? null" (select)="currentId.set($event)" (action)="onTreeAction($event)" />
     </section>
 
     <div class="side-column">

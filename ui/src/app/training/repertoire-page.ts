@@ -36,6 +36,7 @@ import { INITIAL_FEN } from '../shared/chess';
             <a role="tab" class="button" routerLink="/repertoire/black" [class.on]="side() === 'black'" [attr.aria-selected]="side() === 'black'"
                data-testid="repertoire-black">Black</a>
           </div>
+          <a routerLink="/repertoire/deviations" data-testid="my-deviations" title="Games where you left your own Repertoire">My Deviations</a>
           <p class="hint">What you play with {{ side() === 'white' ? 'White' : 'Black' }}. Play moves on the board to add them;
             right-click a move to promote or delete it.</p>
         </header>

@@ -228,6 +228,9 @@ app-eval-bar .eval-bar { flex: 1; }
 /* ---------- Game Analysis: Engine Assessment ---------- */
 :root { --mark-inaccuracy: #c28a1e; --mark-mistake: #c4622d; --mark-blunder: #a3271b; }
 .move[data-mark] { box-shadow: inset 0 -3px 0 var(--mark); }
+.move[data-deviation] { outline: 2px dashed var(--rosewood); outline-offset: -2px; }
+.sheet-deviation { padding: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+.sheet-deviation .link-button { text-align: left; }
 .move[data-mark="inaccuracy"], .classified-move[data-mark="inaccuracy"], .graph-dot.inaccuracy { --mark: var(--mark-inaccuracy); }
 .move[data-mark="mistake"], .classified-move[data-mark="mistake"], .graph-dot.mistake { --mark: var(--mark-mistake); }
 .move[data-mark="blunder"], .classified-move[data-mark="blunder"], .graph-dot.blunder { --mark: var(--mark-blunder); }

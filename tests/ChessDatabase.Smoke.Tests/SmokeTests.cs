@@ -713,6 +713,27 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("repertoire-comment")).ToHaveValueAsync("The main line.");
     }
 
+    [Fact]
+    public async Task A_Game_shows_where_it_left_the_Repertoire_and_the_list_collects_my_own_Deviations()
+    {
+        await _app.AddRepertoireLineAsync("white", "e4", "e5", "Nf3", "Nc6", "Bb5");
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Bc4", "Nf6");
+
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Expect(Page.GetByTestId("deviation")).ToHaveTextAsync("You left your Repertoire with 2.Bc4 (your Repertoire: 2.Nf3).");
+        await Expect(Page.Locator("[data-testid=move][data-deviation]")).ToHaveTextAsync("Bc4");
+
+        await Page.GotoAsync($"{_app.BaseUrl}/repertoire/white");
+        await Page.GetByTestId("my-deviations").ClickAsync();
+        await Expect(Page.GetByTestId("deviation-row")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("deviation-row")).ToContainTextAsync("2.Nf3");
+        await Page.GetByTestId("deviations-colour").SelectOptionAsync("black");
+        await Expect(Page.GetByTestId("deviation-row")).ToHaveCountAsync(0);
+        await Page.GetByTestId("deviations-colour").SelectOptionAsync("white");
+        await Page.GetByTestId("deviation-row").ClickAsync();
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape($"/games/{gameId}?ply=3")));
+    }
+
     private static string Key(params string[] san)
     {
         var position = ChessDatabase.Rules.Position.Initial;

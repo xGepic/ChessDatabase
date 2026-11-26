@@ -97,6 +97,13 @@ public sealed class SmokeApp : IAsyncLifetime
         return gameId;
     }
 
+    /// <summary>Adds a line (SAN from the start) to the Owner's Repertoire for a colour.</summary>
+    public async Task AddRepertoireLineAsync(string side, params string[] moves)
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        (await http.PostAsJsonAsync($"/api/repertoire/{side}/lines", new { parentId = (int?)null, moves })).EnsureSuccessStatusCode();
+    }
+
     /// <summary>
     /// Points the Engine at the scripted fake engine. Keys are FENs (first four fields), values the
     /// engine's "info" lines (text after "info ") and its best move; see tests/ChessDatabase.FakeEngine.
