@@ -14,7 +14,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | **Done** |
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | **Done** |
 | 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | **Done** |
-| 07 | [Import PGN](#07-import-pgn) | 05, 06 | Open |
+| 07 | [Import PGN](#07-import-pgn) | 05, 06 | **Done** |
 | 08 | [Import review list](#08-import-review-list) | 07 | Open |
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | Open |
 | 10 | [Filter and sort the game list](#10-filter-and-sort-the-game-list) | 06, 09 | Open |
@@ -154,16 +154,16 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 05 (Annotate moves), 06 (Game details, Tags and ECO).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] PGN file import and PGN paste both work for multi-game input
-- [ ] Nested Variations, comments and NAGs survive import and render in the notation
-- [ ] German-letter moves import correctly and display in English
-- [ ] Aliases can be managed in Settings; matching is case-insensitive and tolerant of "Surname, Firstname" vs "Surname F." forms of the Owner's own name
-- [ ] Missing or 0 Elo tags import as unrated
-- [ ] A malformed Game is reported in the summary with a reason; the other Games still import
-- [ ] Games with no Owner match or no result are held back from the Collection and counted as "needs review"
-- [ ] API tests import a fixture PGN containing all of the above cases and check the summary and the resulting Games
+- [x] PGN file import and PGN paste both work for multi-game input
+- [x] Nested Variations, comments and NAGs survive import and render in the notation
+- [x] German-letter moves import correctly and display in English
+- [x] Aliases can be managed in Settings; matching is case-insensitive and tolerant of "Surname, Firstname" vs "Surname F." forms of the Owner's own name
+- [x] Missing or 0 Elo tags import as unrated
+- [x] A malformed Game is reported in the summary with a reason; the other Games still import
+- [x] Games with no Owner match or no result are held back from the Collection and counted as "needs review"
+- [x] API tests import a fixture PGN containing all of the above cases and check the summary and the resulting Games
 
 ---
 

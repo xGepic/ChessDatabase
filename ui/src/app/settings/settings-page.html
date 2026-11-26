@@ -9,5 +9,20 @@
         @if (status()) { <span class="status" data-testid="settings-status">{{ status() }}</span> }
       </p>
     </div>
+
+    <label for="alias-input">Aliases</label>
+    <div>
+      <div class="tags">
+        @for (alias of aliases(); track alias) {
+          <span class="tag" data-testid="alias">{{ alias }}
+            <button type="button" class="tag-remove" [attr.aria-label]="'Remove alias ' + alias" (click)="removeAlias(alias)">×</button>
+          </span>
+        }
+        <input #aliasInput id="alias-input" data-testid="alias-input" placeholder="Add another spelling"
+               (keydown.enter)="addAlias(aliasInput)" (blur)="addAlias(aliasInput)" />
+      </div>
+      <p class="hint">Other spellings of your name in PGN files, such as a nickname. "Mustermann, Max", "Mustermann M." and
+        "Max Mustermann" are recognised without an Alias.</p>
+    </div>
   </div>
 </section>

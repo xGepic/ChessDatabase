@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126121357_GameDetailsTagsEco";
+    public override string LastMigrationId => "20261126122015_ImportPgn";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -106,6 +106,37 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("Games");
             });
 
+        modelBuilder.Entity("ChessDatabase.Api.Collection.ImportReviewItemRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Black")
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Date")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Pgn")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Reason")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("White")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.ToTable("ImportReviewItems");
+            });
+
         modelBuilder.Entity("ChessDatabase.Api.Collection.MoveNodeRecord", b =>
             {
                 b.Property<int>("Id")
@@ -171,6 +202,10 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
                     .HasColumnType("INTEGER");
+
+                b.PrimitiveCollection<string>("Aliases")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("OwnerName")
                     .IsRequired()
@@ -239,10 +274,12 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
-                b.HasOne("ChessDatabase.Api.Collection.MoveNodeRecord", null)
+                b.HasOne("ChessDatabase.Api.Collection.MoveNodeRecord", "Parent")
                     .WithMany()
                     .HasForeignKey("ParentId")
                     .OnDelete(DeleteBehavior.Cascade);
+
+                b.Navigation("Parent");
             });
 
         modelBuilder.Entity("GameRecordTagRecord", b =>

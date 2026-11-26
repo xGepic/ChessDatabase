@@ -53,6 +53,12 @@ public sealed class SmokeApp : IAsyncLifetime
         Page.SetDefaultTimeout(10_000);
     }
 
+    public async Task SetOwnerNameAsync(string name)
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        (await http.PutAsJsonAsync("/api/settings", new { ownerName = name })).EnsureSuccessStatusCode();
+    }
+
     /// <summary>Creates a Game with the given main line straight through the API, to start a test mid-story.</summary>
     public async Task<int> CreateGameAsync(params string[] moves)
     {

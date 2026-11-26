@@ -131,6 +131,38 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Import_pasted_pgn_and_open_the_imported_game()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        const string pgn = """
+            [White "Owner, Smoke"]
+            [Black "Huber, Thomas"]
+            [Result "1-0"]
+
+            1. e4 e5 2. Sf3 {Knight out} Sc6 (2... d6 3. d4) 3. Lb5 1-0
+
+            [White "Owner, Smoke"]
+            [Black "Broken, Bob"]
+            [Result "1-0"]
+
+            1. e4 e5 2. Kxe8 1-0
+            """;
+        await Page.GotoAsync($"{_app.BaseUrl}/import");
+
+        await Page.GetByTestId("pgn-text").FillAsync(pgn);
+        await Page.GetByTestId("import-pasted").ClickAsync();
+
+        await Expect(Page.GetByTestId("count-imported")).ToHaveTextAsync("1");
+        await Expect(Page.GetByTestId("count-failed")).ToHaveTextAsync("1");
+        await Expect(Page.GetByTestId("import-row").Nth(1)).ToContainTextAsync("Kxe8");
+
+        await Page.GetByTestId("import-row").First.GetByRole(AriaRole.Link, new() { Name = "Open" }).ClickAsync();
+        await Expect(Page.GetByTestId("comment")).ToHaveTextAsync("Knight out");
+        await Expect(Page.GetByTestId("variation")).ToHaveTextAsync("2...d6 3.d4");
+        await Expect(Page.GetByTestId("move").Last).ToHaveTextAsync("Bb5");
+    }
+
+    [Fact]
     public async Task Annotate_a_move_with_a_symbol_and_a_comment()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");

@@ -74,6 +74,26 @@ export interface GameDetails {
 
 export interface Settings {
   ownerName: string;
+  /** Other spellings of the Owner's name, used to recognise the Owner on import. */
+  aliases: string[];
+}
+
+export type ImportStatus = 'imported' | 'needsReview' | 'failed';
+
+export interface ImportedGame {
+  index: number;
+  status: ImportStatus;
+  reason: string | null;
+  white: string | null;
+  black: string | null;
+  gameId: number | null;
+}
+
+export interface ImportSummary {
+  imported: number;
+  needsReview: number;
+  failed: number;
+  games: ImportedGame[];
 }
 
 export const RESULTS: { value: GameResult; label: string }[] = [
@@ -159,6 +179,16 @@ export class Api {
   }
   createPlayer(name: string): Observable<Player> {
     return this.http.post<Player>('/api/players', { name });
+  }
+
+  // Import
+  importText(pgn: string): Observable<ImportSummary> {
+    return this.http.post<ImportSummary>('/api/import/text', { pgn });
+  }
+  importFile(file: File): Observable<ImportSummary> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<ImportSummary>('/api/import/file', form);
   }
 
   // Settings

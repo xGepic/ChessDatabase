@@ -1,0 +1,51 @@
+<section class="card list-card">
+  <header class="card-head"><h1>Import PGN</h1></header>
+  <div class="import-body">
+    <div class="import-file">
+      <label class="button primary" for="pgn-file">Choose PGN file…</label>
+      <input id="pgn-file" data-testid="pgn-file" type="file" accept=".pgn,text/plain" class="sr-only"
+             (change)="importFile($any($event.target))" />
+      <span class="hint">Games are recognised as yours by your name or an Alias (see Settings).</span>
+    </div>
+    <label for="pgn-text" class="label">Or paste PGN</label>
+    <textarea id="pgn-text" data-testid="pgn-text" rows="8" spellcheck="false"
+              placeholder='[White "…"] [Black "…"] … 1. e4 e5 …' [value]="pgn()"
+              (input)="pgn.set($any($event.target).value)"></textarea>
+    <div class="form-actions">
+      <button type="button" class="primary" data-testid="import-pasted" [disabled]="busy() || !pgn().trim()"
+              (click)="importText()">Import pasted PGN</button>
+      @if (busy()) { <span class="hint">Importing…</span> }
+      @if (error()) { <span class="field-error">{{ error() }}</span> }
+    </div>
+  </div>
+
+  @if (summary(); as s) {
+    <div class="import-summary" data-testid="import-summary">
+      <p>
+        <strong data-testid="count-imported">{{ s.imported }}</strong> imported ·
+        <strong data-testid="count-review">{{ s.needsReview }}</strong> need review ·
+        <strong data-testid="count-failed">{{ s.failed }}</strong> failed
+      </p>
+      <table class="game-table">
+        <thead><tr><th class="num">#</th><th>White</th><th>Black</th><th>Status</th><th>Details</th></tr></thead>
+        <tbody>
+          @for (g of s.games; track g.index) {
+            <tr [class]="'import-' + g.status" data-testid="import-row">
+              <td class="num">{{ g.index }}</td>
+              <td>{{ g.white ?? '?' }}</td>
+              <td>{{ g.black ?? '?' }}</td>
+              <td>{{ statusLabels[g.status] }}</td>
+              <td>
+                @if (g.gameId) {
+                  <a [routerLink]="['/games', g.gameId]">Open</a>
+                } @else {
+                  {{ g.reason }}
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

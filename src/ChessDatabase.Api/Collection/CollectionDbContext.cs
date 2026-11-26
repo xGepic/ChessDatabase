@@ -12,6 +12,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<EventRecord> Events => Set<EventRecord>();
     public DbSet<TagRecord> Tags => Set<TagRecord>();
     public DbSet<SettingsRecord> Settings => Set<SettingsRecord>();
+    public DbSet<ImportReviewItemRecord> ImportReviewItems => Set<ImportReviewItemRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -41,7 +42,7 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
         {
             node.Property(n => n.Uci).HasMaxLength(5);
             node.Property(n => n.San).HasMaxLength(10);
-            node.HasOne<MoveNodeRecord>().WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
+            node.HasOne(n => n.Parent).WithMany().HasForeignKey(n => n.ParentId).OnDelete(DeleteBehavior.Cascade);
             node.HasIndex(n => new { n.GameId, n.ParentId, n.Order });
         });
     }
@@ -129,6 +130,9 @@ public sealed class MoveNodeRecord
     /// <summary>Null for the first move of the Game (or of a Variation on the first move).</summary>
     public int? ParentId { get; set; }
 
+    /// <summary>Set when building a tree in one go (PGN import), so ids are assigned on save.</summary>
+    public MoveNodeRecord? Parent { get; set; }
+
     public int Order { get; set; }
     public string Uci { get; set; } = "";
     public string San { get; set; } = "";
@@ -152,4 +156,22 @@ public sealed class SettingsRecord
     public const int SingletonId = 1;
     public int Id { get; set; } = SingletonId;
     public string OwnerName { get; set; } = "";
+
+    /// <summary>Other spellings of the Owner's name (stored as a JSON array).</summary>
+    public List<string> Aliases { get; set; } = [];
+}
+
+/// <summary>
+/// An imported Game held back from the Collection until the Owner resolves it: no side matched the
+/// Owner, or the result was missing. The Game is kept as its PGN text.
+/// </summary>
+public sealed class ImportReviewItemRecord
+{
+    public int Id { get; set; }
+    public string Pgn { get; set; } = "";
+    public string Reason { get; set; } = "";
+    public string? White { get; set; }
+    public string? Black { get; set; }
+    public string? Date { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

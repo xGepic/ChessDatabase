@@ -45,6 +45,13 @@ public static class TestApi
         (await client.PutAsJsonAsync($"/api/games/{game.Id}", body)).EnsureSuccessStatusCode();
     }
 
+    public static async Task<ImportSummaryDto> ImportTextAsync(this HttpClient client, string pgn)
+    {
+        var response = await client.PostAsJsonAsync("/api/import/text", new { pgn });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ImportSummaryDto>())!;
+    }
+
     public static async Task<GameDto> GetGameAsync(this HttpClient client, int id) =>
         (await client.GetFromJsonAsync<GameDto>($"/api/games/{id}"))!;
 

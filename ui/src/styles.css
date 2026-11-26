@@ -265,3 +265,14 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .tag-remove { border: none; background: transparent; padding: 0 5px; border-radius: 10px; line-height: 1.2; }
 .tag-remove:hover { background: var(--rosewood) !important; color: var(--cream); }
 .sheet-opening { font-size: 12px; color: var(--ink-soft); }
+
+/* ---------- import ---------- */
+.import-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.import-file { display: flex; align-items: center; gap: 12px; }
+.import-file label.button { cursor: pointer; }
+.import-body textarea { width: 100%; resize: vertical; font-family: var(--move-font); font-size: 13px; }
+.import-summary { border-top: 1px solid var(--rule); }
+.import-summary p { padding: 12px 16px 4px; margin: 0; }
+.import-summary tbody tr { cursor: default; }
+.import-failed td:nth-child(4) { color: var(--blood); font-weight: 600; }
+.import-needsReview td:nth-child(4) { color: #8a5a00; font-weight: 600; }
