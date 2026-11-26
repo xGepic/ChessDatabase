@@ -1,15 +1,32 @@
 <section class="card list-card">
   <header class="card-head">
     <h1>Games</h1>
+    <span class="spacer"></span>
+    <a class="button primary" routerLink="/games/new" data-testid="new-game">New Game</a>
   </header>
   @if (games(); as list) {
     @if (list.length === 0) {
-      <p class="empty" data-testid="empty-game-list">No Games yet.</p>
+      <p class="empty" data-testid="empty-game-list">No Games yet. Start with <a routerLink="/games/new">New Game</a>.</p>
     } @else {
       <table class="game-table" data-testid="game-list">
+        <thead>
+          <tr>
+            <th>Date</th><th>White</th><th class="num">Elo</th><th>Black</th><th class="num">Elo</th>
+            <th>Result</th><th>Opponent</th><th>Colour</th>
+          </tr>
+        </thead>
         <tbody>
           @for (game of list; track game.id) {
-            <tr><td>{{ game.id }}</td></tr>
+            <tr (click)="open(game)" (keydown.enter)="open(game)" tabindex="0" data-testid="game-row">
+              <td class="mono">{{ game.date ?? '' }}</td>
+              <td [class.owner]="game.ownerColor === 'white'">{{ game.white }}</td>
+              <td class="num" [class.unrated]="!game.whiteElo">{{ eloLabel(game.whiteElo) }}</td>
+              <td [class.owner]="game.ownerColor === 'black'">{{ game.black }}</td>
+              <td class="num" [class.unrated]="!game.blackElo">{{ eloLabel(game.blackElo) }}</td>
+              <td class="mono">{{ resultLabel(game.result) }}</td>
+              <td data-testid="game-opponent">{{ game.opponent.name }}</td>
+              <td><span class="colour-dot" [class.black]="game.ownerColor === 'black'"></span>{{ game.ownerColor === 'white' ? 'White' : 'Black' }}</td>
+            </tr>
           }
         </tbody>
       </table>

@@ -1,5 +1,7 @@
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
+using ChessDatabase.Api.Players;
+using ChessDatabase.Api.Settings;
 
 namespace ChessDatabase.Api;
 
@@ -15,7 +17,7 @@ public static class ChessDatabaseApp
             ? WebApplication.CreateBuilder(args)
             : WebApplication.CreateBuilder(options);
 
-        builder.Services.AddCollection(builder.Configuration);
+        builder.Services.AddCollection();
         builder.Services.AddProblemDetails();
         builder.Services.ConfigureHttpJsonOptions(o =>
             o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(
@@ -32,6 +34,8 @@ public static class ChessDatabaseApp
         app.UseStaticFiles();
 
         app.MapGameEndpoints();
+        app.MapSettingsEndpoints();
+        app.MapPlayerEndpoints();
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.
         app.MapFallbackToFile("index.html");

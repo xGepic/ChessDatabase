@@ -10,7 +10,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 |---|---|---|---|
 | 01 | [Walking skeleton](#01-walking-skeleton) | – | **Done** |
 | 02 | [Chess Rules core](#02-chess-rules-core) | 01 | **Done** |
-| 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | Open |
+| 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | **Done** |
 | 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | Open |
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | Open |
 | 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | Open |
@@ -83,18 +83,18 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 01 (Walking skeleton), 02 (Chess Rules core).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Owner's name can be set in Settings and is shown as the Owner's side of every Game
-- [ ] Opponent autocomplete suggests existing Players; a new Player can be created inline
-- [ ] Elo empty or 0 is stored and shown as "unrated" for either side, including the Owner's
-- [ ] Moves are entered by drag or click; illegal moves are rejected instantly in the UI and refused by the API
-- [ ] The result (1-0, 0-1, ½-½) is required; the API refuses to save a Game as complete without one
-- [ ] Changes save automatically without a Save button; reopening the app shows the Game unchanged
-- [ ] A Game can be deleted after confirmation
-- [ ] The board is shown from the Owner's colour by default
-- [ ] API tests cover creating a Game, adding moves, refusing an illegal move, Elo 0 reading back as unrated, and refusing a missing result
-- [ ] The Playwright smoke test enters a short Game and finds it in the game list
+- [x] The Owner's name can be set in Settings and is shown as the Owner's side of every Game
+- [x] Opponent autocomplete suggests existing Players; a new Player can be created inline
+- [x] Elo empty or 0 is stored and shown as "unrated" for either side, including the Owner's
+- [x] Moves are entered by drag or click; illegal moves are rejected instantly in the UI and refused by the API
+- [x] The result (1-0, 0-1, ½-½) is required; the API refuses to save a Game as complete without one
+- [x] Changes save automatically without a Save button; reopening the app shows the Game unchanged
+- [x] A Game can be deleted after confirmation
+- [x] The board is shown from the Owner's colour by default
+- [x] API tests cover creating a Game, adding moves, refusing an illegal move, Elo 0 reading back as unrated, and refusing a missing result
+- [x] The Playwright smoke test enters a short Game and finds it in the game list
 
 ---
 

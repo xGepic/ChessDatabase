@@ -1,0 +1,38 @@
+@if (game(); as g) {
+  <div class="review">
+    <div class="board-column">
+      <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="current()?.uci ?? null"
+                 (move)="onBoardMove($event)" />
+      <div class="board-tools">
+        <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
+        @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
+      </div>
+    </div>
+
+    <section class="card scoresheet-card">
+      <header class="sheet-head">
+        <div class="sheet-player" [class.owner]="g.ownerColor === 'white'">
+          <span class="colour-dot"></span>
+          <span class="name" data-testid="white-name">{{ g.white }}</span>
+          <span class="elo" [class.unrated]="!g.whiteElo">{{ eloLabel(g.whiteElo) }}</span>
+        </div>
+        <div class="sheet-player" [class.owner]="g.ownerColor === 'black'">
+          <span class="colour-dot black"></span>
+          <span class="name" data-testid="black-name">{{ g.black }}</span>
+          <span class="elo" [class.unrated]="!g.blackElo">{{ eloLabel(g.blackElo) }}</span>
+        </div>
+        <div class="sheet-meta">
+          <span>{{ g.date ?? '' }}</span>
+          <span class="sheet-result" data-testid="sheet-result">{{ resultLabel(g.result) }}</span>
+        </div>
+      </header>
+      <app-scoresheet [game]="g" [currentId]="currentId()" (select)="currentId.set($event)" />
+    </section>
+
+    <div class="side-column">
+      <app-game-details [game]="g" (saved)="onDetailsSaved($event)" (deleted)="onDelete()" />
+    </div>
+  </div>
+} @else {
+  <p class="empty">Loading…</p>
+}

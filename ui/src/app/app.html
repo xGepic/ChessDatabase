@@ -1,7 +1,8 @@
 <header class="topbar">
   <span class="brand">Chess Database</span>
   <nav class="tabs" aria-label="Main">
-    <a routerLink="/games" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Games</a>
+    <a routerLink="/games" routerLinkActive="active" data-testid="tab-games">Games</a>
+    <a routerLink="/settings" routerLinkActive="active" data-testid="tab-settings">Settings</a>
   </nav>
 </header>
 <main class="page">

@@ -1,0 +1,41 @@
+<section class="card narrow-card">
+  <header class="card-head"><h1>New Game</h1></header>
+  <form class="form-grid" (submit)="$event.preventDefault(); start()">
+    <span class="label">I played</span>
+    <div class="segmented" role="radiogroup" aria-label="Your colour">
+      <button type="button" role="radio" data-testid="colour-white" [attr.aria-checked]="ownerColor() === 'white'"
+              [class.on]="ownerColor() === 'white'" (click)="ownerColor.set('white')">White</button>
+      <button type="button" role="radio" data-testid="colour-black" [attr.aria-checked]="ownerColor() === 'black'"
+              [class.on]="ownerColor() === 'black'" (click)="ownerColor.set('black')">Black</button>
+    </div>
+
+    <label for="opponent">Opponent</label>
+    <app-player-picker inputId="opponent" [player]="opponent()" (playerChange)="opponent.set($event)" />
+
+    <label for="owner-elo">My Elo</label>
+    <input id="owner-elo" data-testid="owner-elo" class="elo" inputmode="numeric" placeholder="unrated"
+           [value]="ownerElo()" (input)="ownerElo.set($any($event.target).value)" />
+
+    <label for="opponent-elo">Opponent's Elo</label>
+    <input id="opponent-elo" data-testid="opponent-elo" class="elo" inputmode="numeric" placeholder="unrated"
+           [value]="opponentElo()" (input)="opponentElo.set($any($event.target).value)" />
+
+    <span class="label">Result</span>
+    <div class="segmented" role="radiogroup" aria-label="Result">
+      @for (r of results; track r.value) {
+        <button type="button" role="radio" [attr.data-testid]="'result-' + r.label" [attr.aria-checked]="result() === r.value"
+                [class.on]="result() === r.value" (click)="result.set(r.value)">{{ r.label }}</button>
+      }
+    </div>
+
+    <label for="date">Date</label>
+    <input id="date" type="date" [value]="date()" (input)="date.set($any($event.target).value)" />
+
+    <span></span>
+    <div class="form-actions">
+      <button type="submit" class="primary" data-testid="start-game" [disabled]="!ready()">Start entering moves</button>
+      @if (!result()) { <span class="hint">A Game needs a result.</span> }
+      @if (error()) { <span class="field-error">{{ error() }}</span> }
+    </div>
+  </form>
+</section>

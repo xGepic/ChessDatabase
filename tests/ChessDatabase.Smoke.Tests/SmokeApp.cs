@@ -31,13 +31,14 @@ public sealed class SmokeApp : IAsyncLifetime
             throw new InvalidOperationException($"The UI is not built ({uiRoot}). Run ./build.ps1 test.");
 
         Directory.CreateDirectory(_directory);
+        var databasePath = Path.Combine(_directory, "collection.db");
         var builder = ChessDatabaseApp.CreateBuilder([], new WebApplicationOptions
         {
+            Args = [$"--Collection:DatabasePath={databasePath}"],
             EnvironmentName = "Testing",
             ContentRootPath = _directory,
             WebRootPath = uiRoot,
         });
-        builder.Configuration["Collection:DatabasePath"] = Path.Combine(_directory, "collection.db");
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         _app = ChessDatabaseApp.Build(builder);
         await _app.StartAsync();

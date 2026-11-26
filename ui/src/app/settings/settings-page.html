@@ -1,0 +1,13 @@
+<section class="card narrow-card">
+  <header class="card-head"><h1>Settings</h1></header>
+  <div class="form-grid">
+    <label for="owner-name">Your name</label>
+    <div>
+      <input id="owner-name" data-testid="owner-name" autocomplete="name" [value]="ownerName()"
+             (input)="onNameInput($any($event.target).value)" (blur)="save()" placeholder="e.g. Max Mustermann" />
+      <p class="hint">Shown as your side of every Game.
+        @if (status()) { <span class="status" data-testid="settings-status">{{ status() }}</span> }
+      </p>
+    </div>
+  </div>
+</section>
