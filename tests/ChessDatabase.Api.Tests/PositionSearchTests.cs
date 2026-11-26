@@ -19,7 +19,7 @@ public class PositionSearchTests
 
         Assert.Equal(
             [(english.Id, 6, 4), (queensGambit.Id, 6, 4)],
-            results.Select(r => (r.Game.Id, r.Ply, r.MoveNumber)).OrderBy(r => r.Item1 == english.Id ? 0 : 1));
+            results.Select(r => (r.Game.Id, r.Ply, r.MoveNumber)).OrderBy(r => r.Id == english.Id ? 0 : 1));
     }
 
     [Fact]

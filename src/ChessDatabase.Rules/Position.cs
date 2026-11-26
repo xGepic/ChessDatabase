@@ -421,7 +421,7 @@ public sealed partial class Position
 
         return new Position(board, side, castling, enPassant, halfmove, fullmove);
 
-        int ParseCounter(string s) =>
+        static int ParseCounter(string s) =>
             int.TryParse(s, out var n) && n >= 0 ? n : throw new FormatException($"'{s}' is not a move counter.");
     }
 
