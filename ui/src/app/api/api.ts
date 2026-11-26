@@ -20,6 +20,15 @@ export interface GameSummary {
   whiteElo: number | null;
   blackElo: number | null;
   result: GameResult;
+  event: Named | null;
+  eco: string | null;
+  openingName: string | null;
+}
+
+/** An Event or a Tag. */
+export interface Named {
+  id: number;
+  name: string;
 }
 
 export interface MoveNode {
@@ -37,6 +46,11 @@ export interface MoveNode {
 }
 
 export interface Game extends GameSummary {
+  site: string | null;
+  round: string | null;
+  timeControl: string | null;
+  notes: string | null;
+  tags: string[];
   startFen: string;
   firstMoves: number[];
   nodes: MoveNode[];
@@ -49,6 +63,13 @@ export interface GameDetails {
   blackElo: number | null;
   result: GameResult;
   date: string | null;
+  /** Event name; an existing Event with that name is linked. */
+  event?: string | null;
+  site?: string | null;
+  round?: string | null;
+  timeControl?: string | null;
+  notes?: string | null;
+  tags?: string[];
 }
 
 export interface Settings {
@@ -119,6 +140,17 @@ export class Api {
   }
   setNags(gameId: number, nodeId: number, nags: number[]): Observable<Game> {
     return this.http.put<Game>(`/api/games/${gameId}/moves/${nodeId}/nags`, { nags });
+  }
+
+  // Autocomplete
+  searchEvents(search: string): Observable<Named[]> {
+    return this.http.get<Named[]>('/api/events', { params: { search } });
+  }
+  searchSites(search: string): Observable<string[]> {
+    return this.http.get<string[]>('/api/sites', { params: { search } });
+  }
+  searchTags(search: string): Observable<Named[]> {
+    return this.http.get<Named[]>('/api/tags', { params: { search } });
   }
 
   // Players

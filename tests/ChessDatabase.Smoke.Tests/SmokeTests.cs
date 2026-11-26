@@ -109,6 +109,28 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Fill_in_game_details_and_tags_and_see_event_and_eco_in_the_list()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "a6");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Expect(Page.GetByTestId("opening")).ToContainTextAsync("B90");
+
+        await Page.GetByTestId("event-input").FillAsync("Vienna Open");
+        await Page.GetByTestId("event-input").PressAsync("Enter");
+        await Page.GetByTestId("round-input").FillAsync("5");
+        await Page.GetByTestId("round-input").PressAsync("Tab");
+        await Expect(Page.GetByTestId("sheet-meta")).ToContainTextAsync("Vienna Open · Round 5");
+
+        await Page.GetByTestId("tag-input").FillAsync("open tournament");
+        await Page.GetByTestId("tag-input").PressAsync("Enter");
+        await Expect(Page.GetByTestId("tag")).ToHaveTextAsync([new System.Text.RegularExpressions.Regex("open tournament")]);
+
+        await Page.GetByTestId("tab-games").ClickAsync();
+        await Expect(Page.GetByTestId("game-event")).ToHaveTextAsync("Vienna Open");
+        await Expect(Page.GetByTestId("game-eco")).ToHaveTextAsync("B90");
+    }
+
+    [Fact]
     public async Task Annotate_a_move_with_a_symbol_and_a_comment()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Qh5", "Nc6");

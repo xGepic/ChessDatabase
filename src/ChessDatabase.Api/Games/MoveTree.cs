@@ -35,12 +35,23 @@ public sealed class MoveTree
 
     public bool Contains(int nodeId) => _nodes.ContainsKey(nodeId);
 
+    public MoveNodeRecord Node(int nodeId) => _nodes[nodeId];
+
     /// <summary>The ordered continuations of a node; null means the starting position.</summary>
     public IReadOnlyList<MoveNodeRecord> ChildrenOf(int? nodeId) =>
         nodeId is null ? _firstMoves : _children.TryGetValue(nodeId.Value, out var list) ? list : [];
 
     /// <summary>The position after a node; null means the starting position.</summary>
     public Position PositionAfter(int? nodeId) => nodeId is null ? StartPosition : _positionAfter[nodeId.Value].Position;
+
+    /// <summary>The moves actually played: first continuations from the start.</summary>
+    public IReadOnlyList<MoveNodeRecord> MainLine()
+    {
+        var line = new List<MoveNodeRecord>();
+        for (var next = ChildrenOf(null).FirstOrDefault(); next is not null; next = ChildrenOf(next.Id).FirstOrDefault())
+            line.Add(next);
+        return line;
+    }
 
     /// <summary>The node and every move after it, in any line.</summary>
     public IReadOnlyList<int> Subtree(int nodeId)

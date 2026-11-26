@@ -12,7 +12,7 @@
         <thead>
           <tr>
             <th>Date</th><th>White</th><th class="num">Elo</th><th>Black</th><th class="num">Elo</th>
-            <th>Result</th><th>Opponent</th><th>Colour</th>
+            <th>Result</th><th>Opponent</th><th>Colour</th><th>Event</th><th>ECO</th>
           </tr>
         </thead>
         <tbody>
@@ -26,6 +26,8 @@
               <td class="mono">{{ resultLabel(game.result) }}</td>
               <td data-testid="game-opponent">{{ game.opponent.name }}</td>
               <td><span class="colour-dot" [class.black]="game.ownerColour === 'black'"></span>{{ game.ownerColour === 'white' ? 'White' : 'Black' }}</td>
+              <td data-testid="game-event">{{ game.event?.name ?? '' }}</td>
+              <td class="mono" data-testid="game-eco" [title]="game.openingName ?? ''">{{ game.eco ?? '' }}</td>
             </tr>
           }
         </tbody>

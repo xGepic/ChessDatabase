@@ -15,12 +15,28 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126120821_OwnerColourAndTypedValues";
+    public override string LastMigrationId => "20261126121357_GameDetailsTagsEco";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0");
+
+        modelBuilder.Entity("ChessDatabase.Api.Collection.EventRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.ToTable("Events");
+            });
 
         modelBuilder.Entity("ChessDatabase.Api.Collection.GameRecord", b =>
             {
@@ -38,6 +54,21 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(10)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Eco")
+                    .HasMaxLength(3)
+                    .HasColumnType("TEXT");
+
+                b.Property<int?>("EventId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Notes")
+                    .HasMaxLength(10000)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("OpeningName")
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
                 b.Property<int>("OpponentId")
                     .HasColumnType("INTEGER");
 
@@ -51,10 +82,24 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(7)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Round")
+                    .HasMaxLength(20)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Site")
+                    .HasMaxLength(200)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("TimeControl")
+                    .HasMaxLength(50)
+                    .HasColumnType("TEXT");
+
                 b.Property<int?>("WhiteElo")
                     .HasColumnType("INTEGER");
 
                 b.HasKey("Id");
+
+                b.HasIndex("EventId");
 
                 b.HasIndex("OpponentId");
 
@@ -137,13 +182,51 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("Settings");
             });
 
+        modelBuilder.Entity("ChessDatabase.Api.Collection.TagRecord", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.ToTable("Tags");
+            });
+
+        modelBuilder.Entity("GameRecordTagRecord", b =>
+            {
+                b.Property<int>("GameRecordId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("TagsId")
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("GameRecordId", "TagsId");
+
+                b.HasIndex("TagsId");
+
+                b.ToTable("GameRecordTagRecord");
+            });
+
         modelBuilder.Entity("ChessDatabase.Api.Collection.GameRecord", b =>
             {
+                b.HasOne("ChessDatabase.Api.Collection.EventRecord", "Event")
+                    .WithMany()
+                    .HasForeignKey("EventId")
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 b.HasOne("ChessDatabase.Api.Collection.PlayerRecord", "Opponent")
                     .WithMany()
                     .HasForeignKey("OpponentId")
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
+
+                b.Navigation("Event");
 
                 b.Navigation("Opponent");
             });
@@ -160,6 +243,21 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .WithMany()
                     .HasForeignKey("ParentId")
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder.Entity("GameRecordTagRecord", b =>
+            {
+                b.HasOne("ChessDatabase.Api.Collection.GameRecord", null)
+                    .WithMany()
+                    .HasForeignKey("GameRecordId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("ChessDatabase.Api.Collection.TagRecord", null)
+                    .WithMany()
+                    .HasForeignKey("TagsId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
             });
 
         modelBuilder.Entity("ChessDatabase.Api.Collection.GameRecord", b =>

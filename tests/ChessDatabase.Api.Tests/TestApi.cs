@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ChessDatabase.Api.Tests;
 
@@ -26,6 +28,23 @@ public static class TestApi
         return (await response.Content.ReadFromJsonAsync<GameDto>())!;
     }
 
+    /// <summary>Saves the Game details with the given fields changed and the required ones kept.</summary>
+    public static async Task UpdateDetailsAsync(this HttpClient client, GameDto game, object changes)
+    {
+        var body = new JsonObject
+        {
+            ["ownerColour"] = game.OwnerColour,
+            ["opponentId"] = game.Opponent.Id,
+            ["whiteElo"] = game.WhiteElo,
+            ["blackElo"] = game.BlackElo,
+            ["result"] = game.Result,
+            ["date"] = game.Date,
+        };
+        foreach (var (key, value) in JsonSerializer.SerializeToNode(changes)!.AsObject())
+            body[key] = value?.DeepClone();
+        (await client.PutAsJsonAsync($"/api/games/{game.Id}", body)).EnsureSuccessStatusCode();
+    }
+
     public static async Task<GameDto> GetGameAsync(this HttpClient client, int id) =>
         (await client.GetFromJsonAsync<GameDto>($"/api/games/{id}"))!;
 
@@ -35,13 +54,17 @@ public static class TestApi
 
 public sealed record PlayerDto(int Id, string Name);
 
+public sealed record NamedDto(int Id, string Name);
+
 public sealed record GameSummaryDto(
     int Id, string? Date, string OwnerColour, PlayerDto Opponent, string White, string Black,
-    int? WhiteElo, int? BlackElo, string Result);
+    int? WhiteElo, int? BlackElo, string Result, NamedDto? Event, string? Eco, string? OpeningName);
 
 public sealed record GameDto(
     int Id, string? Date, string OwnerColour, PlayerDto Opponent, string White, string Black,
-    int? WhiteElo, int? BlackElo, string Result, string StartFen, List<int> FirstMoves, List<MoveNodeDto> Nodes);
+    int? WhiteElo, int? BlackElo, string Result, NamedDto? Event, string? Eco, string? OpeningName,
+    string? Site, string? Round, string? TimeControl, string? Notes, List<string> Tags,
+    string StartFen, List<int> FirstMoves, List<MoveNodeDto> Nodes);
 
 public sealed record MoveNodeDto(
     int Id, int? ParentId, List<int> Children, int Ply, string San, string Uci, string Fen,

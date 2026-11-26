@@ -13,6 +13,7 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 - Entering a Game: set your name under Settings, then New Game: your colour, the Opponent (autocompleted, or created on the spot), both Elos (empty or 0 = unrated) and the result. Play the moves on the board by drag or click. Everything saves as you go. Games show up in the game list and can be deleted from the Game view.
 - Replaying and Variations: step through a Game with the arrow keys (← back, → forward, Home/↑ start, End/↓ end of the line) or by clicking moves. F flips the board. Playing a different move from the recorded one starts a Variation, and Variations can nest. Right-click a move to promote it to the main line, delete its Variation, or delete from there on.
 - Annotations: select any move (main line or Variation). In the Annotation card, set a move symbol (! ? !! ?? !? ?!) and a position symbol (= ∞ ⩲ ⩱ ± ∓ +- -+), and write a comment. Comments save shortly after you stop typing. Symbols and comments show inline in the notation.
+- Game details: Event and Site (both autocompleted from earlier Games), Date (2024, 2024-03 or 2024-03-15), Round, time control, private notes and free-form Tags. The ECO code and opening name come automatically from the main line, using the bundled Lichess opening dataset (CC0, `src/ChessDatabase.Api/Openings/Data`), and follow it when it changes. The game list shows Event and ECO.
 
 ## Prerequisites
 

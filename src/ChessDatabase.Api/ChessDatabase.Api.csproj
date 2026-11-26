@@ -18,4 +18,9 @@
     <ProjectReference Include="..\ChessDatabase.Rules\ChessDatabase.Rules.csproj" />
   </ItemGroup>
 
+  <!-- Lichess chess-openings dataset (CC0), used by OpeningClassifier. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Openings\Data\*.tsv" />
+  </ItemGroup>
+
 </Project>

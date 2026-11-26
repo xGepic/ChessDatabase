@@ -1,12 +1,16 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, OnDestroy, computed, effect, inject, input, output, signal } from '@angular/core';
+import { map } from 'rxjs';
 import { Api, Game, GameDetails, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
+import { SuggestInput } from '../shared/suggest-input';
 import { parseElo } from '../shared/elo';
+
+const NOTES_DEBOUNCE_MS = 500;
 
 /** Edits a Game's details. Every change is saved at once; there is no Save button. */
 @Component({
   selector: 'app-game-details',
-  imports: [PlayerPicker],
+  imports: [PlayerPicker, SuggestInput],
   template: `
     <section class="card side-card">
       <header class="card-head"><h2>Game</h2></header>
@@ -38,9 +42,40 @@ import { parseElo } from '../shared/elo';
           }
         </div>
 
+        <label for="details-event">Event</label>
+        <app-suggest-input inputId="details-event" testId="event-input" placeholder="Tournament or league"
+                           [value]="game().event?.name ?? null" [search]="searchEvents" (commit)="save({ event: $event })" />
+
+        <label for="details-site">Site</label>
+        <app-suggest-input inputId="details-site" testId="site-input" placeholder="Where"
+                           [value]="game().site" [search]="searchSites" (commit)="save({ site: $event })" />
+
         <label for="details-date">Date</label>
-        <input id="details-date" [value]="game().date ?? ''" placeholder="YYYY-MM-DD"
-               (change)="setDate($any($event.target).value)" />
+        <input id="details-date" data-testid="date-input" [value]="game().date ?? ''" placeholder="YYYY, YYYY-MM or YYYY-MM-DD"
+               (change)="save({ date: $any($event.target).value.trim() || null })" />
+
+        <label for="details-round">Round</label>
+        <input id="details-round" class="short" data-testid="round-input" [value]="game().round ?? ''"
+               (change)="save({ round: $any($event.target).value })" />
+
+        <label for="details-time-control">Time control</label>
+        <input id="details-time-control" class="short" data-testid="time-control-input" placeholder="e.g. 90+30"
+               [value]="game().timeControl ?? ''" (change)="save({ timeControl: $any($event.target).value })" />
+
+        <label for="details-tags">Tags</label>
+        <div class="tags">
+          @for (tag of game().tags; track tag) {
+            <span class="tag" data-testid="tag">{{ tag }}
+              <button type="button" class="tag-remove" [attr.aria-label]="'Remove tag ' + tag" (click)="removeTag(tag)">×</button>
+            </span>
+          }
+          <app-suggest-input inputId="details-tags" testId="tag-input" placeholder="Add a tag" [clearOnCommit]="true"
+                             [search]="searchTags" (commit)="addTag($event)" />
+        </div>
+
+        <label for="details-notes">Notes</label>
+        <textarea id="details-notes" data-testid="notes-input" rows="3" placeholder="Private notes on this Game"
+                  [value]="notes()" (input)="onNotesInput($any($event.target).value)" (blur)="flushNotes()"></textarea>
       </div>
       <footer class="card-foot">
         @if (error()) {
@@ -60,7 +95,7 @@ import { parseElo } from '../shared/elo';
     </section>
   `,
 })
-export class GameDetailsCard {
+export class GameDetailsCard implements OnDestroy {
   private readonly api = inject(Api);
 
   readonly game = input.required<Game>();
@@ -70,8 +105,19 @@ export class GameDetailsCard {
   protected readonly results = RESULTS;
   protected readonly whiteElo = signal('');
   protected readonly blackElo = signal('');
+  protected readonly notes = signal('');
   protected readonly error = signal('');
   protected readonly confirmingDelete = signal(false);
+
+  protected readonly searchEvents = (term: string) => this.api.searchEvents(term).pipe(map((l) => l.map((e) => e.name)));
+  protected readonly searchSites = (term: string) => this.api.searchSites(term);
+  protected readonly searchTags = (term: string) => this.api.searchTags(term).pipe(map((l) => l.map((t) => t.name)));
+
+  private readonly savedWhiteElo = computed(() => this.game().whiteElo);
+  private readonly savedBlackElo = computed(() => this.game().blackElo);
+  private readonly savedNotes = computed(() => this.game().notes);
+  private notesTimer: ReturnType<typeof setTimeout> | undefined;
+  private notesPending = false;
 
   private readonly details = computed<GameDetails>(() => {
     const g = this.game();
@@ -82,18 +128,29 @@ export class GameDetailsCard {
       blackElo: g.blackElo,
       result: g.result,
       date: g.date,
+      event: g.event?.name ?? null,
+      site: g.site,
+      round: g.round,
+      timeControl: g.timeControl,
+      notes: g.notes,
+      tags: g.tags,
     };
   });
 
   constructor() {
-    // Only a change of the saved Elos resets the fields, so other saves (e.g. a comment) never
-    // overwrite an Elo the Owner is typing.
+    // Only a change of the saved value resets a field, so other saves (e.g. a comment) never
+    // overwrite what the Owner is typing.
     effect(() => this.whiteElo.set(this.savedWhiteElo() ? String(this.savedWhiteElo()) : ''));
     effect(() => this.blackElo.set(this.savedBlackElo() ? String(this.savedBlackElo()) : ''));
+    effect(() => {
+      const saved = this.savedNotes();
+      if (!this.notesPending) this.notes.set(saved ?? '');
+    });
   }
 
-  private readonly savedWhiteElo = computed(() => this.game().whiteElo);
-  private readonly savedBlackElo = computed(() => this.game().blackElo);
+  ngOnDestroy() {
+    this.flushNotes();
+  }
 
   protected setColour(ownerColour: OwnerColour) {
     if (ownerColour !== this.game().ownerColour) this.save({ ownerColour });
@@ -107,10 +164,6 @@ export class GameDetailsCard {
     if (result !== this.game().result) this.save({ result });
   }
 
-  protected setDate(date: string) {
-    this.save({ date: date.trim() || null });
-  }
-
   protected saveElos() {
     const whiteElo = parseElo(this.whiteElo());
     const blackElo = parseElo(this.blackElo());
@@ -121,7 +174,30 @@ export class GameDetailsCard {
     this.save({ whiteElo, blackElo });
   }
 
-  private save(change: Partial<GameDetails>) {
+  protected addTag(tag: string) {
+    const tags = this.game().tags;
+    if (!tags.some((t) => t.toLocaleLowerCase() === tag.toLocaleLowerCase())) this.save({ tags: [...tags, tag] });
+  }
+
+  protected removeTag(tag: string) {
+    this.save({ tags: this.game().tags.filter((t) => t !== tag) });
+  }
+
+  protected onNotesInput(text: string) {
+    this.notes.set(text);
+    this.notesPending = true;
+    clearTimeout(this.notesTimer);
+    this.notesTimer = setTimeout(() => this.flushNotes(), NOTES_DEBOUNCE_MS);
+  }
+
+  protected flushNotes() {
+    clearTimeout(this.notesTimer);
+    if (!this.notesPending) return;
+    this.notesPending = false;
+    this.save({ notes: this.notes() });
+  }
+
+  protected save(change: Partial<GameDetails>) {
     this.error.set('');
     this.api.updateGame(this.game().id, { ...this.details(), ...change }).subscribe({
       next: (game) => this.saved.emit(game),

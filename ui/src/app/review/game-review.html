@@ -26,9 +26,12 @@
           <span class="elo" [class.unrated]="!g.blackElo">{{ eloLabel(g.blackElo) }}</span>
         </div>
         <div class="sheet-meta">
-          <span>{{ g.date ?? '' }}</span>
+          <span data-testid="sheet-meta">{{ meta() }}</span>
           <span class="sheet-result" data-testid="sheet-result">{{ resultLabel(g.result) }}</span>
         </div>
+        @if (g.eco) {
+          <div class="sheet-opening" data-testid="opening"><span class="mono">{{ g.eco }}</span> {{ g.openingName }}</div>
+        }
       </header>
       <app-scoresheet [game]="g" [currentId]="currentId()" (select)="currentId.set($event)" (action)="onTreeAction($event)" />
     </section>

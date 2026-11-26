@@ -1,4 +1,5 @@
 using ChessDatabase.Api.Collection;
+using ChessDatabase.Api.Openings;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
@@ -10,7 +11,7 @@ public static class MoveTreeEndpoints
 {
     public static void MapMoveTreeEndpoints(this RouteGroupBuilder games)
     {
-        games.MapPost("/{id:int}/moves", async (int id, AddMoveRequest body, CollectionDbContext db) =>
+        games.MapPost("/{id:int}/moves", async (int id, AddMoveRequest body, CollectionDbContext db, OpeningClassifier openings) =>
         {
             var game = await db.Games.Include(g => g.MoveNodes).SingleOrDefaultAsync(g => g.Id == id);
             if (game is null) return Results.NotFound();
@@ -38,34 +39,38 @@ public static class MoveTreeEndpoints
                 };
                 game.MoveNodes.Add(node);
                 await db.SaveChangesAsync();
+                await MainLine.RefreshAsync(db, openings, id);
             }
 
             return Results.Ok(new AddMoveResponse(node.Id, (await GameEndpoints.LoadGameDtoAsync(db, id))!));
         });
 
-        games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db) =>
+        games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
         {
             if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
             tree.PromoteToMainLine(nodeId);
             await db.SaveChangesAsync();
+            await MainLine.RefreshAsync(db, openings, id);
             return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
         });
 
-        games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", async (int id, int nodeId, CollectionDbContext db) =>
+        games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
         {
             if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
             if (tree.VariationStart(nodeId) is not { } start)
                 return Invalid("nodeId", "That move is on the main line, not in a Variation.");
             await DeleteSubtreeAsync(db, tree, start);
+            await MainLine.RefreshAsync(db, openings, id);
             return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
         });
 
         // Delete from here: the move and everything after it. If it was the main continuation, the
         // next Variation at that point (if any) becomes the main line.
-        games.MapDelete("/{id:int}/moves/{nodeId:int}", async (int id, int nodeId, CollectionDbContext db) =>
+        games.MapDelete("/{id:int}/moves/{nodeId:int}", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
         {
             if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
             await DeleteSubtreeAsync(db, tree, nodeId);
+            await MainLine.RefreshAsync(db, openings, id);
             return Results.Ok(await GameEndpoints.LoadGameDtoAsync(db, id));
         });
     }
@@ -78,10 +83,11 @@ public static class MoveTreeEndpoints
         return tree.Contains(nodeId) ? tree : null;
     }
 
+    /// <summary>Deletes through the change tracker, so the removed nodes don't linger in this context.</summary>
     private static async Task DeleteSubtreeAsync(CollectionDbContext db, MoveTree tree, int nodeId)
     {
-        var ids = tree.Subtree(nodeId);
-        await db.MoveNodes.Where(n => ids.Contains(n.Id)).ExecuteDeleteAsync();
+        db.MoveNodes.RemoveRange(tree.Subtree(nodeId).Select(id => tree.Node(id)));
+        await db.SaveChangesAsync();
     }
 
     private static bool TryReadMove(Position position, string? text, out Move move)

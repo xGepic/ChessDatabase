@@ -16,7 +16,13 @@ public record GameSummaryDto(
     string Black,
     int? WhiteElo,
     int? BlackElo,
-    string Result);
+    string Result,
+    NamedDto? Event,
+    string? Eco,
+    string? OpeningName);
+
+/// <summary>An Event or a Tag.</summary>
+public sealed record NamedDto(int Id, string Name);
 
 /// <summary>
 /// A Game with its move tree as a flat node list. <see cref="FirstMoves"/> are the children of the
@@ -24,14 +30,24 @@ public record GameSummaryDto(
 /// </summary>
 public sealed record GameDto : GameSummaryDto
 {
-    public GameDto(GameSummaryDto summary, string startFen, IReadOnlyList<int> firstMoves, IReadOnlyList<MoveNodeDto> nodes)
+    public GameDto(GameSummaryDto summary, GameRecord game, string startFen, IReadOnlyList<int> firstMoves, IReadOnlyList<MoveNodeDto> nodes)
         : base(summary)
     {
+        Site = game.Site;
+        Round = game.Round;
+        TimeControl = game.TimeControl;
+        Notes = game.Notes;
+        Tags = [.. game.Tags.Select(t => t.Name).Order(StringComparer.CurrentCultureIgnoreCase)];
         StartFen = startFen;
         FirstMoves = firstMoves;
         Nodes = nodes;
     }
 
+    public string? Site { get; }
+    public string? Round { get; }
+    public string? TimeControl { get; }
+    public string? Notes { get; }
+    public IReadOnlyList<string> Tags { get; }
     public string StartFen { get; }
     public IReadOnlyList<int> FirstMoves { get; }
     public IReadOnlyList<MoveNodeDto> Nodes { get; }
@@ -50,14 +66,24 @@ public sealed record MoveNodeDto(
     string? CommentAfter,
     IReadOnlyList<int> Nags);
 
-/// <summary>Create or update a Game's details. Elo 0 or null means unrated.</summary>
+/// <summary>
+/// Create or update a Game's details (the whole set at once). Elo 0 or null means unrated. Event is
+/// a name: an existing Event with that name (ignoring case) is linked, otherwise one is created.
+/// Tags work the same way. Empty text means "not set".
+/// </summary>
 public sealed record GameDetailsRequest(
     OwnerColour? OwnerColour,
     int? OpponentId,
     int? WhiteElo,
     int? BlackElo,
     string? Result,
-    string? Date);
+    string? Date,
+    string? Event = null,
+    string? Site = null,
+    string? Round = null,
+    string? TimeControl = null,
+    string? Notes = null,
+    IReadOnlyList<string>? Tags = null);
 
 /// <summary>Play a move after <paramref name="ParentId"/> (null = from the starting position), in SAN or UCI.</summary>
 public sealed record AddMoveRequest(int? ParentId, string? Move);

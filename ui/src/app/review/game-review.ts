@@ -36,6 +36,11 @@ export class GameReview {
     const id = this.currentId();
     return id === null ? null : (this.nodes().get(id) ?? null);
   });
+  /** Event · Round · Date, as far as known. */
+  protected readonly meta = computed(() => {
+    const g = this.game();
+    return g ? [g.event?.name, g.round ? `Round ${g.round}` : null, g.date].filter((x) => !!x).join(" · ") : "";
+  });
   protected readonly fen = computed(() => this.current()?.fen ?? this.game()?.startFen ?? '');
   protected readonly orientation = computed<'white' | 'black'>(() => {
     const owner = this.game()?.ownerColour ?? 'white';

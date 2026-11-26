@@ -9,18 +9,30 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
     public DbSet<GameRecord> Games => Set<GameRecord>();
     public DbSet<MoveNodeRecord> MoveNodes => Set<MoveNodeRecord>();
     public DbSet<PlayerRecord> Players => Set<PlayerRecord>();
+    public DbSet<EventRecord> Events => Set<EventRecord>();
+    public DbSet<TagRecord> Tags => Set<TagRecord>();
     public DbSet<SettingsRecord> Settings => Set<SettingsRecord>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Entity<SettingsRecord>().Property(s => s.OwnerName).HasMaxLength(200);
         model.Entity<PlayerRecord>().Property(p => p.Name).HasMaxLength(200);
+        model.Entity<EventRecord>().Property(e => e.Name).HasMaxLength(GameDetailLimits.Event);
+        model.Entity<TagRecord>().Property(t => t.Name).HasMaxLength(GameDetailLimits.Tag);
 
         model.Entity<GameRecord>(game =>
         {
             game.Property(g => g.OwnerColour).HasConversion<string>().HasMaxLength(5);
             game.Property(g => g.Result).HasConversion(r => r.ToPgn(), text => GameResults.ParsePgn(text)).HasMaxLength(7);
             game.Property(g => g.Date).HasMaxLength(10);
+            game.Property(g => g.Site).HasMaxLength(GameDetailLimits.Site);
+            game.Property(g => g.Round).HasMaxLength(GameDetailLimits.Round);
+            game.Property(g => g.TimeControl).HasMaxLength(GameDetailLimits.TimeControl);
+            game.Property(g => g.Notes).HasMaxLength(GameDetailLimits.Notes);
+            game.Property(g => g.Eco).HasMaxLength(3);
+            game.Property(g => g.OpeningName).HasMaxLength(200);
+            game.HasOne(g => g.Event).WithMany().HasForeignKey(g => g.EventId).OnDelete(DeleteBehavior.SetNull);
+            game.HasMany(g => g.Tags).WithMany();
             game.HasOne(g => g.Opponent).WithMany().HasForeignKey(g => g.OpponentId).OnDelete(DeleteBehavior.Restrict);
             game.HasMany(g => g.MoveNodes).WithOne().HasForeignKey(n => n.GameId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -61,8 +73,48 @@ public sealed class GameRecord
     /// <summary>"2024", "2024-03" or "2024-03-15"; partial dates are allowed, as in PGN.</summary>
     public string? Date { get; set; }
 
+    public int? EventId { get; set; }
+    public EventRecord? Event { get; set; }
+    public string? Site { get; set; }
+    public string? Round { get; set; }
+    public string? TimeControl { get; set; }
+
+    /// <summary>The Owner's private notes on the Game (not move commentary).</summary>
+    public string? Notes { get; set; }
+
+    /// <summary>Derived from the main line by Opening Classification; never entered by hand.</summary>
+    public string? Eco { get; set; }
+
+    public string? OpeningName { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public List<MoveNodeRecord> MoveNodes { get; set; } = [];
+    public List<TagRecord> Tags { get; set; } = [];
+}
+
+/// <summary>The tournament, league, match or occasion a Game was played in.</summary>
+public sealed class EventRecord
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+}
+
+/// <summary>A free-form label the Owner attaches to Games.</summary>
+public sealed class TagRecord
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+}
+
+/// <summary>Maximum lengths of the free-text Game details.</summary>
+public static class GameDetailLimits
+{
+    public const int Event = 200;
+    public const int Site = 200;
+    public const int Round = 20;
+    public const int TimeControl = 50;
+    public const int Notes = 10_000;
+    public const int Tag = 100;
 }
 
 /// <summary>

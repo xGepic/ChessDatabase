@@ -13,7 +13,7 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 03 | [Enter a Game and see it in the game list](#03-enter-a-game-and-see-it-in-the-game-list) | 01, 02 | **Done** |
 | 04 | [Replay a Game and branch into Variations](#04-replay-a-game-and-branch-into-variations) | 03 | **Done** |
 | 05 | [Annotate moves](#05-annotate-moves) | 04 | **Done** |
-| 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | Open |
+| 06 | [Game details, Tags and ECO](#06-game-details-tags-and-eco) | 03 | **Done** |
 | 07 | [Import PGN](#07-import-pgn) | 05, 06 | Open |
 | 08 | [Import review list](#08-import-review-list) | 07 | Open |
 | 09 | [Export to PGN](#09-export-to-pgn) | 05, 06 | Open |
@@ -137,14 +137,14 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 03 (Enter a Game and see it in the game list).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All listed details are optional and editable in the Game's details panel
-- [ ] Event and Site autocomplete from values used before; choosing an existing Event links the Game to it
-- [ ] Tags can be added and removed, and autocomplete from existing Tags
-- [ ] ECO code and opening name are filled in automatically and update when the main line changes (e.g. after promoting a Variation)
-- [ ] The game list shows Event and ECO columns
-- [ ] API tests cover partial dates, Tag assignment, Event autocomplete and ECO derivation for a few known openings
+- [x] All listed details are optional and editable in the Game's details panel
+- [x] Event and Site autocomplete from values used before; choosing an existing Event links the Game to it
+- [x] Tags can be added and removed, and autocomplete from existing Tags
+- [x] ECO code and opening name are filled in automatically and update when the main line changes (e.g. after promoting a Variation)
+- [x] The game list shows Event and ECO columns
+- [x] API tests cover partial dates, Tag assignment, Event autocomplete and ECO derivation for a few known openings
 
 ---
 
