@@ -42,7 +42,6 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 - [.NET 11 SDK](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) 24 or later (npm 10)
 - Microsoft Edge, which the Playwright smoke tests drive (no separate browser download needed)
-- PowerShell 7 (`pwsh`) for `build.ps1`
 
 ## Running
 
@@ -66,10 +65,10 @@ Backups go to `Backups` beside the Collection (by default `%LOCALAPPDATA%\ChessD
 ## Testing
 
 ```powershell
-./build.ps1 test
+dotnet test ChessDatabase.slnx
 ```
 
-This one command builds the UI and the backend and runs every test project. Once the UI is built, `dotnet test ChessDatabase.slnx` runs the same tests.
+This runs every test project. Building the smoke test project builds the UI first (`npm run build` in `ui/`, after `npm ci` when `node_modules` is missing), because the smoke tests drive the built UI. The UI build is skipped when nothing under `ui/` changed since the last one; `-p:SkipUiBuild=true` skips it anyway.
 
 | Project | What it tests |
 |---|---|
@@ -84,7 +83,6 @@ The tests never need Stockfish. One optional check runs the real one: set `STOCK
 
 ```
 ChessDatabase.slnx
-build.ps1                       build and test entry point
 src/
   ChessDatabase.Rules/          Chess Rules: board, legal moves, SAN, FEN, Zobrist hashing
   ChessDatabase.Api/            ASP.NET Core backend: HTTP API and the Collection (EF Core + SQLite)

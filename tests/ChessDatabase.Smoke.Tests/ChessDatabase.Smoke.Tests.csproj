@@ -25,4 +25,27 @@
     <ProjectReference Include="..\ChessDatabase.FakeEngine\ChessDatabase.FakeEngine.csproj" />
   </ItemGroup>
 
+  <!--
+    The smoke tests drive the built UI (ui/dist), which the backend serves. Building this project
+    builds the UI first, so `dotnet test` always tests the current UI. It is skipped when nothing
+    under ui/ changed since the last UI build; pass -p:SkipUiBuild=true to skip it anyway.
+  -->
+  <PropertyGroup>
+    <UiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\ui'))</UiRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <UiSource Include="$(UiRoot)\src\**\*" />
+    <UiSource Include="$(UiRoot)\angular.json;$(UiRoot)\package.json;$(UiRoot)\package-lock.json;$(UiRoot)\tsconfig*.json" />
+  </ItemGroup>
+
+  <Target Name="InstallUiPackages" BeforeTargets="BuildUi" Condition="'$(SkipUiBuild)' != 'true' And !Exists('$(UiRoot)\node_modules')">
+    <Exec Command="npm ci" WorkingDirectory="$(UiRoot)" />
+  </Target>
+
+  <Target Name="BuildUi" BeforeTargets="Build" Condition="'$(SkipUiBuild)' != 'true'"
+          Inputs="@(UiSource)" Outputs="$(UiRoot)\dist\ui\browser\index.html">
+    <Exec Command="npm run build" WorkingDirectory="$(UiRoot)" />
+  </Target>
+
 </Project>

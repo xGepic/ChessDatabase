@@ -41,7 +41,7 @@ public sealed class SmokeApp : IAsyncLifetime
     {
         var uiRoot = Path.Combine(RepositoryRoot(), "ui", "dist", "ui", "browser");
         if (!File.Exists(Path.Combine(uiRoot, "index.html")))
-            throw new InvalidOperationException($"The UI is not built ({uiRoot}). Run ./build.ps1 test.");
+            throw new InvalidOperationException($"The UI is not built ({uiRoot}). Build the smoke test project (it builds the UI) or run `npm run build` in ui/.");
 
         Directory.CreateDirectory(_directory);
         var databasePath = Path.Combine(_directory, "collection.db");
