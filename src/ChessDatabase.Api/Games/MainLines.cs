@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChessDatabase.Api.Games;
 
-/// <summary>A Game's main line as the position index keeps it: its moves (UCI) and the key of every position, the start first.</summary>
-public sealed record IndexedMainLine(IReadOnlyList<string> Uci, IReadOnlyList<long> Keys);
+/// <summary>A Game's main line as the position index keeps it: its moves (UCI) and every position's index key (<see cref="PositionIndex.Key"/>), the start first.</summary>
+public sealed record IndexedMainLine(IReadOnlyList<string> Uci, IReadOnlyList<long> PositionKeys);
 
 /// <summary>
 /// Reading Games' main lines, many at once. The moves are the source of truth; the position index

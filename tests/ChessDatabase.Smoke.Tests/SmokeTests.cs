@@ -774,7 +774,10 @@ owhere\stockfish.exe");
         // A comment typed just before moving on (by keyboard, before the typing pause) is kept.
         await Page.GetByTestId("move").Filter(new() { HasText = "Nf3" }).ClickAsync();
         await Page.GetByTestId("repertoire-comment").FillAsync("The main line.");
-        await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
+        // Moving on saves the comment; wait for that save before reloading, or the reload can cancel it.
+        await Page.RunAndWaitForResponseAsync(
+            () => Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync(),
+            r => r.Url.Contains("/comment") && r.Request.Method == "PUT");
         await Expect(Page.GetByTestId("repertoire-comment")).ToHaveValueAsync("");
         await Page.ReloadAsync();
         await Page.GetByTestId("move").Filter(new() { HasText = "Nf3" }).ClickAsync();

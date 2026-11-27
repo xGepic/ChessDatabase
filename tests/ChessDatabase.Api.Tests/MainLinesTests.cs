@@ -39,7 +39,7 @@ public class MainLinesTests
         Assert.Equal(["e2e4", "e7e5", "g1f3"], indexed[first.Id].Uci);
         Assert.Equal(["e4", "e5", "Nf3"], moves[first.Id].Select(n => n.San));
         Assert.Equal(main.Select(n => n.Id), moves[first.Id].Select(n => n.Id));
-        Assert.Equal(Line.FromUci(["e2e4", "e7e5", "g1f3"]).Positions.Select(p => PositionIndex.Key(p)), indexed[first.Id].Keys);
+        Assert.Equal(Line.FromUci(["e2e4", "e7e5", "g1f3"]).Positions.Select(p => PositionIndex.Key(p)), indexed[first.Id].PositionKeys);
         Assert.Equal(["d2d4"], indexed[second.Id].Uci);
         Assert.Empty(indexed[999_999].Uci);
         Assert.Empty(moves[999_999]);

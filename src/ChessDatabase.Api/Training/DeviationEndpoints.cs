@@ -92,11 +92,11 @@ public static class DeviationEndpoints
     /// </summary>
     private static Found Find(RepertoireByPosition repertoire, OwnerColour ownerColour, IndexedMainLine mainLine)
     {
-        var last = mainLine.Keys.ToList().FindLastIndex(repertoire.Contains);
+        var last = mainLine.PositionKeys.ToList().FindLastIndex(repertoire.Contains);
         if (last < 0 || last == mainLine.Uci.Count) return new Found(DeviationStatus.GameEnded, null, null, []);
 
         var ply = last + 1;
-        var moves = repertoire.MovesFrom(mainLine.Keys[last]);
+        var moves = repertoire.MovesFrom(mainLine.PositionKeys[last]);
         if (moves.Count == 0) return new Found(DeviationStatus.EndOfRepertoire, ply, null, []);
         var whiteMoved = ply % 2 == 1;
         var ownerMoved = whiteMoved == (ownerColour == OwnerColour.White);
