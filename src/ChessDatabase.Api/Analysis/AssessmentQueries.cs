@@ -37,15 +37,14 @@ public static class AssessmentQueries
     {
         var record = await db.EngineAssessments.AsNoTracking().SingleOrDefaultAsync(a => a.GameId == gameId);
         if (record is null) return null;
-        var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == gameId).ToListAsync();
-        var current = new MoveTree(nodes).MainLine();
+        var current = (await MainLines.MovesAsync(db, [gameId]))[gameId];
+        var followed = MainLines.FollowedPlies([.. current.Select(n => n.Uci)], record.MainLine);
 
         var assessment = Assess(record);
 
         var positions = new List<AssessedPositionDto>();
         var moves = new List<AssessedMoveDto>();
         var line = Line.FromUci(record.MainLine);
-        var matching = true;
         for (var ply = 0; ply < record.Positions.Count; ply++)
         {
             var position = line.Positions[ply];
@@ -55,14 +54,13 @@ public static class AssessmentQueries
             if (ply == record.MainLine.Count) break;
 
             var (bestMoves, bestSan) = position.PlayableLine(stored.Line);
-            matching = matching && ply < current.Count && current[ply].Uci == record.MainLine[ply];
             var move = assessment.Moves[ply];
             moves.Add(new AssessedMoveDto(
-                ply + 1, matching ? current[ply].Id : null, line.San[ply], move.Classification,
+                ply + 1, ply < followed ? current[ply].Id : null, line.San[ply], move.Classification,
                 Round(move.Loss), Round(move.Accuracy), bestSan is [var best, ..] ? best : null, bestSan, [.. bestMoves.Select(b => b.ToUci())]));
         }
 
-        var stale = !matching || current.Count != record.MainLine.Count;
+        var stale = followed != record.MainLine.Count || current.Count != record.MainLine.Count;
         return new EngineAssessmentDto(
             gameId, record.EngineName, record.Threads, record.HashMb, AnalysisTime.ToSeconds(record.MsPerMove),
             new DateTimeOffset(DateTime.SpecifyKind(record.AnalysedAt, DateTimeKind.Utc)), stale,

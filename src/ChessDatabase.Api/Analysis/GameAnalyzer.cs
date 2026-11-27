@@ -30,8 +30,7 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         {
             var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
             definition = await db.AnalysisEngineAsync(cancellationToken);
-            var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == gameId).ToListAsync(cancellationToken);
-            mainLine = [.. new MoveTree(nodes).MainLine().Select(n => n.Uci)];
+            mainLine = [.. (await MainLines.MovesAsync(db, [gameId], cancellationToken))[gameId].Select(n => n.Uci)];
         }
         var time = msPerMove ?? definition.AnalysisMsPerMove;
 

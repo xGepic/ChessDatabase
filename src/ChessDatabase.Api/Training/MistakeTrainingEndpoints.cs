@@ -177,7 +177,7 @@ public static class MistakeTrainingEndpoints
 
     /// <summary>
     /// The Owner's analysed mistakes in moves the Game still has: its main line up to the mistake is
-    /// still the analysed one (checked against the position index), so the Game opens on the same position.
+    /// still the analysed one, so the Game opens on the same position.
     /// </summary>
     private static async Task<Dictionary<string, AnalysedMistake>> OwnersCurrentMistakesAsync(CollectionDbContext db, AnalysedMistakes analysed)
     {
@@ -185,20 +185,12 @@ public static class MistakeTrainingEndpoints
         var candidates = (await analysed.AllAsync(db))
             .Where(m => owners.TryGetValue(m.GameId, out var owner) && m.Mover == owner)
             .ToList();
-        var gameIds = candidates.Select(m => m.GameId).Distinct().ToList();
-        var deepest = candidates.Count == 0 ? 0 : candidates.Max(m => m.Ply);
-        var current = (await db.PositionIndex.AsNoTracking()
-                .Where(p => gameIds.Contains(p.GameId) && p.Ply < deepest)
-                .Select(p => new { p.GameId, p.Ply, p.Uci })
-                .ToListAsync())
-            .ToLookup(p => p.GameId, p => (p.Ply, p.Uci));
+        var current = await MainLines.IndexedAsync(db, [.. candidates.Select(m => m.GameId).Distinct()]);
 
         var mistakes = new Dictionary<string, AnalysedMistake>();
         foreach (var mistake in candidates)
-        {
-            var played = current[mistake.GameId].Where(p => p.Ply < mistake.Ply).OrderBy(p => p.Ply).Select(p => p.Uci);
-            if (played.SequenceEqual(mistake.MainLine.Take(mistake.Ply))) mistakes.TryAdd(mistake.Key, mistake);
-        }
+            if (MainLines.FollowedPlies(current[mistake.GameId].Uci, mistake.MainLine) >= mistake.Ply)
+                mistakes.TryAdd(mistake.Key, mistake);
         return mistakes;
     }
 }

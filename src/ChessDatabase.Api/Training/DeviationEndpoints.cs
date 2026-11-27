@@ -47,13 +47,13 @@ public static class DeviationEndpoints
     {
         app.MapGet("/api/games/{id:int}/deviation", async (int id, CollectionDbContext db) =>
         {
-            var game = await db.Games.AsNoTracking().Include(g => g.Positions).SingleOrDefaultAsync(g => g.Id == id);
+            var game = await db.Games.AsNoTracking().SingleOrDefaultAsync(g => g.Id == id);
             if (game is null) return Results.NotFound();
             var repertoire = await RepertoireByPosition.LoadAsync(db, game.OwnerColour);
-            var found = Find(repertoire, game.OwnerColour, game.Positions);
+            var found = Find(repertoire, game.OwnerColour, (await MainLines.IndexedAsync(db, [id]))[id]);
             if (found.Ply is not { } ply) return Results.Ok(new DeviationDto(found.Status, null, null, null, null, []));
 
-            var node = (await MainLinesAsync(db, [id]))[id][ply - 1];
+            var node = (await MainLines.MovesAsync(db, [id]))[id][ply - 1];
             return Results.Ok(new DeviationDto(found.Status, ply, node.Id, found.By, node.San, found.Expected));
         });
 
@@ -63,21 +63,21 @@ public static class DeviationEndpoints
             if (query.Validate() is { Count: > 0 } errors) return Results.ValidationProblem(errors);
             var rows = await query.RunAsync(db);
             var ids = rows.Select(r => r.Game.Id).ToList();
-            var positions = (await db.PositionIndex.AsNoTracking().Where(p => ids.Contains(p.GameId)).ToListAsync()).ToLookup(p => p.GameId);
+            var mainLines = await MainLines.IndexedAsync(db, ids);
             var repertoires = await RepertoireByPosition.LoadBothAsync(db);
 
             var deviations = new List<(GameSummaryDto Summary, int Ply, IReadOnlyList<string> Expected)>();
             foreach (var (game, summary) in rows)
             {
-                var found = Find(repertoires[game.OwnerColour], game.OwnerColour, positions[game.Id]);
+                var found = Find(repertoires[game.OwnerColour], game.OwnerColour, mainLines[game.Id]);
                 if (found is { Status: DeviationStatus.Deviation, By: DeviationSide.Owner, Ply: { } ply })
                     deviations.Add((summary, ply, found.Expected));
             }
 
-            var mainLines = await MainLinesAsync(db, [.. deviations.Select(d => d.Summary.Id)]);
+            var moves = await MainLines.MovesAsync(db, [.. deviations.Select(d => d.Summary.Id)]);
             return Results.Ok(deviations.Select(d =>
             {
-                var node = mainLines[d.Summary.Id][d.Ply - 1];
+                var node = moves[d.Summary.Id][d.Ply - 1];
                 return new OwnerDeviationDto(d.Summary, d.Ply, node.Id, node.San, d.Expected);
             }).ToList());
         });
@@ -90,24 +90,16 @@ public static class DeviationEndpoints
     /// whatever happened before it was a transposition that came back. From there the Game either
     /// ended, reached the end of the Repertoire, or left it for good with the next move.
     /// </summary>
-    private static Found Find(RepertoireByPosition repertoire, OwnerColour ownerColour, IEnumerable<PositionIndexRecord> positions)
+    private static Found Find(RepertoireByPosition repertoire, OwnerColour ownerColour, IndexedMainLine mainLine)
     {
-        var rows = positions.OrderBy(p => p.Ply).ToList();
-        var last = rows.FindLastIndex(r => repertoire.Contains(r.Hash));
-        if (last < 0 || rows[last].Uci is null) return new Found(DeviationStatus.GameEnded, null, null, []);
+        var last = mainLine.Keys.ToList().FindLastIndex(repertoire.Contains);
+        if (last < 0 || last == mainLine.Uci.Count) return new Found(DeviationStatus.GameEnded, null, null, []);
 
         var ply = last + 1;
-        var moves = repertoire.MovesFrom(rows[last].Hash);
+        var moves = repertoire.MovesFrom(mainLine.Keys[last]);
         if (moves.Count == 0) return new Found(DeviationStatus.EndOfRepertoire, ply, null, []);
         var whiteMoved = ply % 2 == 1;
         var ownerMoved = whiteMoved == (ownerColour == OwnerColour.White);
         return new Found(DeviationStatus.Deviation, ply, ownerMoved ? DeviationSide.Owner : DeviationSide.Opponent, [.. moves.Select(m => m.San)]);
-    }
-
-    /// <summary>The main lines of some Games, in one query.</summary>
-    private static async Task<Dictionary<int, IReadOnlyList<MoveNodeRecord>>> MainLinesAsync(CollectionDbContext db, List<int> gameIds)
-    {
-        var nodes = (await db.MoveNodes.AsNoTracking().Where(n => gameIds.Contains(n.GameId)).ToListAsync()).ToLookup(n => n.GameId);
-        return gameIds.Distinct().ToDictionary(id => id, id => new MoveTree(nodes[id]).MainLine());
     }
 }

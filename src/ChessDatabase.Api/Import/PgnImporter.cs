@@ -274,16 +274,13 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
     private async Task<int?> FindDuplicateAsync(PgnEntry entry, TreeBuilder tree, OwnerColour? ownerColour)
     {
         var date = GameDates.FromPgn(entry.Tag("Date"));
-        var candidates = await db.Games.AsNoTracking().Include(g => g.Opponent).Where(g => g.Date == date).ToListAsync();
-        foreach (var candidate in candidates)
-        {
-            if (ownerColour is { } known && candidate.OwnerColour != known) continue;
-            var opponent = PersonName.Parse(OpponentName(entry, candidate.OwnerColour));
-            if (!opponent.Matches(PersonName.Parse(candidate.Opponent.Name))) continue;
-            var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == candidate.Id).ToListAsync();
-            if (new MoveTree(nodes).MainLine().Select(n => n.Uci).SequenceEqual(tree.MainLineUcis)) return candidate.Id;
-        }
-        return null;
+        var candidates = (await db.Games.AsNoTracking().Include(g => g.Opponent).Where(g => g.Date == date).ToListAsync())
+            .Where(c => ownerColour is not { } known || c.OwnerColour == known)
+            .Where(c => PersonName.Parse(OpponentName(entry, c.OwnerColour)).Matches(PersonName.Parse(c.Opponent.Name)))
+            .ToList();
+        if (candidates.Count == 0) return null;
+        var mainLines = await MainLines.IndexedAsync(db, [.. candidates.Select(c => c.Id)]);
+        return candidates.FirstOrDefault(c => mainLines[c.Id].Uci.SequenceEqual(tree.MainLineUcis))?.Id;
     }
 
     /// <summary>Turns PGN moves into move tree nodes, checking every move against Chess Rules.</summary>
