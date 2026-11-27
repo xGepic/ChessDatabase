@@ -1,10 +1,10 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { Api, MoveNode, OwnerColour, Repertoire, problemMessage } from '../api/api';
 import { Board } from '../review/board';
-import { continuations, lineEnd } from '../review/notation';
-import { Scoresheet, TreeAction } from '../review/scoresheet';
-import { INITIAL_FEN } from '../shared/chess';
+import { Scoresheet } from '../review/scoresheet';
+import { TreeAction, TreePort, TreeSession } from '../review/tree-session';
 
 /**
  * The Repertoire editor: one move tree for White and one for Black, edited like a Game. Playing a
@@ -18,12 +18,12 @@ import { INITIAL_FEN } from '../shared/chess';
   template: `
     <div class="review repertoire">
       <div class="board-column">
-        <app-board [fen]="fen()" [orientation]="side()" [lastMove]="current()?.uci ?? null" (move)="onBoardMove($event)" />
+        <app-board [fen]="session.fen()" [orientation]="side()" [lastMove]="session.lastMove()" (move)="session.playMove($event)" />
         <div class="board-tools">
           <button type="button" (click)="goTo(null)" title="Start (Home)" aria-label="Start">⏮</button>
-          <button type="button" (click)="goTo(current()?.parentId ?? null)" title="Back (←)" aria-label="Back">◀</button>
-          <button type="button" (click)="goTo(next(currentId()) ?? currentId())" title="Forward (→)" aria-label="Forward">▶</button>
-          <button type="button" (click)="goTo(end(currentId()))" title="End (End)" aria-label="End">⏭</button>
+          <button type="button" (click)="session.back()" title="Back (←)" aria-label="Back">◀</button>
+          <button type="button" (click)="session.forward()" title="Forward (→)" aria-label="Forward">▶</button>
+          <button type="button" (click)="session.toEnd()" title="End (End)" aria-label="End">⏭</button>
           @if (error()) { <span class="board-error" role="alert" data-testid="repertoire-error">{{ error() }}</span> }
         </div>
       </div>
@@ -73,9 +73,14 @@ export class RepertoirePage {
   readonly sideParam = input.required<string>({ alias: 'side' });
   protected readonly side = computed<OwnerColour>(() => (this.sideParam() === 'black' ? 'black' : 'white'));
 
-  protected readonly repertoire = signal<Repertoire | null>(null);
-  protected readonly currentId = signal<number | null>(null);
-  protected readonly error = signal('');
+  /** The Repertoire on the board: the shown move, navigation and edits. A comment being typed is saved first. */
+  protected readonly session = new TreeSession<Repertoire>({
+    beforeChange: () => this.saveComment(),
+    rejectedMove: () => this.board()?.reset(),
+  });
+  protected readonly repertoire = this.session.tree;
+  protected readonly currentId = this.session.currentId;
+  protected readonly error = this.session.error;
   protected readonly commentStatus = signal('');
   /**
    * The comment box's text. It changes only when another move is shown, never from a save, so
@@ -85,106 +90,53 @@ export class RepertoirePage {
   private pendingComment: { side: OwnerColour; nodeId: number; text: string } | null = null;
   private commentTimer: ReturnType<typeof setTimeout> | undefined;
 
-  protected readonly nodes = computed(() => new Map((this.repertoire()?.nodes ?? []).map((n) => [n.id, n])));
-  protected readonly current = computed<MoveNode | null>(() => {
-    const id = this.currentId();
-    return id === null ? null : (this.nodes().get(id) ?? null);
-  });
-  protected readonly fen = computed(() => this.current()?.fen ?? INITIAL_FEN);
+  protected readonly nodes = this.session.nodes;
+  protected readonly current = this.session.current;
 
   constructor() {
     effect((onCleanup) => {
       const side = this.side();
       untracked(() => {
         this.saveComment();
-        this.repertoire.set(null);
-        this.show(null);
+        this.session.load(null, null, 'start');
       });
       // A slow answer for the side shown before must not replace this one.
-      const request = this.api.repertoire(side).subscribe((r) => this.repertoire.set(r));
+      const request = this.api.repertoire(side).subscribe((r) => this.session.load(r, this.portFor(side), 'start'));
       onCleanup(() => request.unsubscribe());
+    });
+    // The comment box shows the comment of the move on the board.
+    effect(() => {
+      const id = this.currentId();
+      untracked(() => {
+        this.commentStatus.set('');
+        this.draft.set(id === null ? '' : (this.nodes().get(id)?.commentAfter ?? ''));
+      });
     });
     inject(DestroyRef).onDestroy(() => this.saveComment());
   }
 
-  /** Shows a move (null: the start) with its comment. */
-  private show(id: number | null) {
-    this.commentStatus.set('');
-    this.currentId.set(id);
-    this.draft.set(id === null ? '' : (this.nodes().get(id)?.commentAfter ?? ''));
-  }
-
-  protected next(id: number | null): number | undefined {
-    return continuations(this.repertoire(), this.nodes(), id)[0];
-  }
-
-  protected end(id: number | null): number | null {
-    return lineEnd(this.repertoire(), this.nodes(), id);
+  /** How the session changes one side's Repertoire on the server. */
+  private portFor(side: OwnerColour): TreePort<Repertoire> {
+    return {
+      addLine: (parentId, moves) =>
+        this.api.addRepertoireLine(side, parentId, moves).pipe(map(({ nodeId, repertoire }) => ({ nodeId, tree: repertoire }))),
+      promote: (nodeId) => this.api.promoteRepertoire(side, nodeId),
+      deleteVariation: (nodeId) => this.api.deleteRepertoireVariation(side, nodeId),
+      deleteFrom: (nodeId) => this.api.deleteRepertoireFrom(side, nodeId),
+    };
   }
 
   protected goTo(id: number | null) {
-    this.saveComment();
-    this.show(id);
+    this.session.goTo(id);
   }
 
   protected onKey(event: KeyboardEvent) {
     if ((event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable]')) return;
-    const moves: Record<string, () => void> = {
-      ArrowLeft: () => this.goTo(this.current()?.parentId ?? null),
-      ArrowRight: () => this.goTo(this.next(this.currentId()) ?? this.currentId()),
-      Home: () => this.goTo(null),
-      ArrowUp: () => this.goTo(null),
-      End: () => this.goTo(this.end(this.currentId())),
-      ArrowDown: () => this.goTo(this.end(this.currentId())),
-    };
-    const move = moves[event.key];
-    if (!move) return;
-    move();
-    event.preventDefault();
-  }
-
-  /** A move played on the board is added to the Repertoire there (followed if it is already in it). */
-  protected onBoardMove(uci: string) {
-    this.error.set('');
-    this.saveComment();
-    const side = this.side();
-    this.api.addRepertoireLine(side, this.currentId(), [uci]).subscribe({
-      next: ({ nodeId, repertoire }) => {
-        if (this.side() !== side) return;
-        this.repertoire.set(repertoire);
-        this.show(nodeId);
-      },
-      error: (e) => {
-        if (this.side() !== side) return;
-        this.error.set(problemMessage(e));
-        this.board()?.reset();
-      },
-    });
+    if (this.session.handleKey(event.key)) event.preventDefault();
   }
 
   protected onTreeAction({ action, node }: { action: TreeAction; node: MoveNode }) {
-    const side = this.side();
-    const call = {
-      promote: () => this.api.promoteRepertoire(side, node.id),
-      'delete-variation': () => this.api.deleteRepertoireVariation(side, node.id),
-      'delete-from-here': () => this.api.deleteRepertoireFrom(side, node.id),
-    }[action];
-    this.error.set('');
-    this.saveComment();
-    call().subscribe({
-      next: (repertoire) => {
-        if (this.side() !== side) return;
-        const before = this.nodes();
-        this.repertoire.set(repertoire);
-        // If the move on the board was deleted, step back to the last one that still exists.
-        let id = this.currentId();
-        while (id !== null && !this.nodes().has(id)) id = before.get(id)?.parentId ?? null;
-        if (id !== this.currentId()) this.show(id);
-      },
-      error: (e) => {
-        if (this.side() === side) this.error.set(problemMessage(e));
-      },
-    });
+    this.session.treeAction(action, node);
   }
 
   /** Comments save shortly after typing stops, when the box loses focus, or before anything else happens. */
@@ -209,7 +161,8 @@ export class RepertoirePage {
         if (this.side() !== pending.side) return;
         // Only this comment is taken from the answer: other changes may have been answered since.
         const comment = saved.nodes.find((n) => n.id === pending.nodeId)?.commentAfter ?? null;
-        this.repertoire.update((r) => r && { ...r, nodes: r.nodes.map((n) => (n.id === pending.nodeId ? { ...n, commentAfter: comment } : n)) });
+        const shown = this.repertoire();
+        if (shown) this.session.replace({ ...shown, nodes: shown.nodes.map((n) => (n.id === pending.nodeId ? { ...n, commentAfter: comment } : n)) });
         if (this.currentId() === pending.nodeId) this.commentStatus.set('Saved');
       },
       error: (e) => {

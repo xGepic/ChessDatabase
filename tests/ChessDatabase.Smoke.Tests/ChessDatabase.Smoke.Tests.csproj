@@ -27,8 +27,9 @@
 
   <!--
     The smoke tests drive the built UI (ui/dist), which the backend serves. Building this project
-    builds the UI first, so `dotnet test` always tests the current UI. It is skipped when nothing
-    under ui/ changed since the last UI build; pass -p:SkipUiBuild=true to skip it anyway.
+    runs the UI's unit specs (npm test) and builds the UI first, so `dotnet test` always tests the
+    current UI. Both are skipped when nothing under ui/ changed since the last UI build; pass
+    -p:SkipUiBuild=true to skip them anyway.
   -->
   <PropertyGroup>
     <UiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\ui'))</UiRoot>
@@ -45,6 +46,7 @@
 
   <Target Name="BuildUi" BeforeTargets="Build" Condition="'$(SkipUiBuild)' != 'true'"
           Inputs="@(UiSource)" Outputs="$(UiRoot)\dist\ui\browser\index.html">
+    <Exec Command="npm test" WorkingDirectory="$(UiRoot)" />
     <Exec Command="npm run build" WorkingDirectory="$(UiRoot)" />
   </Target>
 

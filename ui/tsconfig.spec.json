@@ -1,0 +1,11 @@
+/* Unit specs (every .spec.ts file under src), run by `npm test` with Vitest through Angular's unit-test builder. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

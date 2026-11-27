@@ -1,14 +1,12 @@
 import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
-import { Chess } from 'chess.js';
 import { Router, RouterLink } from '@angular/router';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription, map } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AnalysisLine, Api, BoardMove, Classification, Deviation, EngineAssessment, Game, MoveNode, PositionGame, eloLabel, problemMessage, resultLabel,
 } from '../api/api';
 import { nextPly, numberedChoices, numberedLine } from '../engine/scores';
-import { continuations, lineEnd, pathTo } from './notation';
 import { openGameAt } from '../shared/chess';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 import { AssessmentCard } from '../engine/assessment-card';
@@ -21,15 +19,8 @@ import { Board } from './board';
 import { ExportTools } from './export-tools';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
-import { Scoresheet, TreeAction } from './scoresheet';
-
-/** A move shown on the board while exploring: not part of the Game until the Owner adds it. */
-interface ExploreStep {
-  uci: string;
-  san: string;
-  /** The position after the move. */
-  fen: string;
-}
+import { Scoresheet } from './scoresheet';
+import { TreeAction, TreePort, TreeSession } from './tree-session';
 
 /** The Game view: board, scoresheet and details. */
 @Component({
@@ -50,10 +41,12 @@ export class GameReview {
   /** Query parameter: open the Game at this main-line ply (0 = the start) instead of its end. */
   readonly ply = input<string | undefined>();
 
-  protected readonly game = signal<Game | null>(null);
+  /** The Game's moves on the board: the shown move, navigation, exploring and edits. */
+  protected readonly session = new TreeSession<Game>({ rejectedMove: () => this.board()?.reset() });
+  protected readonly game = this.session.tree;
   /** The move the board shows the position after; null is the starting position. */
-  protected readonly currentId = signal<number | null>(null);
-  protected readonly error = signal('');
+  protected readonly currentId = this.session.currentId;
+  protected readonly error = this.session.error;
   protected readonly flipped = signal(false);
   protected readonly eloLabel = eloLabel;
   protected readonly resultLabel = resultLabel;
@@ -74,30 +67,21 @@ export class GameReview {
       ),
   );
 
-  protected readonly nodes = computed(() => new Map((this.game()?.nodes ?? []).map((n) => [n.id, n])));
-  protected readonly current = computed<MoveNode | null>(() => {
-    const id = this.currentId();
-    return id === null ? null : (this.nodes().get(id) ?? null);
-  });
+  protected readonly nodes = this.session.nodes;
+  protected readonly current = this.session.current;
   /** Event · Round · Date, as far as known. */
   protected readonly meta = computed(() => {
     const g = this.game();
     return g ? [g.event?.name, g.round ? `Round ${g.round}` : null, g.date].filter((x) => !!x).join(" · ") : "";
   });
-  /** The position of the Game's move on the board (exploring starts from here). */
-  private readonly gameFen = computed(() => this.current()?.fen ?? this.game()?.startFen ?? '');
-
-  /**
-   * Moves played on from the Game's position without saving them: from the Opening Tree, or on
-   * the board while exploring. Empty when the board shows the Game.
-   */
-  protected readonly explore = signal<ExploreStep[]>([]);
+  /** Moves shown on from the Game's position without saving them (Opening Tree, board). */
+  protected readonly explore = this.session.explore;
   /** The position on the board: the Game's, or the end of the exploration. */
-  protected readonly fen = computed(() => this.explore().at(-1)?.fen ?? this.gameFen());
-  protected readonly lastMove = computed(() => this.explore().at(-1)?.uci ?? this.current()?.uci ?? null);
+  protected readonly fen = this.session.fen;
+  protected readonly lastMove = this.session.lastMove;
   /** The exploration as move text, e.g. "3...Bc5 4.c3". */
   protected readonly exploreLine = computed(() =>
-    numberedLine(nextPly(this.gameFen()), this.explore().map((s) => s.san)),
+    numberedLine(nextPly(this.session.treeFen()), this.explore().map((s) => s.san)),
   );
   protected readonly orientation = computed<'white' | 'black'>(() => {
     const owner = this.game()?.ownerColour ?? 'white';
@@ -105,7 +89,7 @@ export class GameReview {
   });
 
   /** The moves from the start to the board position, in UCI: what the Engine is given. */
-  private readonly path = computed(() => [...pathTo(this.nodes(), this.currentId()), ...this.explore().map((s) => s.uci)]);
+  private readonly path = this.session.path;
 
   constructor() {
     // The Engine follows the board: every new position restarts the analysis (briefly debounced for held keys).
@@ -129,8 +113,7 @@ export class GameReview {
       this.ply(); // opening the same Game at another position reloads it there
       this.api.getGame(id).subscribe({
         next: (game) => {
-          this.game.set(game);
-          this.currentId.set(this.startNode());
+          this.session.load(game, this.portFor(game.id), this.startAt(), game.startFen);
           this.loadAssessment(game.id);
         },
         error: () => this.router.navigate(['/games']),
@@ -165,7 +148,7 @@ export class GameReview {
     if (!game) return;
     this.api.copyAssessedMove(game.id, ply).subscribe({
       next: ({ copied, game: updated }) => {
-        this.game.set(updated);
+        this.session.replace(updated);
         this.copyMessage.set(copied ? 'Copied into the Game.' : 'Already in the Game.');
       },
       error: (e) => this.copyMessage.set(problemMessage(e)),
@@ -177,7 +160,7 @@ export class GameReview {
     if (!game) return;
     this.api.copyMistakesAndBlunders(game.id).subscribe({
       next: ({ copied, game: updated }) => {
-        this.game.set(updated);
+        this.session.replace(updated);
         this.copyMessage.set(
           copied === 0 ? 'Already in the Game.' : copied === 1 ? 'Copied 1 move into the Game.' : `Copied ${copied} moves into the Game.`,
         );
@@ -205,20 +188,6 @@ export class GameReview {
 
     const handled = (() => {
       switch (event.key) {
-        case 'ArrowLeft':
-          if (this.explore().length) {
-            this.explore.update((steps) => steps.slice(0, -1));
-            return true;
-          }
-          return this.goTo(this.current()?.parentId ?? null);
-        case 'ArrowRight':
-          return this.forward();
-        case 'Home':
-        case 'ArrowUp':
-          return this.goTo(null);
-        case 'End':
-        case 'ArrowDown':
-          return this.toEnd();
         case 'f':
         case 'F':
           this.flipped.update((f) => !f);
@@ -228,45 +197,39 @@ export class GameReview {
           this.toggleEngine();
           return true;
         default:
-          return false;
+          return this.session.handleKey(event.key);
       }
     })();
     if (handled) event.preventDefault();
   }
 
   /** Shows a move of the Game; any exploration is dropped. */
-  protected goTo(id: number | null): true {
-    this.explore.set([]);
-    this.currentId.set(id);
-    return true;
+  protected goTo(id: number | null) {
+    this.session.goTo(id);
   }
 
-  /** One move on along the current line (the first continuation). */
-  protected forward(): true {
-    if (this.explore().length) return true;
-    return this.goTo(this.continuations(this.currentId())[0] ?? this.currentId());
+  protected forward() {
+    this.session.forward();
   }
 
-  /** To the last move of the current line. */
-  protected toEnd(): true {
-    return this.goTo(this.lineEnd(this.currentId()));
-  }
-
-  private continuations(id: number | null): number[] {
-    return continuations(this.game(), this.nodes(), id);
+  protected toEnd() {
+    this.session.toEnd();
   }
 
   /** Where a Game opens: the main-line move at the requested ply, otherwise the end of the main line. */
-  private startNode(): number | null {
+  private startAt(): number | 'end' {
     const ply = Number(this.ply());
-    if (this.ply() === undefined || !Number.isInteger(ply) || ply < 0) return this.lineEnd(null);
-    let id: number | null = null;
-    for (let i = 0; i < ply; i++) {
-      const next: number | undefined = this.continuations(id)[0];
-      if (next === undefined) break;
-      id = next;
-    }
-    return id;
+    return this.ply() === undefined || !Number.isInteger(ply) || ply < 0 ? 'end' : ply;
+  }
+
+  /** How the session changes this Game's moves on the server. */
+  private portFor(gameId: number): TreePort<Game> {
+    return {
+      addLine: (parentId, moves) => this.api.addLine(gameId, parentId, moves).pipe(map(({ nodeId, game }) => ({ nodeId, tree: game }))),
+      promote: (nodeId) => this.api.promote(gameId, nodeId),
+      deleteVariation: (nodeId) => this.api.deleteVariation(gameId, nodeId),
+      deleteFrom: (nodeId) => this.api.deleteFromHere(gameId, nodeId),
+    };
   }
 
   /** Opens a Game from the Opening Tree at the position it shares with the board. */
@@ -281,31 +244,17 @@ export class GameReview {
    * it on the board without saving (exploring).
    */
   protected onTreeMove(move: BoardMove) {
-    if (!this.explore().length) {
-      const recorded = this.continuations(this.currentId()).find((id) => this.nodes().get(id)?.uci === move.uci);
-      if (recorded !== undefined) {
-        this.goTo(recorded);
-        return;
-      }
-    }
-    this.explore.update((steps) => [...steps, { uci: move.uci, san: move.san, fen: move.fen }]);
+    this.session.treeMove({ uci: move.uci, san: move.san, fen: move.fen });
   }
 
   /** Back to the Game's position, dropping the exploration. */
   protected stopExploring() {
-    this.explore.set([]);
+    this.session.stopExploring();
   }
 
   /** Saves the exploration into the Game from where it started (a Variation, or the main line's end). */
   protected addExploration() {
-    const game = this.game();
-    const steps = this.explore();
-    if (!game || !steps.length) return;
-    this.saveLine(game.id, steps.map((s) => s.uci));
-  }
-
-  private lineEnd(id: number | null): number | null {
-    return lineEnd(this.game(), this.nodes(), id);
+    this.session.addExploration();
   }
 
   // ---------------------------------------------------------------- Repertoire
@@ -317,8 +266,7 @@ export class GameReview {
   private readonly mainLineKey = computed(() => {
     const game = this.game();
     if (!game) return null;
-    const moves = pathTo(this.nodes(), lineEnd(game, this.nodes(), null));
-    return `${game.id}:${game.ownerColour}:${moves.join(' ')}`;
+    return `${game.id}:${game.ownerColour}:${this.session.mainLine().join(' ')}`;
   });
   private readonly loadDeviationOnChange = effect(() => {
     if (this.mainLineKey() !== null) untracked(() => this.loadDeviation());
@@ -382,52 +330,9 @@ export class GameReview {
 
   // ---------------------------------------------------------------- editing
 
+  /** A board move: added to the Game, or explored on while exploring. */
   protected onBoardMove(uci: string) {
-    const game = this.game();
-    if (!game) return;
-    if (this.explore().length) {
-      this.exploreBoardMove(uci);
-      return;
-    }
-    this.error.set('');
-    this.api.addMove(game.id, this.currentId(), uci).subscribe({
-      next: ({ nodeId, game: updated }) => {
-        this.game.set(updated);
-        this.currentId.set(nodeId);
-      },
-      error: (e) => {
-        this.error.set(problemMessage(e));
-        this.board()?.reset();
-      },
-    });
-  }
-
-  /**
-   * A board move while exploring goes on exploring. chess.js only gives the instant feedback here;
-   * nothing is saved until "Add to Game", where the backend checks every move (ADR 0002).
-   */
-  private exploreBoardMove(uci: string) {
-    const chess = new Chess(this.fen());
-    try {
-      const move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
-      this.explore.update((steps) => [...steps, { uci, san: move.san, fen: chess.fen() }]);
-    } catch {
-      this.board()?.reset();
-    }
-  }
-
-  /** Adds moves from the Game's move on the board and steps to the first of them. */
-  private saveLine(gameId: number, moves: string[]) {
-    const from = this.currentId();
-    this.error.set('');
-    this.api.addLine(gameId, from, moves).subscribe({
-      next: ({ game: updated }) => {
-        this.game.set(updated);
-        const first = this.continuations(from).find((id) => this.nodes().get(id)?.uci === moves[0]);
-        this.goTo(first ?? from);
-      },
-      error: (e) => this.error.set(problemMessage(e)),
-    });
+    this.session.playMove(uci);
   }
 
   // ---------------------------------------------------------------- engine
@@ -442,38 +347,15 @@ export class GameReview {
    * steps into it. While exploring, the explored moves are added first.
    */
   protected onPlayLine(line: AnalysisLine) {
-    const game = this.game();
-    if (!game) return;
-    this.saveLine(game.id, [...this.explore().map((s) => s.uci), ...line.uci]);
+    this.session.playLine(line.uci);
   }
 
   protected onTreeAction({ action, node }: { action: TreeAction; node: MoveNode }) {
-    const game = this.game();
-    if (!game) return;
-    const calls: Record<TreeAction, () => Observable<Game>> = {
-      promote: () => this.api.promote(game.id, node.id),
-      'delete-variation': () => this.api.deleteVariation(game.id, node.id),
-      'delete-from-here': () => this.api.deleteFromHere(game.id, node.id),
-    };
-    this.error.set('');
-    calls[action]().subscribe({
-      next: (updated) => {
-        const before = this.nodes();
-        this.game.set(updated);
-        // If the current move was deleted, step back to the last move that still exists.
-        const current = this.currentId();
-        if (current !== null && !this.nodes().has(current)) {
-          let parent = node.parentId;
-          while (parent !== null && !this.nodes().has(parent)) parent = before.get(parent)?.parentId ?? null;
-          this.currentId.set(parent);
-        }
-      },
-      error: (e) => this.error.set(problemMessage(e)),
-    });
+    this.session.treeAction(action, node);
   }
 
   protected onDetailsSaved(game: Game) {
-    this.game.set(game);
+    this.session.replace(game);
   }
 
   protected onDelete() {

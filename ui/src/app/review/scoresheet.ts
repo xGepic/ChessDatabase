@@ -2,8 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { Classification, GameResult, MoveNode, MoveTreeView, resultLabel } from '../api/api';
 import { annotatedSan, buildSheet, isOnMainLine } from './notation';
-
-export type TreeAction = 'promote' | 'delete-variation' | 'delete-from-here';
+import type { TreeAction } from './tree-session';
 
 /**
  * The notation as a scoresheet: numbered rows with White and Black columns. Variations sit as

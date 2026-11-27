@@ -69,12 +69,13 @@ Backups go to `Backups` beside the Collection (by default `%LOCALAPPDATA%\ChessD
 dotnet test ChessDatabase.slnx
 ```
 
-This runs every test project. Building the smoke test project builds the UI first (`npm run build` in `ui/`, after `npm ci` when `node_modules` is missing), because the smoke tests drive the built UI. The UI build is skipped when nothing under `ui/` changed since the last one; `-p:SkipUiBuild=true` skips it anyway.
+This runs every test project. Building the smoke test project first runs the UI's unit specs (`npm test` in `ui/`) and builds the UI (`npm run build`, after `npm ci` when `node_modules` is missing), because the smoke tests drive the built UI. Both are skipped when nothing under `ui/` changed since the last UI build; `-p:SkipUiBuild=true` skips them anyway. To run only the UI specs, use `npm test` in `ui/`.
 
 | Project | What it tests |
 |---|---|
 | `tests/ChessDatabase.Rules.Tests` | Chess Rules directly: perft, SAN and FEN round trips, hashing (ADR 0002) |
 | `tests/ChessDatabase.Api.Tests` | The HTTP API, run in-process against a fresh temporary SQLite file per test |
+| `ui/src/**/*.spec.ts` | UI logic without a browser or backend (Vitest), e.g. the tree session behind the Game view and the Repertoire |
 | `tests/ChessDatabase.Smoke.Tests` | Playwright drives the real app (built UI and backend) in headless Edge |
 | `tests/ChessDatabase.FakeEngine` | Not a test project: a scripted UCI engine that answers with canned output per position, so Engine tests are exact |
 

@@ -573,9 +573,6 @@ export class Api {
   }
 
   // Move tree
-  addMove(gameId: number, parentId: number | null, move: string): Observable<{ nodeId: number; game: Game }> {
-    return this.http.post<{ nodeId: number; game: Game }>(`/api/games/${gameId}/moves`, { parentId, move });
-  }
   /** Plays several moves from a node; a move already recorded there is followed, not doubled. */
   addLine(gameId: number, parentId: number | null, moves: string[]): Observable<{ nodeId: number; game: Game }> {
     return this.http.post<{ nodeId: number; game: Game }>(`/api/games/${gameId}/moves/line`, { parentId, moves });

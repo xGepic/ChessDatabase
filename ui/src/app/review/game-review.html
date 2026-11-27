@@ -65,7 +65,7 @@
           </div>
         }
       </header>
-      <app-scoresheet [game]="g" [currentId]="currentId()" [marks]="marks()" [deviationId]="deviation()?.nodeId ?? null" (select)="currentId.set($event)" (action)="onTreeAction($event)" />
+      <app-scoresheet [game]="g" [currentId]="currentId()" [marks]="marks()" [deviationId]="deviation()?.nodeId ?? null" (select)="goTo($event)" (action)="onTreeAction($event)" />
     </section>
 
     <div class="side-column">
