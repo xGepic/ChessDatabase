@@ -1,5 +1,5 @@
 using ChessDatabase.Api;
 
-// Browser mode: run the backend as a localhost web app (development, or `ng serve` against it).
+// The backend on http://localhost:5080 (launchSettings.json); `ng serve` in ui/ serves the UI and proxies /api and /hubs here.
 var app = ChessDatabaseApp.Build(ChessDatabaseApp.CreateBuilder(args));
 app.Run();

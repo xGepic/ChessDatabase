@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ChessDatabase.Api/ChessDatabase.Api.csproj" />
-    <Project Path="src/ChessDatabase.Desktop/ChessDatabase.Desktop.csproj" />
     <Project Path="src/ChessDatabase.Rules/ChessDatabase.Rules.csproj" />
   </Folder>
   <Folder Name="/tests/">

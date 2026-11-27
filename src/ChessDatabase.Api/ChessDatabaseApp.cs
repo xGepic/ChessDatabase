@@ -15,7 +15,7 @@ using ChessDatabase.Api.Training;
 namespace ChessDatabase.Api;
 
 /// <summary>
-/// Composes the backend. Used by the browser-mode entry point (Program), the desktop shell
+/// Composes the backend. Used by the entry point (Program)
 /// and the tests, so all of them run the same app.
 /// </summary>
 public static class ChessDatabaseApp
@@ -26,6 +26,7 @@ public static class ChessDatabaseApp
             ? WebApplication.CreateBuilder(args)
             : WebApplication.CreateBuilder(options);
 
+        builder.Services.AddLocalOnly();
         builder.Services.AddCollection();
         builder.Services.AddSingleton<OpeningClassifier>();
         builder.Services.AddScoped<PgnImporter>();
@@ -67,6 +68,7 @@ public static class ChessDatabaseApp
         app.Services.MigrateCollection();
         Games.PositionIndex.Backfill(app.Services);
 
+        app.UseLocalOnly();
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
@@ -92,6 +94,7 @@ public static class ChessDatabaseApp
         app.MapDiagramEndpoints();
         app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
+        // A built UI in wwwroot is served too (the smoke tests use this); day to day, `ng serve` serves the UI.
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.
         app.MapFallbackToFile("index.html");
         return app;

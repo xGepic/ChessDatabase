@@ -6,7 +6,7 @@
 
 web
 
-The UI is an Angular app shown in a desktop window (Photino.NET or WebView2) on Windows. During development it also runs as a localhost web app. See docs/adr/0001-aspnet-core-angular-desktop-shell.md.
+The UI is an Angular app used in a normal browser on localhost, served by `ng serve` with the ASP.NET Core backend started separately, on Windows. See docs/adr/0004-web-app-on-localhost.md.
 
 ## Users
 

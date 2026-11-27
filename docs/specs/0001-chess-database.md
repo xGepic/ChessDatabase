@@ -4,7 +4,7 @@ status: ready-for-agent
 
 # Spec: Personal chess database with engine analysis
 
-Vocabulary follows [GLOSSARY.md](../../GLOSSARY.md). Architecture follows [ADR 0001](../adr/0001-aspnet-core-angular-desktop-shell.md), [ADR 0002](../adr/0002-csharp-is-source-of-truth-for-chess-rules.md) and [ADR 0003](../adr/0003-engine-assessment-separate-from-annotations.md).
+Vocabulary follows [GLOSSARY.md](../../GLOSSARY.md). Architecture follows [ADR 0001](../adr/0001-aspnet-core-angular-desktop-shell.md) (its desktop window superseded by [ADR 0004](../adr/0004-web-app-on-localhost.md)), [ADR 0002](../adr/0002-csharp-is-source-of-truth-for-chess-rules.md) and [ADR 0003](../adr/0003-engine-assessment-separate-from-annotations.md).
 
 ## Problem Statement
 
@@ -12,7 +12,7 @@ The Owner is a hobby over-the-board chess player with about 100 annotated Games 
 
 ## Solution
 
-A personal Windows desktop app that holds the Owner's Collection of Games in a local database. The Owner types Games in on a board or imports them from PGN. Each Game records both Players, their Elo (or unrated), the result, optional details, the moves with Variations, and the Owner's own Annotations. The Owner replays any Game with Stockfish running live alongside (Interactive Analysis), or has the Engine go through the whole Game unattended (Game Analysis). Game Analysis produces an Engine Assessment with an evaluation graph, Move Classifications and Accuracy, without touching the Owner's Annotations.
+A personal web app, running on the Owner's Windows PC, that holds the Owner's Collection of Games in a local database. The Owner types Games in on a board or imports them from PGN. Each Game records both Players, their Elo (or unrated), the result, optional details, the moves with Variations, and the Owner's own Annotations. The Owner replays any Game with Stockfish running live alongside (Interactive Analysis), or has the Engine go through the whole Game unattended (Game Analysis). Game Analysis produces an Engine Assessment with an evaluation graph, Move Classifications and Accuracy, without touching the Owner's Annotations.
 
 Later phases add research (Opening Tree over the Owner's Games plus online Master Games, Position Search, online Tablebase lookups), Player Dossiers, an opening Repertoire with training, Mistake Training from the Owner's own errors, export to PDF, images and PGN, and Leela Chess Zero as a second Engine on the GPU.
 
@@ -178,7 +178,7 @@ Delivery happens in five phases. Each phase leaves the app usable:
 
 ### Architecture
 
-- Desktop shell: an ASP.NET Core (.NET 11) backend hosting an Angular UI inside a desktop window (Photino.NET or WebView2; pick whichever integrates more simply). During development, the app also runs as a plain localhost web app. See ADR 0001.
+- Shell: an ASP.NET Core (.NET 11) backend and an Angular UI, used in a browser on localhost (`ng serve` for the UI, the backend started separately). The desktop window of ADR 0001 was dropped; see ADR 0004.
 - The UI talks to the backend over a REST-style HTTP API. Live Engine output (Interactive Analysis lines, Game Analysis progress) streams over a SignalR hub.
 - Personal use only: no authentication, no installer requirement, Windows only. Stockfish (GPLv3) runs as a separate process and is never linked in, so the GPL question stays moot even if this changes.
 

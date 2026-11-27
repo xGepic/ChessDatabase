@@ -1,14 +1,14 @@
 # Chess Database
 
-A personal, ChessBase-like desktop app for one over-the-board player's own Games. Games are entered on a board or imported from PGN, replayed with Variations and Annotations, and analysed with Stockfish. Everything lives in one local SQLite file.
+A personal, ChessBase-like web app for one over-the-board player's own Games. Games are entered on a board or imported from PGN, replayed with Variations and Annotations, and analysed with Stockfish. Everything lives in one local SQLite file.
 
-It is an ASP.NET Core backend that hosts an Angular UI in a desktop window (Photino, which uses WebView2 on Windows). During development the same UI also runs in a normal browser.
+It is an ASP.NET Core backend and an Angular UI that run on your own PC and are used in a normal browser at <http://localhost:4200>. Nothing is reachable from other machines.
 
 ## Status
 
 Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). What works so far:
 
-- The desktop window opens on the game list. The Collection is created and migrated automatically on first start.
+- The app opens on the game list. The Collection is created and migrated automatically on first start.
 - Chess Rules (`src/ChessDatabase.Rules`): legal move generation (passes the standard perft suite), check, checkmate and stalemate, FEN, SAN (German piece letters K D T L S are accepted, English letters are always written) and Zobrist position hashes.
 - Entering a Game: set your name under Settings, then New Game: your colour, the Opponent (autocompleted, or created on the spot), both Elos (empty or 0 = unrated) and the result. Play the moves on the board by drag or click. Everything saves as you go. Games show up in the game list and can be deleted from the Game view.
 - Replaying and Variations: step through a Game with the arrow keys (← back, → forward, Home/↑ start, End/↓ end of the line) or by clicking moves. F flips the board. Playing a different move from the recorded one starts a Variation, and Variations can nest. Right-click a move to promote it to the main line, delete its Variation, or delete from there on.
@@ -38,7 +38,7 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 
 ## Prerequisites
 
-- Windows 10/11 with the WebView2 runtime (part of current Windows and Edge)
+- Windows 10/11 (the Lichess token is encrypted for your Windows account, and PDF export uses the Windows fonts)
 - [.NET 11 SDK](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) 24 or later (npm 10)
 - Microsoft Edge, which the Playwright smoke tests drive (no separate browser download needed)
@@ -46,20 +46,22 @@ Built ticket by ticket from [docs/tickets/tickets.md](docs/tickets/tickets.md). 
 
 ## Running
 
-| What | Command |
-|---|---|
-| Desktop app | `./build.ps1 run` |
-| Browser (development) | `./build.ps1 dev`, then open <http://localhost:4200> |
+Start the two halves in two terminals:
 
-`./build.ps1 run` builds the Angular UI, then starts `src/ChessDatabase.Desktop`. That project serves the UI and the API on a private loopback port and opens a window on it.
+| What | Command | Address |
+|---|---|---|
+| Backend | `dotnet run --project src/ChessDatabase.Api` | <http://localhost:5080> |
+| UI | `ng serve` (or `npm start`) in `ui/` | <http://localhost:4200> |
 
-`./build.ps1 dev` starts the backend on <http://localhost:5080> and `ng serve` on <http://localhost:4200>. The dev server proxies `/api` to the backend and reloads the UI as you edit it. You can also run the two halves yourself: `dotnet run --project src/ChessDatabase.Api` and `npm start` in `ui/`.
+Then open <http://localhost:4200>. The UI dev server proxies `/api` and `/hubs` (SignalR) to the backend (`ui/proxy.conf.json`) and reloads as you edit. Run `npm ci` in `ui/` once first.
+
+The backend only answers to `localhost` and `127.0.0.1`, and refuses changes sent from pages of other sites, so websites open in the same browser can't touch the Collection. There are no logins: don't expose port 5080 to the network.
 
 ### Where the data lives
 
 The Collection is `%LOCALAPPDATA%\ChessDatabase\collection.db`. It is created and migrated automatically on first start. To use a different file, set `Collection:DatabasePath` in `appsettings.json`, or pass `--Collection:DatabasePath=<path>` on the command line.
 
-Backups go to `Backups` beside the Collection (by default `%LOCALAPPDATA%\ChessDatabase\Backups`) unless Settings name another folder. Each backup is a complete `collection-<date>-<time>.db`; to restore one, close the app and copy it over `collection.db`. Setting `Backup:Daily` to `false` turns the automatic backups off.
+Backups go to `Backups` beside the Collection (by default `%LOCALAPPDATA%\ChessDatabase\Backups`) unless Settings name another folder. Each backup is a complete `collection-<date>-<time>.db`; to restore one, stop the backend and copy it over `collection.db`. Setting `Backup:Daily` to `false` turns the automatic backups off.
 
 ## Testing
 
@@ -82,11 +84,12 @@ The tests never need Stockfish. One optional check runs the real one: set `STOCK
 
 ```
 ChessDatabase.slnx
-build.ps1                       build / test / run entry point
+build.ps1                       build and test entry point
 src/
   ChessDatabase.Rules/          Chess Rules: board, legal moves, SAN, FEN, Zobrist hashing
   ChessDatabase.Api/            ASP.NET Core backend: HTTP API and the Collection (EF Core + SQLite)
-    ChessDatabaseApp.cs         composes the app; shared by browser mode, desktop shell and tests
+    ChessDatabaseApp.cs         composes the app; shared by Program and the tests
+    LocalOnly.cs                answers only to localhost and refuses cross-site changes
     Collection/                 DbContext, entities, migrations
     Engines/                    Engine Host: UCI processes, Interactive Analysis hub (SignalR)
     Analysis/                   Game Analysis: background queue, analyser, Engine Assessment API
@@ -96,7 +99,6 @@ src/
     Training/                   Repertoires, the Deviation check, Repertoire and Mistake Training, the spaced-repetition scheduler
     Export/                     board diagrams (PNG, SkiaSharp) and PDF export (QuestPDF)
     Backup/                     daily backups
-  ChessDatabase.Desktop/        Photino desktop shell (builds ChessDatabase.exe)
 ui/                             Angular UI (chessground board, chess.js for instant feedback)
 tests/                          see Testing
 docs/                           spec, ADRs and tickets
@@ -108,6 +110,6 @@ Database migrations are created with the local EF tool, for example `dotnet ef m
 
 - [Glossary](GLOSSARY.md): the domain terms (Game, Owner, Variation, Annotation, …) used everywhere, code included
 - [Spec](docs/specs/0001-chess-database.md)
-- ADRs: [0001 desktop shell](docs/adr/0001-aspnet-core-angular-desktop-shell.md), [0002 Chess Rules in C#](docs/adr/0002-csharp-is-source-of-truth-for-chess-rules.md), [0003 Engine Assessment kept separate](docs/adr/0003-engine-assessment-separate-from-annotations.md)
+- ADRs: [0001 desktop shell (superseded)](docs/adr/0001-aspnet-core-angular-desktop-shell.md), [0004 web app on localhost](docs/adr/0004-web-app-on-localhost.md), [0002 Chess Rules in C#](docs/adr/0002-csharp-is-source-of-truth-for-chess-rules.md), [0003 Engine Assessment kept separate](docs/adr/0003-engine-assessment-separate-from-annotations.md)
 - [Tickets](docs/tickets/tickets.md)
 - [Product](PRODUCT.md) and the [design direction for the review screen](.impeccable/surfaces/review.md)

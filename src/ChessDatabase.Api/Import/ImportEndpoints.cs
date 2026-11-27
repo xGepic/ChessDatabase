@@ -17,7 +17,7 @@ public static class ImportEndpoints
                 ? Invalid("pgn", "Paste the PGN of one or more Games.")
                 : Results.Ok(await importer.ImportAsync(body.Pgn, body.AllowDuplicates)));
 
-        // A local desktop app with no cookies or logins, so there is nothing for antiforgery to protect.
+        // No cookies or logins, so antiforgery has nothing to protect; LocalOnly refuses posts from other sites.
         import.MapPost("/file", async (IFormFile? file, PgnImporter importer) =>
         {
             if (file is null || file.Length == 0) return Invalid("file", "Choose a PGN file.");
