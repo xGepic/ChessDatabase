@@ -86,10 +86,17 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         PlayerRecord opponent;
         if (choice.OpponentPlayerId is { } playerId)
         {
+            // With no name in the PGN the Owner names the Opponent freely; otherwise the Player must match it.
             var player = _players.FirstOrDefault(p => p.Id == playerId);
-            if (player is null || !(Names.Same(player.Name, opponentName) || PersonName.SamePerson(player.Name, opponentName)))
+            if (player is null)
+                return new ResolveOutcome.Invalid("opponentPlayerId", "That Player no longer exists.");
+            if (opponentName.Length > 0 && !(Names.Same(player.Name, opponentName) || PersonName.SamePerson(player.Name, opponentName)))
                 return new ResolveOutcome.Invalid("opponentPlayerId", $"That Player's name does not match \"{opponentName}\".");
             opponent = player;
+        }
+        else if (opponentName.Length == 0)
+        {
+            return new ResolveOutcome.Invalid("opponentPlayerId", "The PGN has no name for your Opponent: choose or create the Player.");
         }
         else
         {
@@ -137,17 +144,24 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         var hasResult = GameResults.TryParsePgn(entry.Tag("Result") ?? entry.Termination, out var result);
         if (!hasResult) problems.Add("The Game has no result.");
 
+        // A missing name holds the Game back for review, where the Owner names the Opponent.
+        var whiteMissing = PgnValues.OptionalTag(white) is null;
+        var blackMissing = PgnValues.OptionalTag(black) is null;
+        if (whiteMissing && blackMissing) problems.Add("The PGN has no player names.");
+        else if (whiteMissing) problems.Add("The White player's name is missing in the PGN.");
+        else if (blackMissing) problems.Add("The Black player's name is missing in the PGN.");
+
         var ownerColour = OwnerColourOf(entry);
         PlayerRecord? opponent = null;
         if (ownerColour is null)
         {
-            problems.Add(IsOwner(white) && IsOwner(black)
-                ? "Both sides match your name or an Alias."
-                : "Neither side matches your name or an Alias.");
+            if (!whiteMissing || !blackMissing)
+                problems.Add(IsOwner(white) && IsOwner(black)
+                    ? "Both sides match your name or an Alias."
+                    : "Neither side matches your name or an Alias.");
         }
-        else
+        else if (OpponentName(entry, ownerColour.Value) is { Length: > 0 } opponentName)
         {
-            var opponentName = OpponentName(entry, ownerColour.Value);
             opponent = ExactPlayer(opponentName);
             if (opponent is null && SimilarPlayer(opponentName) is { } similar)
                 problems.Add($"The Opponent \"{opponentName}\" may be the same Player as \"{similar.Name}\".");
@@ -159,8 +173,8 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
             {
                 Pgn = entry.Source,
                 Reason = string.Join(' ', problems),
-                White = white,
-                Black = black,
+                White = PgnValues.OptionalTag(white),
+                Black = PgnValues.OptionalTag(black),
                 Date = GameDates.FromPgn(entry.Tag("Date")),
                 CreatedAt = DateTime.UtcNow,
             });
@@ -179,10 +193,6 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
     {
         if (entry.Tag("SetUp") == "1" || entry.Tag("FEN") is not null)
             return "Games from a custom starting position are not supported.";
-        if (PgnValues.OptionalTag(entry.Tag("White")) is null)
-            return "Both players' names are needed, and the White player's name is missing.";
-        if (PgnValues.OptionalTag(entry.Tag("Black")) is null)
-            return "Both players' names are needed, and the Black player's name is missing.";
         return null;
     }
 
@@ -240,8 +250,9 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         return white == black ? null : white ? OwnerColour.White : OwnerColour.Black;
     }
 
+    /// <summary>The Opponent's name from the PGN; empty when the PGN has none ("?" and "-" count as none).</summary>
     private static string OpponentName(PgnEntry entry, OwnerColour ownerColour) =>
-        PlayerSides.ToOwnerAndOpponent(ownerColour, entry.Tag("White"), entry.Tag("Black")).Opponent?.Trim() ?? "";
+        PgnValues.OptionalTag(PlayerSides.ToOwnerAndOpponent(ownerColour, entry.Tag("White"), entry.Tag("Black")).Opponent) ?? "";
 
     /// <summary>The Player with exactly this name. Any other spelling, even in letter case, needs the Owner's confirmation.</summary>
     private PlayerRecord? ExactPlayer(string name) => _players.FirstOrDefault(p => p.Name == name.Trim());
@@ -276,7 +287,8 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         var date = GameDates.FromPgn(entry.Tag("Date"));
         var candidates = (await db.Games.AsNoTracking().Include(g => g.Opponent).Where(g => g.Date == date).ToListAsync())
             .Where(c => ownerColour is not { } known || c.OwnerColour == known)
-            .Where(c => PersonName.Parse(OpponentName(entry, c.OwnerColour)).Matches(PersonName.Parse(c.Opponent.Name)))
+            .Where(c => OpponentName(entry, c.OwnerColour) is { Length: > 0 } name
+                && PersonName.Parse(name).Matches(PersonName.Parse(c.Opponent.Name)))
             .ToList();
         if (candidates.Count == 0) return null;
         var mainLines = await MainLines.IndexedAsync(db, [.. candidates.Select(c => c.Id)]);

@@ -1,14 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, catchError, combineLatest, map, of, startWith, switchMap, tap } from 'rxjs';
+import { Subject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap, tap } from 'rxjs';
 import { Api, GameSummary, eloLabel, problemMessage, resultLabel } from '../api/api';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 
 /** The filter fields, as they appear in the URL and in the API's query parameters. */
-const FILTER_KEYS = [
-  'opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'ecoFrom', 'ecoTo', 'tag', 'timeControl', 'analysed',
-];
+const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'analysed'];
+/** What the URL may carry: the filters and the sort. Anything else (an old bookmark's ECO or Tag filter) is ignored. */
+const URL_KEYS = [...FILTER_KEYS, 'sort', 'direction'];
 
 interface Column {
   key: string;
@@ -18,7 +18,7 @@ interface Column {
 
 /**
  * The game list: sort by any column (click its header, again to reverse) and filter by
- * Opponent, Event, dates, result, colour, ECO range, Tag and time control. Filters and sort live
+ * Opponent, Event, dates, result, colour and whether it is analysed. Filters and sort live
  * in the URL, so returning from a Game keeps them, and "Export to PGN" exports exactly what is shown.
  */
 @Component({
@@ -39,9 +39,13 @@ export class GameList {
   /** Reloads the list, e.g. when a Game Analysis finishes and the "analysed" mark changes. */
   private readonly reload = new Subject<void>();
 
-  /** Games ticked for Game Analysis. */
+  /** Games ticked for Game Analysis or deletion. */
   protected readonly selected = signal<ReadonlySet<number>>(new Set());
   protected readonly queueError = signal('');
+  /** "1 Game", "3 Games": the ticked Games, for the buttons. */
+  protected readonly selectedLabel = computed(() => `${this.selected().size} ${this.selected().size === 1 ? 'Game' : 'Games'}`);
+  /** Deleting asks once more before anything is removed. */
+  protected readonly confirmingDelete = signal(false);
 
   protected readonly eloLabel = eloLabel;
   protected readonly resultLabel = resultLabel;
@@ -60,7 +64,12 @@ export class GameList {
 
   /** Current filters and sort from the URL. */
   private readonly params$ = this.route.queryParamMap.pipe(
-    map((q) => Object.fromEntries(q.keys.map((k) => [k, q.get(k)!]).filter(([, v]) => v !== '')) as Record<string, string>),
+    map(
+      (q) =>
+        Object.fromEntries(
+          q.keys.filter((k) => URL_KEYS.includes(k)).map((k) => [k, q.get(k)!]).filter(([, v]) => v !== ''),
+        ) as Record<string, string>,
+    ),
   );
   protected readonly params = toSignal(this.params$, { initialValue: {} as Record<string, string> });
   /** Why the list could not be loaded, e.g. a date filter that is not a date. */
@@ -84,9 +93,12 @@ export class GameList {
     return query ? `/api/games/pgn?${query}` : '/api/games/pgn';
   });
 
-  protected readonly players = toSignal(this.api.searchPlayers(''), { initialValue: [] });
+  /** Reloaded with the list: deleting a Game can delete its Opponent too. */
+  protected readonly players = toSignal(
+    this.reload.pipe(startWith(undefined), switchMap(() => this.api.searchPlayers(''))),
+    { initialValue: [] },
+  );
   protected readonly events = toSignal(this.api.searchEvents(''), { initialValue: [] });
-  protected readonly tags = toSignal(this.api.searchTags(''), { initialValue: [] });
 
   protected value(key: string): string {
     return this.params()[key] ?? '';
@@ -151,6 +163,25 @@ export class GameList {
         this.selected.set(new Set());
       },
       error: (e) => this.queueError.set(problemMessage(e)),
+    });
+  }
+
+  /** Deletes the ticked Games, then reloads the list (and its filter choices). */
+  protected deleteSelected() {
+    const ids = [...this.selected()];
+    this.confirmingDelete.set(false);
+    if (!ids.length) return;
+    this.queueError.set('');
+    forkJoin(ids.map((id) => this.api.deleteGame(id))).subscribe({
+      next: () => {
+        this.selected.set(new Set());
+        this.reload.next();
+      },
+      error: (e) => {
+        this.queueError.set(problemMessage(e));
+        this.selected.set(new Set());
+        this.reload.next();
+      },
     });
   }
 

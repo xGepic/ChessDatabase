@@ -26,12 +26,17 @@ public static class CollectionSetup
         return services;
     }
 
-    /// <summary>Creates the database on first start and applies any pending migrations.</summary>
+    /// <summary>
+    /// Creates the database on first start and applies any pending migrations. Then removes Players
+    /// left without a Game (e.g. created for a Game that was never started).
+    /// </summary>
     public static void MigrateCollection(this IServiceProvider services)
     {
         var path = DatabasePath(services.GetRequiredService<IConfiguration>());
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var scope = services.CreateScope();
-        scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Database.Migrate();
+        var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
+        db.Database.Migrate();
+        Players.PlayerCleanup.RemoveAllUnusedAsync(db).GetAwaiter().GetResult();
     }
 }

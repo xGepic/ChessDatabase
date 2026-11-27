@@ -4,8 +4,14 @@
     @if (games(); as list) { <span class="hint" data-testid="game-count">{{ list.length }} shown</span> }
     <span class="spacer"></span>
     @if (selected().size) {
-      <button type="button" data-testid="analyse-selected" (click)="analyseSelected(games() ?? [])">
-        Analyse {{ selected().size }} {{ selected().size === 1 ? 'Game' : 'Games' }}</button>
+      @if (confirmingDelete()) {
+        <span class="confirm" role="alert">Delete {{ selectedLabel() }}? This can't be undone.</span>
+        <button type="button" class="danger" data-testid="confirm-delete-selected" (click)="deleteSelected()">Delete</button>
+        <button type="button" data-testid="keep-selected" (click)="confirmingDelete.set(false)">Keep</button>
+      } @else {
+        <button type="button" data-testid="analyse-selected" (click)="analyseSelected(games() ?? [])">Analyse {{ selectedLabel() }}</button>
+        <button type="button" class="danger" data-testid="delete-selected" (click)="confirmingDelete.set(true)">Delete {{ selectedLabel() }}</button>
+      }
     }
     <a class="button" [href]="exportUrl()" download data-testid="export-all"
        [title]="filtered() ? 'Exports the Games shown' : 'Exports the whole Collection'">
@@ -48,24 +54,6 @@
         <option value="white" [selected]="value('ownerColour') === 'white'">White</option>
         <option value="black" [selected]="value('ownerColour') === 'black'">Black</option>
       </select>
-    </label>
-    <label>ECO
-      <span class="range">
-        <input data-testid="filter-eco-from" class="eco" placeholder="A00" maxlength="3" [value]="value('ecoFrom')"
-               (change)="setFilter('ecoFrom', $any($event.target).value)" />–<input
-               data-testid="filter-eco-to" class="eco" placeholder="E99" maxlength="3" [value]="value('ecoTo')"
-               (change)="setFilter('ecoTo', $any($event.target).value)" />
-      </span>
-    </label>
-    <label>Tag
-      <select data-testid="filter-tag" (change)="setFilter('tag', $any($event.target).value)">
-        <option value="">Any</option>
-        @for (t of tags(); track t.id) { <option [value]="t.name" [selected]="value('tag') === t.name">{{ t.name }}</option> }
-      </select>
-    </label>
-    <label>Time control
-      <input data-testid="filter-time-control" class="short" placeholder="90+30" [value]="value('timeControl')"
-             (change)="setFilter('timeControl', $any($event.target).value)" />
     </label>
     <label>Analysed
       <select data-testid="filter-analysed" (change)="setFilter('analysed', $any($event.target).value)">

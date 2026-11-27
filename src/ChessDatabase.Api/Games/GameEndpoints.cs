@@ -1,3 +1,4 @@
+using ChessDatabase.Api.Players;
 using ChessDatabase.Api.Collection;
 using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.Games.GameValues;
@@ -40,15 +41,22 @@ public static class GameEndpoints
             var errors = await ValidateAsync(body, db);
             if (errors.Count > 0) return Results.ValidationProblem(errors);
 
+            var previousOpponentId = game.OpponentId;
             await ApplyAsync(body, game, db);
             await db.SaveChangesAsync();
+            // Another Opponent chosen: the previous one goes if this was their last Game.
+            if (game.OpponentId != previousOpponentId) await PlayerCleanup.RemoveIfUnusedAsync(db, previousOpponentId);
             return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
         });
 
         games.MapDelete("/{id:int}", async (int id, CollectionDbContext db) =>
         {
-            var deleted = await db.Games.Where(g => g.Id == id).ExecuteDeleteAsync();
-            return deleted == 0 ? Results.NotFound() : Results.NoContent();
+            var opponentId = await db.Games.Where(g => g.Id == id).Select(g => (int?)g.OpponentId).SingleOrDefaultAsync();
+            if (opponentId is null) return Results.NotFound();
+            await db.Games.Where(g => g.Id == id).ExecuteDeleteAsync();
+            // The Opponent goes with their last Game.
+            await PlayerCleanup.RemoveIfUnusedAsync(db, opponentId.Value);
+            return Results.NoContent();
         });
 
         games.MapMoveTreeEndpoints();

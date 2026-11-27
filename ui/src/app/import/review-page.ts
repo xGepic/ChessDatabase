@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { PlayerPicker } from '../shared/player-picker';
 import { Api, GameResult, OwnerColour, Player, RESULTS, ReviewItem, problemMessage } from '../api/api';
 
 /** What the Owner has chosen so far for one held-back import. */
@@ -9,15 +10,17 @@ interface Draft {
   result: GameResult | null;
   /** True: same Player as the suggestion. False: a different (new) Player. Null: not decided. */
   sameAsSuggestion: boolean | null;
+  /** The Opponent the Owner chose, when the PGN has no name for that side. */
+  opponent: Player | null;
 }
 
 /**
- * The import review list: imported entries held back because no side matched the Owner, the result was
- * missing, or the Opponent only resembles an existing Player. Nothing is linked without a choice.
+ * The import review list: imported entries held back because no side matched the Owner, the result or a
+ * player's name was missing, or the Opponent only resembles an existing Player. Nothing is linked without a choice.
  */
 @Component({
   selector: 'app-review-page',
-  imports: [RouterLink],
+  imports: [RouterLink, PlayerPicker],
   templateUrl: './review-page.html',
 })
 export class ReviewPage {
@@ -39,7 +42,7 @@ export class ReviewPage {
       this.items.set(items);
       this.drafts.set(
         Object.fromEntries(
-          items.map((i) => [i.id, { ownerColour: i.ownerColour, result: i.result, sameAsSuggestion: null }]),
+          items.map((i) => [i.id, { ownerColour: i.ownerColour, result: i.result, sameAsSuggestion: null, opponent: null }]),
         ),
       );
     });
@@ -60,19 +63,35 @@ export class ReviewPage {
     return colour === 'white' ? item.blackSuggestion : item.whiteSuggestion;
   }
 
+  /** The PGN has no name on the Opponent's side, so the Owner picks the Player. */
+  protected opponentMissing(item: ReviewItem): boolean {
+    const colour = this.draft(item).ownerColour;
+    if (!colour) return false;
+    return !(colour === 'white' ? item.black : item.white)?.trim();
+  }
+
   protected opponentName(item: ReviewItem): string {
     return (this.draft(item).ownerColour === 'white' ? item.black : item.white) ?? '?';
   }
 
   protected ready(item: ReviewItem): boolean {
     const d = this.draft(item);
-    return !!d.ownerColour && !!d.result && (!this.suggestion(item) || d.sameAsSuggestion !== null);
+    return (
+      !!d.ownerColour &&
+      !!d.result &&
+      (!this.opponentMissing(item) || !!d.opponent) &&
+      (!this.suggestion(item) || d.sameAsSuggestion !== null)
+    );
   }
 
   protected resolve(item: ReviewItem, allowDuplicate = false) {
     const d = this.draft(item);
     if (!d.ownerColour || !d.result) return;
-    const link = this.suggestion(item) && d.sameAsSuggestion ? this.suggestion(item)!.id : null;
+    const link = this.opponentMissing(item)
+      ? (d.opponent?.id ?? null)
+      : this.suggestion(item) && d.sameAsSuggestion
+        ? this.suggestion(item)!.id
+        : null;
     this.api.resolveReview(item.id, d.ownerColour, d.result, link, allowDuplicate).subscribe({
       next: () => this.remove(item),
       error: (e: HttpErrorResponse) => {

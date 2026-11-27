@@ -31,7 +31,7 @@ public class SmokeTests : IAsyncLifetime
         await Page.GetByTestId("owner-name").BlurAsync();
         await Expect(Page.GetByTestId("settings-status")).ToHaveTextAsync("Saved");
 
-        // New Game: colour, Opponent created inline, Elos, result
+        // New Game: colour, Opponent created inline, Elos, result, Event and Round
         await Page.GetByTestId("tab-games").ClickAsync();
         await Page.GetByTestId("new-game").ClickAsync();
         await Page.GetByTestId("colour-white").ClickAsync();
@@ -40,10 +40,13 @@ public class SmokeTests : IAsyncLifetime
         await Page.GetByTestId("owner-elo").FillAsync("1650");
         await Page.GetByTestId("opponent-elo").FillAsync("0");
         await Page.GetByTestId("result-1-0").ClickAsync();
+        await Page.GetByTestId("new-event").FillAsync("Smoke Open");
+        await Page.GetByTestId("new-round").FillAsync("3");
         await Page.GetByTestId("start-game").ClickAsync();
 
         // Moves on the board
         await Expect(Page.GetByTestId("board")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("sheet-meta")).ToContainTextAsync("Smoke Open · Round 3");
         await Page.PlayAsync("e2e4");
         await Expect(Page.GetByTestId("move")).ToHaveCountAsync(1);
         await Page.PlayAsync("e7e5");
@@ -475,6 +478,60 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("copy-status")).ToHaveTextAsync("Copied 1 move into the Game.");
         await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Nf6??" })).ToHaveCountAsync(1);
         await Expect(Page.GetByTestId("variation")).ToContainTextAsync("3...g6 4.Qf3 Nf6");
+    }
+
+    [Fact]
+    public async Task Import_a_game_without_names_and_name_the_opponent_in_the_review_list()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        const string pgn = """
+            [Event "Club evening"]
+            [Result "1-0"]
+
+            1. e4 e5 2. Nf3 1-0
+            """;
+        await Page.GotoAsync($"{_app.BaseUrl}/import");
+        await Page.GetByTestId("pgn-text").FillAsync(pgn);
+        await Page.GetByTestId("import-pasted").ClickAsync();
+        await Expect(Page.GetByTestId("count-review")).ToHaveTextAsync("1");
+
+        await Page.GetByTestId("review-link").ClickAsync();
+        var item = Page.GetByTestId("review-item");
+        await item.GetByTestId("review-white").ClickAsync();
+        await Expect(item.GetByTestId("review-resolve")).ToBeDisabledAsync(); // the Opponent is still missing
+        await item.GetByTestId("opponent-input").FillAsync("Nameless Opponent");
+        await item.GetByTestId("opponent-create").ClickAsync();
+        await item.GetByTestId("review-resolve").ClickAsync();
+        await Expect(Page.GetByTestId("review-empty")).ToBeVisibleAsync();
+
+        await Page.GotoAsync(_app.BaseUrl);
+        await Expect(Page.GetByTestId("game-opponent")).ToHaveTextAsync("Nameless Opponent");
+        await Expect(Page.GetByTestId("game-event")).ToHaveTextAsync("Club evening");
+    }
+
+    [Fact]
+    public async Task Delete_ticked_games_from_the_game_list_after_confirming()
+    {
+        await _app.CreateGameAsync("e4", "e5");
+        await _app.CreateGameAsync("d4", "d5");
+        await _app.CreateGameAsync("c4", "c5");
+        await Page.GotoAsync(_app.BaseUrl);
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(3);
+
+        await Page.GetByTestId("select-game").Nth(0).CheckAsync();
+        await Page.GetByTestId("select-game").Nth(1).CheckAsync();
+        await Page.GetByTestId("delete-selected").ClickAsync();
+
+        // Keep backs out; nothing is deleted.
+        await Page.GetByTestId("keep-selected").ClickAsync();
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(3);
+
+        await Page.GetByTestId("delete-selected").ClickAsync();
+        await Page.GetByTestId("confirm-delete-selected").ClickAsync();
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("delete-selected")).ToHaveCountAsync(0);
+        await Page.ReloadAsync();
+        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
     }
 
     [Fact]

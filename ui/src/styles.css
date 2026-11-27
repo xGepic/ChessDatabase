@@ -228,7 +228,7 @@ th.num, .tree-table th.num { font-family: var(--ui-font); }
 .form-grid > label, .form-grid > .label { color: var(--chalk-2); }
 .form-grid input:not(.elo):not([type="checkbox"]) { width: 100%; }
 .form-grid input.elo { width: 96px; }
-.form-grid input.short { width: 120px; }
+.form-grid input.short:not(.elo):not([type="checkbox"]) { width: 120px; }
 .form-grid textarea { width: 100%; resize: vertical; }
 .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .backup-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

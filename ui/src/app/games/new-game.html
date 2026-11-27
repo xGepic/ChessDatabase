@@ -31,6 +31,14 @@
     <label for="date">Date</label>
     <input id="date" type="date" [value]="date()" (input)="date.set($any($event.target).value)" />
 
+    <label for="new-event">Event</label>
+    <app-suggest-input inputId="new-event" testId="new-event" placeholder="Tournament or league (optional)"
+                       [value]="event()" [search]="searchEvents" (commit)="event.set($event)" />
+
+    <label for="new-round">Round</label>
+    <input id="new-round" class="short" data-testid="new-round" placeholder="optional" [value]="round()"
+           (input)="round.set($any($event.target).value)" />
+
     <span></span>
     <div class="form-actions">
       <button type="submit" class="primary" data-testid="start-game" [disabled]="!ready()">Start entering moves</button>

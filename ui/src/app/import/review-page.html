@@ -23,10 +23,10 @@
           <span class="label">I played</span>
           <div class="segmented" role="radiogroup" aria-label="Your side">
             <button type="button" role="radio" data-testid="review-white" [attr.aria-checked]="draft(item).ownerColour === 'white'"
-                    [class.on]="draft(item).ownerColour === 'white'" (click)="update(item, { ownerColour: 'white', sameAsSuggestion: null })">
+                    [class.on]="draft(item).ownerColour === 'white'" (click)="update(item, { ownerColour: 'white', sameAsSuggestion: null, opponent: null })">
               White ({{ item.white ?? '?' }})</button>
             <button type="button" role="radio" data-testid="review-black" [attr.aria-checked]="draft(item).ownerColour === 'black'"
-                    [class.on]="draft(item).ownerColour === 'black'" (click)="update(item, { ownerColour: 'black', sameAsSuggestion: null })">
+                    [class.on]="draft(item).ownerColour === 'black'" (click)="update(item, { ownerColour: 'black', sameAsSuggestion: null, opponent: null })">
               Black ({{ item.black ?? '?' }})</button>
           </div>
 
@@ -38,6 +38,14 @@
             }
           </div>
 
+          @if (draft(item).ownerColour && opponentMissing(item)) {
+            <label class="label" [for]="'review-opponent-' + item.id">Opponent</label>
+            <div>
+              <app-player-picker [inputId]="'review-opponent-' + item.id" [player]="draft(item).opponent"
+                                 (playerChange)="update(item, { opponent: $event })" />
+              <p class="hint">The PGN has no name for your Opponent. Choose a Player or create one.</p>
+            </div>
+          }
           @if (suggestion(item); as s) {
             <span class="label">Opponent</span>
             <div>

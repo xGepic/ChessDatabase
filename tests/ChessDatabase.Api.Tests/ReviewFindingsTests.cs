@@ -127,7 +127,7 @@ public class ReviewFindingsTests
     [InlineData("[White \"Mustermann, Max\"]\n[Black \"?\"]")]
     [InlineData("[White \"Mustermann, Max\"]\n[Black \"\"]")]
     [InlineData("[White \"Mustermann, Max\"]")]
-    public async Task A_game_without_the_opponents_name_fails_with_a_reason(string players)
+    public async Task A_game_without_the_opponents_name_waits_for_review_without_creating_a_player(string players)
     {
         using var factory = new CollectionFactory();
         var client = await OwnerClientAsync(factory);
@@ -135,9 +135,10 @@ public class ReviewFindingsTests
         var summary = await client.ImportTextAsync($"{players}\n[Result \"1-0\"]\n\n1. e4 1-0");
 
         var game = Assert.Single(summary.Games);
-        Assert.Equal("failed", game.Status);
+        Assert.Equal("needsReview", game.Status);
         Assert.Contains("name", game.Reason);
         Assert.Empty(await client.GetFromJsonAsync<List<PlayerDto>>("/api/players") ?? []);
+        Assert.Null(Assert.Single(await client.ReviewListAsync()).Black);
     }
 
     [Fact]

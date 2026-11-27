@@ -2,12 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Api, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
+import { SuggestInput } from '../shared/suggest-input';
+import { map } from 'rxjs';
 import { parseElo } from '../shared/elo';
 
-/** Starts a Game: the Owner's colour, the Opponent, both Elos and the result. Moves follow on the board. */
+/** Starts a Game: the Owner's colour, the Opponent, both Elos, the result, and optionally the Event and Round. Moves follow on the board. */
 @Component({
   selector: 'app-new-game',
-  imports: [PlayerPicker],
+  imports: [PlayerPicker, SuggestInput],
   templateUrl: './new-game.html',
 })
 export class NewGame {
@@ -21,6 +23,9 @@ export class NewGame {
   protected readonly opponentElo = signal('');
   protected readonly result = signal<GameResult | null>(null);
   protected readonly date = signal(new Date().toISOString().slice(0, 10));
+  protected readonly event = signal('');
+  protected readonly round = signal('');
+  protected readonly searchEvents = (term: string) => this.api.searchEvents(term).pipe(map((l) => l.map((e) => e.name)));
   protected readonly error = signal('');
   protected readonly saving = signal(false);
 
@@ -46,6 +51,8 @@ export class NewGame {
         blackElo: white ? opponentElo : ownerElo,
         result,
         date: this.date() || null,
+        event: this.event().trim() || null,
+        round: this.round().trim() || null,
       })
       .subscribe({
         next: (game) => this.router.navigate(['/games', game.id]),

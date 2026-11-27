@@ -33,6 +33,22 @@ public class ImportReviewTests
         1. e4 e5 1-0
         """;
 
+    private const string NoNamesPgn = """
+        [Event "Club evening"]
+        [Date "2025.09.02"]
+        [Result "1-0"]
+
+        1. e4 e5 2. Nf3 Nc6 1-0
+        """;
+
+    private const string NoOpponentNamePgn = """
+        [White "Mustermann, Max"]
+        [Black "?"]
+        [Result "0-1"]
+
+        1. d4 Nf6 0-1
+        """;
+
     private static async Task<HttpClient> OwnerClientAsync(CollectionFactory factory)
     {
         var client = factory.CreateClient();
@@ -149,6 +165,55 @@ public class ImportReviewTests
 
         Assert.NotEqual(huber.Id, game.Opponent.Id);
         Assert.Equal("Huber T.", game.Opponent.Name);
+    }
+
+    [Fact]
+    public async Task A_game_without_player_names_is_held_back_with_its_moves()
+    {
+        using var factory = new CollectionFactory();
+        var client = await OwnerClientAsync(factory);
+
+        var summary = await client.ImportTextAsync(NoNamesPgn);
+
+        var entry = Assert.Single(summary.Games);
+        Assert.Equal("needsReview", entry.Status);
+        Assert.Contains("no player names", entry.Reason);
+        var item = Assert.Single(await client.ReviewListAsync());
+        Assert.Null(item.OwnerColour);
+        Assert.Equal("1-0", item.Result);
+    }
+
+    [Fact]
+    public async Task The_owner_names_the_missing_opponent_when_resolving()
+    {
+        using var factory = new CollectionFactory();
+        var client = await OwnerClientAsync(factory);
+        var huber = await client.CreatePlayerAsync("Huber, Thomas");
+        await client.ImportTextAsync(NoNamesPgn);
+        var item = Assert.Single(await client.ReviewListAsync());
+
+        var game = await client.ResolveAsync(item.Id, new { ownerColour = "black", result = "1-0", opponentPlayerId = huber.Id });
+
+        Assert.Equal(("black", huber.Id, "1-0"), (game.OwnerColour, game.Opponent.Id, game.Result));
+        Assert.Equal(["e4", "e5", "Nf3", "Nc6"], game.MainLine().Select(n => n.San));
+        Assert.Equal("Club evening", game.Event!.Name);
+        Assert.Empty(await client.ReviewListAsync());
+    }
+
+    [Fact]
+    public async Task A_missing_opponent_name_must_be_chosen_before_the_game_is_added()
+    {
+        using var factory = new CollectionFactory();
+        var client = await OwnerClientAsync(factory);
+        var summary = await client.ImportTextAsync(NoOpponentNamePgn);
+        Assert.Equal("needsReview", Assert.Single(summary.Games).Status);
+        var item = Assert.Single(await client.ReviewListAsync());
+        Assert.Equal("white", item.OwnerColour);
+
+        var response = await client.PostAsJsonAsync($"/api/import/review/{item.Id}/resolve", new { ownerColour = "white", result = "0-1" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(await client.ListGamesAsync());
     }
 
     [Fact]
