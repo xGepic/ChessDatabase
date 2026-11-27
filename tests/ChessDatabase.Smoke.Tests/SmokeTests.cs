@@ -222,6 +222,41 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Copy_the_board_position_as_a_png_diagram()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("copy-diagram").ClickAsync();
+
+        await Expect(Page.GetByTestId("diagram-message")).ToHaveTextAsync("Diagram copied");
+        var types = await Page.EvaluateAsync<string[]>(
+            "async () => (await navigator.clipboard.read()).flatMap(item => item.types)");
+        Assert.Contains("image/png", types);
+    }
+
+    [Fact]
+    public async Task Mark_a_move_for_a_diagram_and_export_the_game_to_pdf()
+    {
+        await _app.SetOwnerNameAsync("Smoke Owner");
+        var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3");
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
+        await Page.GetByTestId("diagram-mark").ClickAsync();
+        await Expect(Page.GetByTestId("diagram-mark")).ToHaveAttributeAsync("aria-pressed", "true");
+        await Page.ReloadAsync();
+        await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
+        await Expect(Page.GetByTestId("diagram-mark")).ToHaveAttributeAsync("aria-pressed", "true");
+
+        var download = await Page.RunAndWaitForDownloadAsync(() => Page.GetByTestId("export-pdf").ClickAsync());
+
+        Assert.EndsWith(".pdf", download.SuggestedFilename);
+        var pdf = await File.ReadAllBytesAsync((await download.PathAsync())!);
+        Assert.Equal("%PDF"u8.ToArray(), pdf[..4]);
+    }
+
+    [Fact]
     public async Task Filter_and_sort_the_game_list_then_export_what_is_shown()
     {
         await _app.SetOwnerNameAsync("Smoke Owner");

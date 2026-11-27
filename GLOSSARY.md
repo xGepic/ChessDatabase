@@ -43,6 +43,9 @@ An alternative sequence of moves branching off the moves actually played. Variat
 **Annotation**
 Commentary attached to a move or position: a text comment or a symbol such as `!`, `?` or `±`.
 
+**Diagram**
+A picture of a board position. "Copy diagram" puts the board as it is turned on the clipboard; in PDF export, a move marked "diagram here" (NAG 220, so the mark travels in PGN) gets one from the Owner's side.
+
 ## Analysis
 
 **Engine**

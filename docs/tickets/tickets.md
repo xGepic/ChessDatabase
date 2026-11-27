@@ -34,8 +34,8 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 24 | [Deviation check](#24-deviation-check) | 23 | **Done** |
 | 25 | [Repertoire Training](#25-repertoire-training) | 23 | **Done** |
 | 26 | [Mistake Training](#26-mistake-training) | 12, 25 | **Done** |
-| 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | Open |
-| 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | Open |
+| 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | **Done** |
+| 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | **Done** |
 | 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | Open |
 | 30 | [Side-by-side engines in Interactive Analysis](#30-side-by-side-engines-in-interactive-analysis) | 29 | Open |
 
@@ -477,11 +477,11 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 04 (Replay a Game and branch into Variations).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] "Copy diagram" puts a PNG of the current position on the clipboard
-- [ ] Orientation follows the board's current orientation; coordinates and last-move highlight are toggleable
-- [ ] API tests render known positions and check image dimensions and that rendering is deterministic (stable output for the same input)
+- [x] "Copy diagram" puts a PNG of the current position on the clipboard
+- [x] Orientation follows the board's current orientation; coordinates and last-move highlight are toggleable
+- [x] API tests render known positions and check image dimensions and that rendering is deterministic (stable output for the same input)
 
 ---
 
@@ -491,12 +491,12 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 05 (Annotate moves), 27 (Copy diagram as image).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Owner can mark moves "diagram here" in the Game view; the marks are saved with the Game
-- [ ] The PDF contains the header, notation with nested Variations, comments and symbols, and diagrams at the marked moves
-- [ ] Unrated sides print as "unrated"
-- [ ] A test generates a PDF for a fixture Game and checks that its text includes the expected header and moves
+- [x] The Owner can mark moves "diagram here" in the Game view; the marks are saved with the Game
+- [x] The PDF contains the header, notation with nested Variations, comments and symbols, and diagrams at the marked moves
+- [x] Unrated sides print as "unrated"
+- [x] A test generates a PDF for a fixture Game and checks that its text includes the expected header and moves
 
 ---
 

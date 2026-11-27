@@ -18,6 +18,7 @@ import { EnginePanel } from '../engine/engine-panel';
 import { EngineSession } from '../engine/engine-session';
 import { EvalBar } from '../engine/eval-bar';
 import { Board } from './board';
+import { ExportTools } from './export-tools';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
 import { Scoresheet, TreeAction } from './scoresheet';
@@ -33,7 +34,7 @@ interface ExploreStep {
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, RouterLink],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, ExportTools, RouterLink],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)' },

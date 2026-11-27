@@ -1,6 +1,6 @@
 import { Component, OnDestroy, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { Api, Game, MoveNode, problemMessage } from '../api/api';
-import { MOVE_SYMBOLS, POSITION_SYMBOLS, toggleNag } from '../shared/nags';
+import { DIAGRAM_NAG, MOVE_SYMBOLS, POSITION_SYMBOLS, toggleNag } from '../shared/nags';
 import { moveLabel } from './notation';
 
 const COMMENT_DEBOUNCE_MS = 500;
@@ -32,6 +32,10 @@ const COMMENT_DEBOUNCE_MS = 500;
                       [title]="s.name" [attr.data-testid]="'nag-' + s.nag" (click)="toggle(s.nag)">{{ s.glyph }}</button>
             }
           </div>
+          <div class="symbol-group" role="group" aria-label="Diagram">
+            <button type="button" class="symbol diagram-mark" [class.on]="n.nags.includes(diagramNag)" [attr.aria-pressed]="n.nags.includes(diagramNag)"
+                    title="Print a board diagram after this move in PDF export" data-testid="diagram-mark" (click)="toggle(diagramNag)">▦ Diagram here</button>
+          </div>
           <label class="sr-only" for="comment">Comment after {{ label() }}</label>
           <textarea id="comment" data-testid="comment-input" rows="4" placeholder="Comment on this move…"
                     [value]="draft()" (input)="onInput($any($event.target).value)" (blur)="flush()"></textarea>
@@ -58,6 +62,7 @@ export class AnnotationCard implements OnDestroy {
 
   protected readonly moveSymbols = MOVE_SYMBOLS;
   protected readonly positionSymbols = POSITION_SYMBOLS;
+  protected readonly diagramNag = DIAGRAM_NAG;
   protected readonly draft = signal('');
   protected readonly status = signal('');
   protected readonly error = signal('');

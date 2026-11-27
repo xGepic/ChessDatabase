@@ -61,7 +61,11 @@ public sealed class SmokeApp : IAsyncLifetime
 
         _playwright = await Playwright.CreateAsync();
         _browser = await _playwright.Chromium.LaunchAsync(new() { Headless = true, Channel = "msedge" });
-        Page = await _browser.NewPageAsync(new() { ViewportSize = new() { Width = 1440, Height = 900 } });
+        Page = await _browser.NewPageAsync(new()
+        {
+            ViewportSize = new() { Width = 1440, Height = 900 },
+            Permissions = ["clipboard-read", "clipboard-write"],
+        });
         Page.SetDefaultTimeout(10_000);
     }
 

@@ -3,7 +3,7 @@ using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Research;
 
-/// <summary>Reads a position sent to the Research endpoints as a FEN.</summary>
+/// <summary>Reads a position sent as a FEN (Research endpoints, diagrams).</summary>
 public static class PositionInput
 {
     /// <summary>

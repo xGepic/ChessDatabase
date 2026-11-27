@@ -12,7 +12,6 @@
         <button type="button" (click)="forward()" title="Forward (→)" aria-label="Forward">▶</button>
         <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
         <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
-        <a class="button tool-link" [href]="'/api/games/' + g.id + '/pgn'" download data-testid="export-game">Export PGN</a>
         <button type="button" data-testid="add-to-repertoire" (click)="addToRepertoire()"
                 title="Add the moves up to here to your Repertoire for the colour you had">Add to Repertoire</button>
         <a class="button tool-link" routerLink="/search" [queryParams]="{ fen: fen() }" data-testid="search-this-position"
@@ -20,6 +19,7 @@
         @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
         @if (repertoireMessage()) { <span class="board-note" role="status" data-testid="repertoire-message">{{ repertoireMessage() }}</span> }
       </div>
+      <app-export-tools [gameId]="g.id" [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()" />
       @if (explore().length) {
         <div class="explore-bar" role="status" data-testid="explore-bar">
           <span class="explore-line">Exploring <span class="mono" data-testid="explore-line">{{ exploreLine() }}</span>, not saved.</span>

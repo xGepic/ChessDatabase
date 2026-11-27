@@ -480,6 +480,7 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .symbol-group { display: flex; flex-wrap: wrap; gap: 4px; }
 .symbol { min-width: 38px; padding: 4px 8px; font-family: var(--move-font); font-weight: 700; }
 .symbol.on { background: var(--wood-active); color: var(--cream); }
+.symbol.diagram-mark { font-family: var(--ui-font); font-weight: 600; }
 .current-move { color: var(--ink-soft); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -520,6 +521,11 @@ button.move.current, button.move.current:hover { background: var(--boxwood) !imp
 .link-button:hover { background: none !important; color: var(--ink); }
 .board-tools .tool-link { background: transparent; color: var(--boxwood); border-color: var(--frame-light); }
 .board-tools .tool-link:hover { background: rgba(232,207,160,.1); }
+.export-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.export-tools button, .export-tools .tool-link { background: transparent; color: var(--boxwood); border-color: var(--frame-light); }
+.export-tools button:hover, .export-tools .tool-link:hover { background: rgba(232,207,160,.1) !important; }
+.tool-toggle { display: inline-flex; align-items: center; gap: 4px; color: var(--boxwood); font-size: 13px; }
+.tool-divider { width: 1px; align-self: stretch; background: var(--frame-light); margin: 2px 4px; }
 
 /* ---------- game list filters and sorting ---------- */
 .list-card.wide { max-width: 1280px; }

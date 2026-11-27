@@ -2,6 +2,7 @@ using ChessDatabase.Api.Analysis;
 using ChessDatabase.Api.Backup;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Engines;
+using ChessDatabase.Api.Export;
 using ChessDatabase.Api.Games;
 using ChessDatabase.Api.Import;
 using ChessDatabase.Api.Openings;
@@ -88,6 +89,7 @@ public static class ChessDatabaseApp
         app.MapResearchEndpoints();
         app.MapMastersEndpoints();
         app.MapTablebaseEndpoints();
+        app.MapDiagramEndpoints();
         app.MapHub<AnalysisHub>(AnalysisHub.Path);
 
         // Angular routes (e.g. /games/12) fall back to the UI's index.html when it is present.

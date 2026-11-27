@@ -25,7 +25,16 @@ export const POSITION_SYMBOLS: NagSymbol[] = [
   { nag: 19, glyph: '-+', name: 'Black is winning' },
 ];
 
-const GLYPHS = new Map([...MOVE_SYMBOLS, ...POSITION_SYMBOLS].map((s) => [s.nag, s.glyph]));
+/** Marks a move for a board diagram in PDF export (NAG 220, as ChessBase writes it). */
+export const DIAGRAM_NAG = 220;
+
+/** Other common signs that arrive with imported PGN; shown, but not offered in the picker. Matches the PDF. */
+const OTHER_GLYPHS: [number, string][] = [
+  [22, '⨀'], [23, '⨀'], [32, '⟳'], [33, '⟳'], [36, '↑'], [37, '↑'], [40, '→'], [41, '→'], [44, '=∞'], [45, '=∞'],
+  [132, '⇆'], [133, '⇆'], [138, '⊕'], [139, '⊕'], [140, '∆'], [146, 'N'], [DIAGRAM_NAG, '▦'],
+];
+
+const GLYPHS = new Map<number, string>([...[...MOVE_SYMBOLS, ...POSITION_SYMBOLS].map((s): [number, string] => [s.nag, s.glyph]), ...OTHER_GLYPHS]);
 const MOVE_NAGS = new Set(MOVE_SYMBOLS.map((s) => s.nag));
 
 /** Move symbols attach to the move ("Qh5?!"); everything else follows after a space ("Qh5?! ⩲"). */
