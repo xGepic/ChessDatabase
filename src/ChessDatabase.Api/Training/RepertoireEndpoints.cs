@@ -1,5 +1,6 @@
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
+using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
 
@@ -49,7 +50,7 @@ public static class RepertoireEndpoints
                 return Invalid("parentId", "That move is not part of this Repertoire.");
             var moves = body.Moves ?? [];
             if (moves.Count == 0) return Invalid("moves", "Give at least one move.");
-            if (MoveReading.ReadLine(tree.PositionAfter(body.ParentId), moves, out var line) is { } illegal)
+            if (Line.Read(tree.PositionAfter(body.ParentId), moves, out var illegal) is not { } line)
                 return Invalid("moves", $"'{illegal}' is not a legal move here.");
 
             var (last, added) = tree.AddLine(body.ParentId, line, m =>

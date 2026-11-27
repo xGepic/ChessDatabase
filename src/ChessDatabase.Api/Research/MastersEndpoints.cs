@@ -104,17 +104,10 @@ public static partial class MastersEndpoints
     private static MasterGameDto? ToGame(string id, string pgn, Position? asked)
     {
         if (PgnReader.Read(pgn) is not [{ Entry: { } entry }, ..]) return null;
-        var position = Position.Initial;
-        var moves = new List<MasterMoveDto>();
-        int? ply = asked is not null && position.Hash == asked.Hash ? 0 : null;
-        foreach (var written in entry.Moves)
-        {
-            if (!position.TryParseSan(written.San, out var move)) return null;
-            var san = position.ToSan(move);
-            position = position.Play(move);
-            moves.Add(new MasterMoveDto(san, move.ToUci(), position.ToFen()));
-            if (ply is null && asked is not null && position.Hash == asked.Hash) ply = moves.Count;
-        }
+        if (Line.Read(Position.Initial, entry.Moves.Select(w => w.San), out _) is not { } line) return null;
+        List<MasterMoveDto> moves = [.. Enumerable.Range(0, line.Count).Select(i => new MasterMoveDto(line.San[i], line.Uci[i], line.Positions[i + 1].ToFen()))];
+        var reached = asked is null ? -1 : line.Positions.ToList().FindIndex(p => p.Hash == asked.Hash);
+        int? ply = reached < 0 ? null : reached;
         return new MasterGameDto(
             id,
             new MasterPlayerDto(entry.Tag("White") ?? "?", PgnValues.Elo(entry.Tag("WhiteElo"))),

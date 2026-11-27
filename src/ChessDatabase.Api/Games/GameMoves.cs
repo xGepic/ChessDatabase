@@ -67,7 +67,7 @@ public sealed class GameMoves(CollectionDbContext db, OpeningClassifier openings
 
         var nodesByGame = db.MoveNodes.AsNoTracking().Where(n => missing.Contains(n.GameId)).ToList().ToLookup(n => n.GameId);
         foreach (var id in missing)
-            foreach (var row in Walk(MainLineUcis(nodesByGame[id])).Rows)
+            foreach (var row in IndexRows(Line.FromUci(MainLineUcis(nodesByGame[id]))))
             {
                 row.GameId = id;
                 db.PositionIndex.Add(row);
@@ -78,36 +78,21 @@ public sealed class GameMoves(CollectionDbContext db, OpeningClassifier openings
     /// <summary>Sets the ECO code, opening name and position index for a main line. The Game's old index rows, if loaded, go.</summary>
     internal static void Derive(GameRecord game, IReadOnlyList<string> mainLine, OpeningClassifier openings)
     {
-        var (positions, rows) = Walk(mainLine);
-        var opening = openings.Classify(positions.Skip(1).ToList()); // the positions after each move
+        var line = Line.FromUci(mainLine);
+        var opening = openings.Classify([.. line.Positions.Skip(1)]); // the positions after each move
         game.Eco = opening?.Eco;
         game.OpeningName = opening?.Name;
-        game.Positions = rows;
+        game.Positions = IndexRows(line);
     }
 
     internal static List<string> MainLineUcis(IEnumerable<MoveNodeRecord> nodes) => [.. new MoveTree(nodes).MainLine().Select(n => n.Uci)];
 
-    /// <summary>
-    /// Plays a main line from the start: every position on it (the start first) and its position
-    /// index rows, one per position.
-    /// </summary>
-    private static (List<Position> Positions, List<PositionIndexRecord> Rows) Walk(IReadOnlyList<string> mainLine)
-    {
-        var positions = new List<Position>(mainLine.Count + 1);
-        var rows = new List<PositionIndexRecord>(mainLine.Count + 1);
-        var position = Position.Initial;
-        for (var ply = 0; ; ply++)
+    /// <summary>The position index rows for a main line: the start and the position after each move.</summary>
+    private static List<PositionIndexRecord> IndexRows(Line line) =>
+        [.. line.Positions.Select((position, ply) => new PositionIndexRecord
         {
-            var uci = ply < mainLine.Count ? mainLine[ply] : null;
-            positions.Add(position);
-            rows.Add(new PositionIndexRecord { Ply = ply, Hash = PositionIndex.Key(position), Uci = uci });
-            if (uci is null) return (positions, rows);
-            position = position.Play(StoredMove(uci));
-        }
-    }
-
-    private static Move StoredMove(string uci) =>
-        Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
+            Ply = ply, Hash = PositionIndex.Key(position), Uci = ply < line.Count ? line.Uci[ply] : null,
+        })];
 }
 
 /// <summary>
@@ -145,7 +130,7 @@ public sealed class GameMovesEdit : IAsyncDisposable
     {
         if (parentId is { } id && !_tree.Contains(id)) return MoveChange.Failed(MoveChangeProblem.NotInGame);
         if (moves.Count == 0) return MoveChange.Failed(MoveChangeProblem.NoMoves);
-        if (MoveReading.ReadLine(_tree.PositionAfter(parentId), moves, out var line) is { } illegal)
+        if (Line.Read(_tree.PositionAfter(parentId), moves, out var illegal) is not { } line)
             return MoveChange.Failed(MoveChangeProblem.IllegalMove, illegal);
 
         var (last, added) = _tree.AddLine(parentId, line, m =>

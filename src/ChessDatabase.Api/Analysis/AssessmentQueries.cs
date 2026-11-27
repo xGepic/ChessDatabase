@@ -44,23 +44,22 @@ public static class AssessmentQueries
 
         var positions = new List<AssessedPositionDto>();
         var moves = new List<AssessedMoveDto>();
-        var position = Position.Initial;
+        var line = Line.FromUci(record.MainLine);
         var matching = true;
         for (var ply = 0; ply < record.Positions.Count; ply++)
         {
+            var position = line.Positions[ply];
             var stored = record.Positions[ply];
             var white = new EngineScore(stored.Cp, stored.Mate).ForWhite(position.SideToMove);
             positions.Add(new AssessedPositionDto(ply, Round(assessment.WhitePercents[ply]), white.Cp, white.Mate == 0 ? 0 : white.Mate));
             if (ply == record.MainLine.Count) break;
 
-            var played = Move.TryParseUci(record.MainLine[ply], out var m) ? m : throw new InvalidDataException(record.MainLine[ply]);
             var (bestMoves, bestSan) = position.PlayableLine(stored.Line);
             matching = matching && ply < current.Count && current[ply].Uci == record.MainLine[ply];
             var move = assessment.Moves[ply];
             moves.Add(new AssessedMoveDto(
-                ply + 1, matching ? current[ply].Id : null, position.ToSan(played), move.Classification,
+                ply + 1, matching ? current[ply].Id : null, line.San[ply], move.Classification,
                 Round(move.Loss), Round(move.Accuracy), bestSan is [var best, ..] ? best : null, bestSan, [.. bestMoves.Select(b => b.ToUci())]));
-            position = position.Play(played);
         }
 
         var stale = !matching || current.Count != record.MainLine.Count;

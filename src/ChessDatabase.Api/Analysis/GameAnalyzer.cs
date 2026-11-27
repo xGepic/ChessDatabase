@@ -39,12 +39,11 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         string engineName;
         await using (var engine = await StartEngineAsync(definition, cancellationToken))
         {
-            var position = Position.Initial;
+            var line = Line.FromUci(mainLine);
             await progress(0, mainLine.Count + 1);
             for (var ply = 0; ply <= mainLine.Count; ply++)
             {
-                if (ply > 0) position = position.Play(ParseUci(mainLine[ply - 1]));
-                positions.Add(await EvaluateAsync(engine, mainLine[..ply], position, time, cancellationToken));
+                positions.Add(await EvaluateAsync(engine, mainLine[..ply], line.Positions[ply], time, cancellationToken));
                 await progress(ply + 1, mainLine.Count + 1);
             }
             engineName = engine.Name;
@@ -146,7 +145,4 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         var score = best?.Score ?? new EngineScore(0, null);
         return new StoredEvaluation(score.Cp, score.Mate, [.. legal.Take(StoredLineLength).Select(m => m.ToUci())]);
     }
-
-    private static Move ParseUci(string uci) =>
-        Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
 }

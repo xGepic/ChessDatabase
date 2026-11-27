@@ -62,13 +62,9 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
     public async Task AnalyseAsync(string connectionId, int requestId, IReadOnlyList<string> moves)
     {
         var connection = _connections.GetOrAdd(connectionId, _ => new Connection());
-        var position = Position.Initial;
-        foreach (var text in moves)
-        {
-            if (!Move.TryParseUci(text, out var move) || !position.IsLegal(move))
-                throw new HubException($"'{text}' is not a legal move in that position.");
-            position = position.Play(move);
-        }
+        if (Line.Read(Position.Initial, moves, out var illegal) is not { } line)
+            throw new HubException($"'{illegal}' is not a legal move in that position.");
+        var position = line.End;
 
         await connection.Gate.WaitAsync();
         try

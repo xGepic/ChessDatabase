@@ -41,7 +41,7 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
         var queue = new Queue<(TNode Node, Position Before, int Ply)>(_firstMoves.Select(n => (n, StartPosition, 1)));
         while (queue.TryDequeue(out var item))
         {
-            var after = item.Before.Play(ParseStoredMove(item.Node.Uci));
+            var after = item.Before.Play(Move.ParseUci(item.Node.Uci));
             _positionAfter[item.Node.Id] = (after, item.Ply);
             foreach (var child in ChildrenOf(item.Node.Id)) queue.Enqueue((child, after, item.Ply + 1));
         }
@@ -103,17 +103,17 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
     }
 
     /// <summary>
-    /// Plays checked moves (UCI and SAN) one after another from the parent. A move already in the
-    /// tree there is followed; the first new one starts a new line after the existing continuations.
+    /// Plays a checked line (read from the position after the parent) move by move. A move already in
+    /// the tree there is followed; the first new one starts a new line after the existing continuations.
     /// <paramref name="create"/> makes each new node and adds it wherever the caller keeps nodes;
     /// nothing is saved here. Returns the line's last node and whether anything is new.
     /// </summary>
-    public (TNode Last, bool Added) AddLine(int? parentId, IReadOnlyList<(string Uci, string San)> line, Func<NewMove<TNode>, TNode> create)
+    public (TNode Last, bool Added) AddLine(int? parentId, Line line, Func<NewMove<TNode>, TNode> create)
     {
         if (line.Count == 0) throw new ArgumentException("A line has at least one move.", nameof(line));
         int? at = parentId;
         TNode? last = null, firstNew = null;
-        foreach (var (uci, san) in line)
+        foreach (var (uci, san) in line.Uci.Zip(line.San))
         {
             if (firstNew is null && ChildrenOf(at).FirstOrDefault(n => n.Uci == uci) is { } existing)
             {
@@ -148,9 +148,6 @@ public class MoveTree<TNode> where TNode : class, ITreeNode
         }
         return ([.. _firstMoves.Select(n => n.Id)], dtos);
     }
-
-    private static Move ParseStoredMove(string uci) =>
-        Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
 }
 
 /// <summary>

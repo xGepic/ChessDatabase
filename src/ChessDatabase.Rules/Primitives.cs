@@ -109,6 +109,10 @@ public readonly record struct Move(Square From, Square To, PieceType? Promotion 
         return true;
     }
 
+    /// <summary>A move that must be UCI, such as a stored one; anything else is a <see cref="FormatException"/>.</summary>
+    public static Move ParseUci(string? text) =>
+        TryParseUci(text, out var move) ? move : throw new FormatException($"'{text}' is not a UCI move.");
+
     public override string ToString() => ToUci();
 }
 

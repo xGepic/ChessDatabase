@@ -75,16 +75,12 @@ public sealed class AnalysedMistakes
     {
         var assessment = AssessmentQueries.Assess(record);
         var mistakes = new List<AnalysedMistake>();
-        var position = Position.Initial;
-        for (var i = 0; i < record.MainLine.Count; i++)
-        {
-            var move = Move.TryParseUci(record.MainLine[i], out var parsed) ? parsed : throw new InvalidDataException(record.MainLine[i]);
+        var line = Line.FromUci(record.MainLine);
+        for (var i = 0; i < line.Count; i++)
             if (assessment.Moves[i].Classification is MoveClassification.Mistake or MoveClassification.Blunder)
                 mistakes.Add(new AnalysedMistake(
-                    record.GameId, i + 1, record.MainLine, position, position.ToSan(move),
+                    record.GameId, i + 1, record.MainLine, line.Positions[i], line.San[i],
                     assessment.Moves[i].Classification!.Value, record.Positions[i], record.MsPerMove, record.EngineId));
-            position = position.Play(move);
-        }
         return mistakes;
     }
 }
@@ -127,7 +123,7 @@ public static class MistakeTrainingEndpoints
             var (items, mistakes) = await SyncAsync(db, analysed, clock);
             if (items.FirstOrDefault(i => i.Id == itemId) is not { } item) return Results.NotFound();
             var mistake = mistakes[item.Key];
-            if (!MoveReading.TryReadMove(mistake.Before, body.Move, out var move))
+            if (!mistake.Before.TryReadMove(body.Move, out var move))
                 return Invalid("move", $"'{body.Move}' is not a legal move here.");
 
             bool right;

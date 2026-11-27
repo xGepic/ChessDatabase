@@ -82,6 +82,17 @@ public sealed partial class Position
     /// Parses SAN. Accepts English (K Q R B N) and German (K D T L S) piece letters, castling
     /// written with O or 0, and ignores check, mate and annotation suffixes such as "+", "!?".
     /// </summary>
+    /// <summary>
+    /// A move as the Owner types it or the UI sends it: UCI or SAN (German piece letters too), if it
+    /// is legal here.
+    /// </summary>
+    public bool TryReadMove(string? text, out Move move)
+    {
+        text = text?.Trim();
+        if (Move.TryParseUci(text, out move) && IsLegal(move)) return true;
+        return TryParseSan(text, out move);
+    }
+
     public Move ParseSan(string san) =>
         TryParseSan(san, out var move)
             ? move

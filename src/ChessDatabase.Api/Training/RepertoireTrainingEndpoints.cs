@@ -74,13 +74,13 @@ public static class RepertoireTrainingEndpoints
             var (items, repertoires) = await SyncAsync(db, clock);
             if (items.FirstOrDefault(i => i.Id == itemId) is not { } item || Locate(repertoires, item) is not { } found) return Results.NotFound();
             var position = found.Position;
-            if (!MoveReading.TryReadMove(position.Position, body.Move, out var move))
+            if (!position.Position.TryReadMove(body.Move, out var move))
                 return Invalid("move", $"'{body.Move}' is not a legal move here.");
 
             var right = position.Moves.Any(m => m.Uci == move.ToUci());
             SpacedRepetition.Review(item, right, clock.GetUtcNow().UtcDateTime);
             await db.SaveChangesAsync();
-            var shown = right ? move : Parse(position.Moves[0].Uci);
+            var shown = right ? move : Move.ParseUci(position.Moves[0].Uci);
             return Results.Ok(new TrainingAnswerDto(
                 right, [.. position.Moves.Select(m => m.San)], [.. position.Moves.Select(m => m.Uci)],
                 shown.ToUci(), position.Position.Play(shown).ToFen(), new DateTimeOffset(item.DueAt, TimeSpan.Zero)));
@@ -97,13 +97,8 @@ public static class RepertoireTrainingEndpoints
     private static Position? BeforeLastMove(IReadOnlyList<RepertoireMove> line)
     {
         if (line.Count == 0) return null;
-        var position = Position.Initial;
-        foreach (var m in line.Take(line.Count - 1)) position = position.Play(Parse(m.Uci));
-        return position;
+        return Line.FromUci(line.Select(m => m.Uci)).Positions[^2];
     }
-
-    private static Move Parse(string uci) =>
-        Move.TryParseUci(uci, out var move) ? move : throw new InvalidDataException($"Stored move '{uci}' is not UCI.");
 
     /// <summary>
     /// Brings the items in step with both Repertoires and returns them (tracked) with the Repertoires.
