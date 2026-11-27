@@ -4,6 +4,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, combineLatest, map, of, switchMap } from 'rxjs';
 import { Api, MasterGame, problemMessage } from '../api/api';
 import { Board } from '../review/board';
+import { Icon } from '../shared/icon';
 import { INITIAL_FEN } from '../shared/chess';
 
 /**
@@ -12,7 +13,7 @@ import { INITIAL_FEN } from '../shared/chess';
  */
 @Component({
   selector: 'app-master-game',
-  imports: [Board],
+  imports: [Board, Icon],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
     @if (game(); as g) {
@@ -20,10 +21,10 @@ import { INITIAL_FEN } from '../shared/chess';
         <div class="board-column">
           <app-board [fen]="boardFen()" [lastMove]="lastMove()" [orientation]="flipped() ? 'black' : 'white'" [viewOnly]="true" />
           <div class="board-tools">
-            <button type="button" (click)="ply.set(0)" title="Start (Home)" aria-label="Start">⏮</button>
-            <button type="button" (click)="step(-1)" title="Back (←)" aria-label="Back">◀</button>
-            <button type="button" (click)="step(1)" title="Forward (→)" aria-label="Forward">▶</button>
-            <button type="button" (click)="ply.set(g.moves.length)" title="End (End)" aria-label="End">⏭</button>
+            <button type="button" class="icon-button" (click)="ply.set(0)" title="Start (Home)" aria-label="Start"><app-icon name="first" /></button>
+            <button type="button" class="icon-button" (click)="step(-1)" title="Back (←)" aria-label="Back"><app-icon name="back" /></button>
+            <button type="button" class="icon-button" (click)="step(1)" title="Forward (→)" aria-label="Forward"><app-icon name="forward" /></button>
+            <button type="button" class="icon-button" (click)="ply.set(g.moves.length)" title="End (End)" aria-label="End"><app-icon name="last" /></button>
             <button type="button" (click)="flipped.set(!flipped())">Flip board</button>
           </div>
         </div>

@@ -3,23 +3,38 @@
     <div class="board-column">
       <div class="board-with-bar">
         <app-eval-bar [line]="engine.on() ? (engine.update()?.lines?.[0] ?? null) : null" [orientation]="orientation()" />
-        <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()"
+        <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()" [arrow]="engineArrow()"
                    (move)="onBoardMove($event)" />
       </div>
-      <div class="board-tools">
-        <button type="button" (click)="goTo(null)" title="Start (Home)" aria-label="Start">⏮</button>
-        <button type="button" (click)="goTo(current()?.parentId ?? null)" title="Back (←)" aria-label="Back">◀</button>
-        <button type="button" (click)="forward()" title="Forward (→)" aria-label="Forward">▶</button>
-        <button type="button" (click)="toEnd()" title="End (End)" aria-label="End">⏭</button>
-        <button type="button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)">Flip board</button>
-        <button type="button" data-testid="add-to-repertoire" (click)="addToRepertoire()"
-                title="Add the moves up to here to your Repertoire for the colour you had">Add to Repertoire</button>
-        <a class="button tool-link" routerLink="/search" [queryParams]="{ fen: fen() }" data-testid="search-this-position"
-           title="Find every Game that reached this position">Search position</a>
-        @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
-        @if (repertoireMessage()) { <span class="board-note" role="status" data-testid="repertoire-message">{{ repertoireMessage() }}</span> }
+      <app-move-rail [game]="g" [marks]="marks()" [currentId]="currentId()" (select)="goTo($event)" />
+
+      <div class="board-tools" role="toolbar" aria-label="Board">
+        <div class="tool-group">
+          <button type="button" class="icon-button" (click)="goTo(null)" title="Start (Home)" aria-label="Start"><app-icon name="first" /></button>
+          <button type="button" class="icon-button" (click)="goTo(current()?.parentId ?? null)" title="Back (←)" aria-label="Back"><app-icon name="back" /></button>
+          <button type="button" class="icon-button" (click)="forward()" title="Forward (→)" aria-label="Forward"><app-icon name="forward" /></button>
+          <button type="button" class="icon-button" (click)="toEnd()" title="End (End)" aria-label="End"><app-icon name="last" /></button>
+        </div>
+        <button type="button" class="icon-button" (click)="flipped.set(!flipped())" data-testid="flip" title="Flip board (F)" aria-label="Flip board"><app-icon name="flip" /></button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <button type="button" class="quiet" data-testid="add-to-repertoire" (click)="addToRepertoire()"
+                title="Add the moves up to here to your Repertoire for the colour you had"><app-icon name="book" />Add to Repertoire</button>
+        <a class="button quiet" routerLink="/search" [queryParams]="{ fen: fen() }" data-testid="search-this-position"
+           title="Find every Game that reached this position"><app-icon name="search" />Search position</a>
+        <span class="spacer"></span>
+        <details class="menu" #exportMenu>
+          <summary class="button quiet" data-testid="export-menu"><app-icon name="export" />Export</summary>
+          <div class="menu-body">
+            <app-export-tools [gameId]="g.id" [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()" />
+          </div>
+        </details>
       </div>
-      <app-export-tools [gameId]="g.id" [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()" />
+      @if (error() || repertoireMessage()) {
+        <div class="board-messages">
+          @if (error()) { <span class="board-error" role="alert" data-testid="move-error">{{ error() }}</span> }
+          @if (repertoireMessage()) { <span class="board-note" role="status" data-testid="repertoire-message">{{ repertoireMessage() }}</span> }
+        </div>
+      }
       @if (explore().length) {
         <div class="explore-bar" role="status" data-testid="explore-bar">
           <span class="explore-line">Exploring <span class="mono" data-testid="explore-line">{{ exploreLine() }}</span>, not saved.</span>
@@ -27,28 +42,25 @@
           <button type="button" data-testid="explore-back" (click)="stopExploring()">Back to the Game</button>
         </div>
       }
-      <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
-                        [name]="engine.engineName()" (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
-      <app-tablebase-panel [fen]="fen()" (play)="onTreeMove($event)" />
-      <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)"
-                        (addToRepertoire)="addToRepertoire()" />
     </div>
 
-    <section class="card scoresheet-card">
+    <section class="panel sheet-panel" aria-label="Scoresheet">
       <header class="sheet-head">
-        <div class="sheet-player" [class.owner]="g.ownerColour === 'white'">
-          <span class="colour-dot"></span>
-          @if (g.ownerColour === 'black') {
-            <a class="name" data-testid="white-name" [routerLink]="['/players', g.opponent.id]" title="Open the Dossier">{{ g.white }}</a>
-          } @else { <span class="name" data-testid="white-name">{{ g.white }}</span> }
-          <span class="elo" [class.unrated]="!g.whiteElo">{{ eloLabel(g.whiteElo) }}</span>
-        </div>
-        <div class="sheet-player" [class.owner]="g.ownerColour === 'black'">
-          <span class="colour-dot black"></span>
-          @if (g.ownerColour === 'white') {
-            <a class="name" data-testid="black-name" [routerLink]="['/players', g.opponent.id]" title="Open the Dossier">{{ g.black }}</a>
-          } @else { <span class="name" data-testid="black-name">{{ g.black }}</span> }
-          <span class="elo" [class.unrated]="!g.blackElo">{{ eloLabel(g.blackElo) }}</span>
+        <div class="plates">
+          <div class="plate" [class.owner]="g.ownerColour === 'white'">
+            <span class="colour-dot"></span>
+            @if (g.ownerColour === 'black') {
+              <a class="name" data-testid="white-name" [routerLink]="['/players', g.opponent.id]" title="Open the Dossier">{{ g.white }}</a>
+            } @else { <span class="name" data-testid="white-name">{{ g.white }}</span> }
+            <span class="elo" [class.unrated]="!g.whiteElo">{{ eloLabel(g.whiteElo) }}</span>
+          </div>
+          <div class="plate" [class.owner]="g.ownerColour === 'black'">
+            <span class="colour-dot black"></span>
+            @if (g.ownerColour === 'white') {
+              <a class="name" data-testid="black-name" [routerLink]="['/players', g.opponent.id]" title="Open the Dossier">{{ g.black }}</a>
+            } @else { <span class="name" data-testid="black-name">{{ g.black }}</span> }
+            <span class="elo" [class.unrated]="!g.blackElo">{{ eloLabel(g.blackElo) }}</span>
+          </div>
         </div>
         <div class="sheet-meta">
           <span data-testid="sheet-meta">{{ meta() }}</span>
@@ -66,15 +78,36 @@
         }
       </header>
       <app-scoresheet [game]="g" [currentId]="currentId()" [marks]="marks()" [deviationId]="deviation()?.nodeId ?? null" (select)="goTo($event)" (action)="onTreeAction($event)" />
+      <app-annotation-card [game]="g" [node]="current()" (saved)="onDetailsSaved($event)" />
     </section>
 
     <div class="side-column">
-      <app-annotation-card [game]="g" [node]="current()" (saved)="onDetailsSaved($event)" />
-      <app-assessment-card [gameId]="g.id" [assessment]="assessment()" [queue]="queue.status()" [error]="analysisError()"
-                           [ownerColour]="g.ownerColour" [currentId]="currentId()"
-                           [copyMessage]="copyMessage()" (copy)="onCopy($event)" (copyAll)="onCopyAll()"
-                           (analyse)="onAnalyse($event)" (goToPly)="onGoToPly($event)" />
-      <app-game-details [game]="g" (saved)="onDetailsSaved($event)" (deleted)="onDelete()" />
+      <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
+                        [name]="engine.engineName()" (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
+      <app-tablebase-panel [fen]="fen()" (play)="onTreeMove($event)" />
+
+      <section class="panel tabbed">
+        <div class="tabs-bar" role="tablist" aria-label="Game tools">
+          @for (t of sideTabs; track t.id) {
+            <button type="button" role="tab" class="tab" [id]="'side-tab-' + t.id" [attr.aria-controls]="'side-panel-' + t.id"
+                    [attr.aria-selected]="sideTab() === t.id" [class.on]="sideTab() === t.id"
+                    [attr.data-testid]="'side-tab-' + t.id" (click)="sideTab.set(t.id)">{{ t.label }}</button>
+          }
+        </div>
+        <div class="tab-body" role="tabpanel" id="side-panel-analysis" aria-labelledby="side-tab-analysis" [hidden]="sideTab() !== 'analysis'">
+          <app-assessment-card [gameId]="g.id" [assessment]="assessment()" [queue]="queue.status()" [error]="analysisError()"
+                               [ownerColour]="g.ownerColour" [currentId]="currentId()"
+                               [copyMessage]="copyMessage()" (copy)="onCopy($event)" (copyAll)="onCopyAll()"
+                               (analyse)="onAnalyse($event)" (goToPly)="onGoToPly($event)" />
+        </div>
+        <div class="tab-body" role="tabpanel" id="side-panel-tree" aria-labelledby="side-tab-tree" [hidden]="sideTab() !== 'tree'">
+          <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)"
+                            (addToRepertoire)="addToRepertoire()" />
+        </div>
+        <div class="tab-body" role="tabpanel" id="side-panel-details" aria-labelledby="side-tab-details" [hidden]="sideTab() !== 'details'">
+          <app-game-details [game]="g" (saved)="onDetailsSaved($event)" (deleted)="onDelete()" />
+        </div>
+      </section>
     </div>
   </div>
 } @else {

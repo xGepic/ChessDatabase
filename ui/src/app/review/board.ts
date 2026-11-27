@@ -47,6 +47,8 @@ export class Board implements OnDestroy {
   readonly lastMove = input<string | null>(null);
   /** No moves can be made (e.g. a Master Game, which is only replayed); may change at any time. */
   readonly viewOnly = input(false);
+  /** A move to draw as an arrow, in UCI (the Engine's best move); null draws none. */
+  readonly arrow = input<string | null>(null);
   readonly move = output<string>();
 
   protected readonly promotionPieces: { role: Promotion; name: string }[] = [
@@ -68,7 +70,10 @@ export class Board implements OnDestroy {
         movable: { free: false, showDests: true, events: { after: (from, to) => this.onBoardMove(from, to) } },
         draggable: { showGhost: true },
         premovable: { enabled: false },
-        drawable: { enabled: true },
+        drawable: {
+          enabled: true,
+          brushes: { engine: { key: 'engine', color: '#1f6b4a', opacity: 0.85, lineWidth: 11 } } as never,
+        },
       });
       this.sync();
     });
@@ -78,6 +83,7 @@ export class Board implements OnDestroy {
       this.orientation();
       this.lastMove();
       this.viewOnly();
+      this.arrow();
       this.sync();
     });
   }
@@ -114,6 +120,8 @@ export class Board implements OnDestroy {
       selectable: { enabled: !this.viewOnly() },
       draggable: { enabled: !this.viewOnly(), showGhost: true },
     });
+    const arrow = this.arrow();
+    this.cg.setAutoShapes(arrow ? [{ orig: arrow.slice(0, 2) as Key, dest: arrow.slice(2, 4) as Key, brush: 'engine' }] : []);
   }
 
   private onBoardMove(from: Key, to: Key) {

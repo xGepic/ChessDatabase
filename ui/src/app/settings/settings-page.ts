@@ -1,11 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { Api, BackupStatus, problemMessage } from '../api/api';
 import { EngineSettings } from './engine-settings';
+import { Icon } from '../shared/icon';
 import { sameName } from '../shared/names';
 
 @Component({
   selector: 'app-settings-page',
-  imports: [EngineSettings],
+  imports: [EngineSettings, Icon],
   templateUrl: './settings-page.html',
 })
 export class SettingsPage {

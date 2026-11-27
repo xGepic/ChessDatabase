@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal } from '@angular/core';
 import { Classification, GameResult, MoveNode, MoveTreeView, resultLabel } from '../api/api';
 import { annotatedSan, buildSheet, isOnMainLine } from './notation';
 import type { TreeAction } from './tree-session';
@@ -83,6 +83,8 @@ import type { TreeAction } from './tree-session';
 })
 export class Scoresheet {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** A Game (its result ends the sheet) or any other move tree, such as a Repertoire. */
   readonly game = input.required<MoveTreeView & { result?: GameResult }>();
@@ -104,10 +106,21 @@ export class Scoresheet {
     effect(() => {
       const id = this.currentId();
       this.items();
-      queueMicrotask(() =>
-        this.host.nativeElement.querySelector(`[data-node="${id}"]`)?.scrollIntoView({ block: 'nearest' }),
-      );
+      // After the rows have rendered, so a freshly opened Game shows its current move.
+      afterNextRender(() => this.scrollToCurrent(id), { injector: this.injector });
     });
+    // The sheet can shrink after it rendered (the header above it fills in later): keep the move in view.
+    afterNextRender(() => {
+      const sheet = this.host.nativeElement.querySelector('.sheet');
+      if (!sheet || typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(() => this.scrollToCurrent(this.currentId()));
+      observer.observe(sheet);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
+
+  private scrollToCurrent(id: number | null) {
+    this.host.nativeElement.querySelector(`[data-node="${id}"]`)?.scrollIntoView({ block: 'nearest' });
   }
 
   protected markTitle(id: number): string | null {

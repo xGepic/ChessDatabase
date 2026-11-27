@@ -116,6 +116,7 @@ public class SmokeTests : IAsyncLifetime
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
         await Expect(Page.GetByTestId("opening")).ToContainTextAsync("B90");
 
+        await Page.GetByTestId("side-tab-details").ClickAsync();
         await Page.GetByTestId("event-input").FillAsync("Vienna Open");
         await Page.GetByTestId("event-input").PressAsync("Enter");
         await Page.GetByTestId("round-input").FillAsync("5");
@@ -213,6 +214,7 @@ public class SmokeTests : IAsyncLifetime
         var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3");
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
 
+        await Page.GetByTestId("export-menu").ClickAsync();
         var download = await Page.RunAndWaitForDownloadAsync(() => Page.GetByTestId("export-game").ClickAsync());
 
         Assert.EndsWith(".pgn", download.SuggestedFilename);
@@ -227,6 +229,7 @@ public class SmokeTests : IAsyncLifetime
         var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3");
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
 
+        await Page.GetByTestId("export-menu").ClickAsync();
         await Page.GetByTestId("copy-diagram").ClickAsync();
 
         await Expect(Page.GetByTestId("diagram-message")).ToHaveTextAsync("Diagram copied");
@@ -243,12 +246,14 @@ public class SmokeTests : IAsyncLifetime
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
 
         await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
+        await Page.GetByTestId("symbols-toggle").ClickAsync();
         await Page.GetByTestId("diagram-mark").ClickAsync();
         await Expect(Page.GetByTestId("diagram-mark")).ToHaveAttributeAsync("aria-pressed", "true");
         await Page.ReloadAsync();
         await Page.GetByTestId("move").Filter(new() { HasText = "e5" }).ClickAsync();
         await Expect(Page.GetByTestId("diagram-mark")).ToHaveAttributeAsync("aria-pressed", "true");
 
+        await Page.GetByTestId("export-menu").ClickAsync();
         var download = await Page.RunAndWaitForDownloadAsync(() => Page.GetByTestId("export-pdf").ClickAsync());
 
         Assert.EndsWith(".pdf", download.SuggestedFilename);
@@ -316,6 +321,7 @@ public class SmokeTests : IAsyncLifetime
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
 
         await Page.GetByTestId("move").Filter(new() { HasText = "Qh5" }).ClickAsync();
+        await Page.GetByTestId("symbols-toggle").ClickAsync();
         await Page.GetByTestId("nag-6").ClickAsync();
         await Expect(Page.GetByTestId("move").Filter(new() { HasText = "Qh5" })).ToHaveTextAsync("Qh5?!");
 
@@ -501,6 +507,7 @@ owhere\stockfish.exe");
         var second = await _app.CreateGameAsync("e4", "c5");
         await Page.GotoAsync($"{_app.BaseUrl}/games/{first}?ply=0");
 
+        await Page.GetByTestId("side-tab-tree").ClickAsync();
         await Expect(Page.GetByTestId("tree-move")).ToHaveTextAsync(["e4"]);
         await Expect(Page.GetByTestId("tree-games")).ToHaveTextAsync(["2"]);
 
@@ -601,6 +608,7 @@ owhere\stockfish.exe");
         var gameId = await _app.CreateGameAsync();
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
 
+        await Page.GetByTestId("side-tab-tree").ClickAsync();
         await Page.GetByTestId("tree-source-masters").ClickAsync();
         await Expect(Page.GetByTestId("masters-move")).ToHaveTextAsync(["e4", "d4"]);
         await Expect(Page.GetByTestId("masters-percent").First).ToHaveTextAsync("32 · 45 · 24");
@@ -614,6 +622,7 @@ owhere\stockfish.exe");
 
         // A position Lichess can't answer: the tab says so, the rest of the view works on.
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+        await Page.GetByTestId("side-tab-tree").ClickAsync();
         await Page.GetByTestId("tree-source-masters").ClickAsync();
         await Page.GetByTestId("masters-move").First.ClickAsync(); // explores 1.e4, nothing saved
         await Expect(Page.GetByTestId("masters-unavailable")).ToContainTextAsync("Masters unavailable");

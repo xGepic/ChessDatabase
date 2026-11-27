@@ -1,0 +1,792 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T14:38:53.852Z",
+  "title": "Design System: Chess Database",
+  "extensions": {
+    "colorMeta": {
+      "brand-brown": {
+        "role": "brand",
+        "displayName": "Brand Brown (pinned by the Owner)",
+        "canonical": "#3b2a20",
+        "tonalRamp": [
+          "#110905",
+          "#2e2118",
+          "#4d3b31",
+          "#6c594e",
+          "#907b70",
+          "#b3a095",
+          "#d5c8c0",
+          "#f2edeb"
+        ]
+      },
+      "brand-cream": {
+        "role": "brand",
+        "displayName": "Brand Cream (pinned by the Owner)",
+        "canonical": "#efe6d8",
+        "tonalRamp": [
+          "#0e0b06",
+          "#29231a",
+          "#463f33",
+          "#645c50",
+          "#877f72",
+          "#aba398",
+          "#cfcac2",
+          "#f0eeeb"
+        ]
+      },
+      "brand-green": {
+        "role": "brand",
+        "displayName": "Brand Green (pinned by the Owner)",
+        "canonical": "#173b2c",
+        "tonalRamp": [
+          "#010f08",
+          "#0d2a1e",
+          "#244838",
+          "#426756",
+          "#658a78",
+          "#8cae9d",
+          "#bad1c5",
+          "#e9f1ec"
+        ]
+      },
+      "shell": {
+        "role": "neutral",
+        "displayName": "Shell Brown",
+        "canonical": "#22170f",
+        "tonalRamp": [
+          "#0f0a06",
+          "#2c221b",
+          "#4a3d34",
+          "#685b51",
+          "#8b7d73",
+          "#afa298",
+          "#d2c8c2",
+          "#f1eeeb"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground Brown (Brand Brown)",
+        "canonical": "#3b2a20",
+        "tonalRamp": [
+          "#110905",
+          "#2e2118",
+          "#4d3b31",
+          "#6c594e",
+          "#907b70",
+          "#b3a095",
+          "#d5c8c0",
+          "#f2edeb"
+        ]
+      },
+      "sunken": {
+        "role": "neutral",
+        "displayName": "Sunken Brown",
+        "canonical": "#241911",
+        "tonalRamp": [
+          "#0f0a06",
+          "#2b221b",
+          "#493d34",
+          "#685b51",
+          "#8b7d73",
+          "#afa298",
+          "#d2c8c2",
+          "#f1eeeb"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel Brown",
+        "canonical": "#2d2017",
+        "tonalRamp": [
+          "#100a06",
+          "#2c211a",
+          "#4b3c33",
+          "#695a50",
+          "#8d7d72",
+          "#b0a197",
+          "#d3c8c1",
+          "#f1eeeb"
+        ]
+      },
+      "panel-hover": {
+        "role": "neutral",
+        "displayName": "Panel Hover Brown",
+        "canonical": "#392a1f",
+        "tonalRamp": [
+          "#100905",
+          "#2d2118",
+          "#4c3c31",
+          "#6b5a4e",
+          "#8e7c6f",
+          "#b2a195",
+          "#d4c8c0",
+          "#f2edea"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Brown",
+        "canonical": "#46342a",
+        "tonalRamp": [
+          "#110905",
+          "#2f2018",
+          "#4e3b31",
+          "#6d594e",
+          "#907b70",
+          "#b4a095",
+          "#d5c7c0",
+          "#f2edeb"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#4a3829",
+        "tonalRamp": [
+          "#110904",
+          "#2f2115",
+          "#4e3c2c",
+          "#6d5949",
+          "#907c6b",
+          "#b4a191",
+          "#d5c8bd",
+          "#f2edea"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#634c3a",
+        "tonalRamp": [
+          "#120903",
+          "#312012",
+          "#503a29",
+          "#705846",
+          "#947b67",
+          "#b7a08e",
+          "#d7c7bb",
+          "#f3ede9"
+        ]
+      },
+      "chalk": {
+        "role": "neutral",
+        "displayName": "Cream (Brand Cream)",
+        "canonical": "#efe6d8",
+        "tonalRamp": [
+          "#0e0b06",
+          "#29231a",
+          "#463f33",
+          "#645c50",
+          "#877f72",
+          "#aba398",
+          "#cfcac2",
+          "#f0eeeb"
+        ]
+      },
+      "chalk-2": {
+        "role": "neutral",
+        "displayName": "Cream 2",
+        "canonical": "#cbbda8",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2b2214",
+          "#493e2c",
+          "#685c49",
+          "#8b7e6b",
+          "#afa391",
+          "#d2c9bd",
+          "#f1eee9"
+        ]
+      },
+      "chalk-3": {
+        "role": "neutral",
+        "displayName": "Cream 3",
+        "canonical": "#a5947e",
+        "tonalRamp": [
+          "#100a03",
+          "#2d2212",
+          "#4c3d29",
+          "#6a5b46",
+          "#8e7d68",
+          "#b1a28e",
+          "#d3c9bb",
+          "#f2eee9"
+        ]
+      },
+      "square-light": {
+        "role": "neutral",
+        "displayName": "Cream Square",
+        "canonical": "#efe6d8",
+        "tonalRamp": [
+          "#0e0b06",
+          "#29231a",
+          "#463f33",
+          "#645c50",
+          "#877f72",
+          "#aba398",
+          "#cfcac2",
+          "#f0eeeb"
+        ]
+      },
+      "square-dark": {
+        "role": "neutral",
+        "displayName": "Brown Square",
+        "canonical": "#9a7457",
+        "tonalRamp": [
+          "#160700",
+          "#371d06",
+          "#59371b",
+          "#795538",
+          "#9d775a",
+          "#c09d82",
+          "#dec5b3",
+          "#f6ede6"
+        ]
+      },
+      "select": {
+        "role": "primary",
+        "displayName": "Deep Green (Brand Green)",
+        "canonical": "#173b2c",
+        "tonalRamp": [
+          "#010f08",
+          "#0d2a1e",
+          "#244838",
+          "#426756",
+          "#658a78",
+          "#8cae9d",
+          "#bad1c5",
+          "#e9f1ec"
+        ]
+      },
+      "select-hover": {
+        "role": "primary",
+        "displayName": "Deep Green Hover",
+        "canonical": "#1f4d3a",
+        "tonalRamp": [
+          "#000f07",
+          "#042c1d",
+          "#1b4a37",
+          "#3b6954",
+          "#5e8c76",
+          "#86b09c",
+          "#b6d2c4",
+          "#e7f1ec"
+        ]
+      },
+      "select-ink": {
+        "role": "primary",
+        "displayName": "Deep Green Ink (cream)",
+        "canonical": "#efe6d8",
+        "tonalRamp": [
+          "#0e0b06",
+          "#29231a",
+          "#463f33",
+          "#645c50",
+          "#877f72",
+          "#aba398",
+          "#cfcac2",
+          "#f0eeeb"
+        ]
+      },
+      "green-edge": {
+        "role": "primary",
+        "displayName": "Green Edge",
+        "canonical": "#2d6b51",
+        "tonalRamp": [
+          "#001006",
+          "#002d1b",
+          "#044c34",
+          "#2d6b51",
+          "#528f73",
+          "#7cb399",
+          "#b0d4c2",
+          "#e5f2eb"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Light Green",
+        "canonical": "#6fb592",
+        "tonalRamp": [
+          "#001105",
+          "#002e18",
+          "#004d30",
+          "#256d4d",
+          "#4b916f",
+          "#77b495",
+          "#add6c0",
+          "#e4f3eb"
+        ]
+      },
+      "engine": {
+        "role": "secondary",
+        "displayName": "Mint",
+        "canonical": "#8cc7a8",
+        "tonalRamp": [
+          "#001006",
+          "#002d1a",
+          "#0d4c32",
+          "#316b50",
+          "#558e72",
+          "#7fb297",
+          "#b2d4c1",
+          "#e6f2eb"
+        ]
+      },
+      "engine-arrow": {
+        "role": "secondary",
+        "displayName": "Forest Green (board arrow)",
+        "canonical": "#1f6b4a",
+        "tonalRamp": [
+          "#001105",
+          "#002f17",
+          "#004e2f",
+          "#226d4c",
+          "#49916e",
+          "#76b594",
+          "#add6bf",
+          "#e4f3ea"
+        ]
+      },
+      "good": {
+        "role": "tertiary",
+        "displayName": "Sage",
+        "canonical": "#8fc29a",
+        "tonalRamp": [
+          "#001003",
+          "#032d12",
+          "#1a4b29",
+          "#3a6a46",
+          "#5d8e68",
+          "#85b18e",
+          "#b6d4bb",
+          "#e7f2e9"
+        ]
+      },
+      "mark-inaccuracy": {
+        "role": "tertiary",
+        "displayName": "Inaccuracy Yellow",
+        "canonical": "#ecc65a",
+        "tonalRamp": [
+          "#170700",
+          "#391d00",
+          "#5b3800",
+          "#7b5700",
+          "#9f7b00",
+          "#c1a143",
+          "#dec98f",
+          "#f6eeda"
+        ]
+      },
+      "mark-mistake": {
+        "role": "tertiary",
+        "displayName": "Mistake Orange",
+        "canonical": "#e38a4c",
+        "tonalRamp": [
+          "#200000",
+          "#4a0700",
+          "#722200",
+          "#954300",
+          "#bc6725",
+          "#de8f5a",
+          "#f4bd9a",
+          "#feeade"
+        ]
+      },
+      "mark-blunder": {
+        "role": "tertiary",
+        "displayName": "Blunder Red",
+        "canonical": "#e85a3f",
+        "tonalRamp": [
+          "#290000",
+          "#590000",
+          "#860000",
+          "#ac1c00",
+          "#d74a2f",
+          "#f87960",
+          "#ffb19e",
+          "#ffe6df"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Hot Red",
+        "canonical": "#e85a3f",
+        "tonalRamp": [
+          "#290000",
+          "#590000",
+          "#860000",
+          "#ac1c00",
+          "#d74a2f",
+          "#f87960",
+          "#ffb19e",
+          "#ffe6df"
+        ]
+      },
+      "rail-white": {
+        "role": "neutral",
+        "displayName": "Rail Marker (White)",
+        "canonical": "#6e5644",
+        "tonalRamp": [
+          "#130903",
+          "#312012",
+          "#513a29",
+          "#705846",
+          "#947a68",
+          "#b79f8e",
+          "#d8c7bb",
+          "#f3ede9"
+        ]
+      },
+      "rail-black": {
+        "role": "neutral",
+        "displayName": "Rail Marker (Black)",
+        "canonical": "#574334",
+        "tonalRamp": [
+          "#120904",
+          "#2f2015",
+          "#4f3b2c",
+          "#6e5949",
+          "#927b6b",
+          "#b5a091",
+          "#d6c7bd",
+          "#f3ede9"
+        ]
+      },
+      "graph-white": {
+        "role": "neutral",
+        "displayName": "Graph White",
+        "canonical": "#d9cdb9",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2a2316",
+          "#483e2e",
+          "#675c4b",
+          "#8a7f6c",
+          "#ada392",
+          "#d1cabe",
+          "#f1eeea"
+        ]
+      },
+      "score-drawn": {
+        "role": "neutral",
+        "displayName": "Drawn",
+        "canonical": "#85725f",
+        "tonalRamp": [
+          "#110903",
+          "#2e2113",
+          "#4d3c2b",
+          "#6c5a47",
+          "#907c69",
+          "#b3a18f",
+          "#d5c8bc",
+          "#f2eee9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-number": {
+        "displayName": "Display Number",
+        "purpose": "The live engine eval; related figures (Accuracy 22px, stat tiles 24px, head-to-head 30px) use the same mono treatment."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page-level panel heading."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI text; buttons at 13.5px on a 20px line."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Table headers (600), filter labels, hints, sheet metadata, errors."
+      },
+      "move": {
+        "displayName": "Move",
+        "purpose": "Scoresheet moves; variations at 13px; current move 700."
+      },
+      "coordinate": {
+        "displayName": "Coordinate",
+        "purpose": "Board coordinates outside the squares, in Cream 2."
+      }
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "No drop shadows; depth is tonal (shell and sunken darkest, panels recessed below the Brand Brown ground, raised brown for floating menus) with 1px rules."
+      },
+      {
+        "name": "green-edge-ring",
+        "value": "inset 0 0 0 1px #2d6b51",
+        "purpose": "Edge, not elevation: outlines the Deep Green fill on the active shell tab and the current scoresheet move (the primary button uses a 1px #2d6b51 border instead)."
+      },
+      {
+        "name": "rail-start-ring",
+        "value": "inset 0 0 0 1.5px var(--rule-strong)",
+        "purpose": "Edge, not elevation: draws the hollow start-position marker on the move rail."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Background, border, colour, rail-marker hover scale (1.25) and the reveal of per-row Copy buttons."
+      },
+      {
+        "name": "row",
+        "value": "120ms",
+        "purpose": "Table row hover."
+      },
+      {
+        "name": "toggle",
+        "value": "200ms",
+        "purpose": "Engine switch knob; symbols chevron rotation."
+      },
+      {
+        "name": "eval",
+        "value": "450ms",
+        "purpose": "Evaluation bar height change."
+      },
+      {
+        "name": "reduced",
+        "value": "0s",
+        "purpose": "prefers-reduced-motion zeroes all transitions and animations."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack-side-column",
+        "value": "1180px"
+      },
+      {
+        "name": "dossier-single",
+        "value": "1100px"
+      },
+      {
+        "name": "single-column",
+        "value": "760px"
+      }
+    ],
+    "boardMarks": [
+      {
+        "name": "last-move",
+        "value": "rgba(214, 178, 74, .5)"
+      },
+      {
+        "name": "selected",
+        "value": "rgba(45, 107, 81, .6)"
+      },
+      {
+        "name": "move-dest",
+        "value": "radial-gradient(rgba(23, 59, 44, .45) 18%, transparent 20%)"
+      },
+      {
+        "name": "move-dest-hover",
+        "value": "rgba(45, 107, 81, .5)"
+      },
+      {
+        "name": "check",
+        "value": "radial-gradient(ellipse at center, rgba(232, 90, 63, 1) 0%, rgba(232, 90, 63, .6) 30%, transparent 70%)"
+      },
+      {
+        "name": "engine-arrow",
+        "value": "chessground brush engine: #1f6b4a, opacity 0.85, lineWidth 11"
+      }
+    ],
+    "brandPalette": {
+      "pinnedBy": "Owner",
+      "colors": [
+        {
+          "name": "brand-brown",
+          "value": "#3B2A20",
+          "role": "The room: page ground; every brown is a shade of it."
+        },
+        {
+          "name": "brand-cream",
+          "value": "#EFE6D8",
+          "role": "Primary text and the light board square."
+        },
+        {
+          "name": "brand-green",
+          "value": "#173B2C",
+          "role": "Selection fill (active tab, current move, primary action), always with cream ink."
+        }
+      ],
+      "rule": "Every other colour is derived from these three, except the functional marks (engine, good, classification ramp)."
+    },
+    "icons": {
+      "grid": "20x20",
+      "strokeWidth": 1.6,
+      "linecap": "round",
+      "linejoin": "round",
+      "displaySize": "18px",
+      "colour": "currentColor"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default action on brown: panel-hover fill, strong rule border.",
+      "html": "<button class=\"ds-btn\">Copy all mistakes and blunders</button>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-btn{font-family:var(--ui-font);font-size:13.5px;line-height:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-strong);background:var(--panel-hover);color:var(--chalk);padding:5px 12px;border-radius:3px;transition:background-color .15s var(--ease-out),border-color .15s var(--ease-out),color .15s var(--ease-out);} .ds-btn:hover{background:var(--raised);border-color:var(--chalk-3)} .ds-btn:active{transform:translateY(1px)} .ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action in a view, filled Deep Green with cream ink and a 1px green edge.",
+      "html": "<button class=\"ds-btn-primary\">Analyse</button>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-btn-primary{font-family:var(--ui-font);font-size:13.5px;line-height:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-strong);background:var(--panel-hover);color:var(--chalk);padding:5px 12px;border-radius:3px;transition:background-color .15s var(--ease-out),border-color .15s var(--ease-out),color .15s var(--ease-out);background:var(--select);color:var(--select-ink);border-color:var(--green-edge);font-weight:600} .ds-btn-primary:hover{background:var(--select-hover);border-color:var(--accent)} .ds-btn-primary:active{transform:translateY(1px)} .ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Quiet Tool Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Transparent tool action with an authored stroke icon, as in the row under the board.",
+      "html": "<button class=\"ds-btn-quiet\"><svg viewBox=\"0 0 20 20\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 3v9M6.5 8.5 10 12l3.5-3.5M4 13.5V16h12v-2.5\"/></svg>Export</button>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-btn-quiet{font-family:var(--ui-font);font-size:13.5px;line-height:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-strong);background:var(--panel-hover);color:var(--chalk);padding:5px 12px;border-radius:3px;transition:background-color .15s var(--ease-out),border-color .15s var(--ease-out),color .15s var(--ease-out);background:transparent;border-color:transparent;color:var(--chalk-2);padding:5px 10px} .ds-btn-quiet svg{display:block} .ds-btn-quiet:hover{background:var(--panel-hover);color:var(--chalk)} .ds-btn-quiet:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken brown field; border turns Light Green on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Opponent\">",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-input{font-family:var(--ui-font);font-size:14px;color:var(--chalk);background:var(--sunken);border:1px solid var(--rule-strong);border-radius:3px;padding:5px 8px;transition:border-color .15s var(--ease-out)} .ds-input::placeholder{color:var(--chalk-3)} .ds-input:hover{border-color:var(--chalk-3)} .ds-input:focus{outline:none;border-color:var(--accent)}"
+    },
+    {
+      "name": "Shell Bar",
+      "kind": "nav",
+      "refersTo": "shell-bar",
+      "description": "48px flat top bar on Shell Brown; active tab filled Deep Green with cream ink and a 1px green edge.",
+      "html": "<nav class=\"ds-shell\"><span class=\"ds-brand\">Chess Database</span><a class=\"ds-tab on\" href=\"#\">Games</a><a class=\"ds-tab\" href=\"#\">Players</a><a class=\"ds-tab\" href=\"#\">My statistics</a></nav>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-shell{height:48px;display:flex;align-items:center;gap:2px;padding:0 24px;background:var(--shell);border-bottom:1px solid var(--rule);font-family:var(--ui-font);font-size:14px} .ds-brand{font-weight:650;color:var(--chalk);margin-right:26px} .ds-tab{color:var(--chalk-2);text-decoration:none;padding:6px 12px;border-radius:3px;transition:background-color .15s var(--ease-out),color .15s var(--ease-out)} .ds-tab:hover{color:var(--chalk);background:var(--panel)} .ds-tab.on{background:var(--select);color:var(--select-ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--green-edge)} .ds-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Panel Tabs",
+      "kind": "nav",
+      "refersTo": "panel-tab-active",
+      "description": "Tabs inside a panel; active gets a 2px Light Green underline.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-ptab on\">Game Analysis</button><button class=\"ds-ptab\">Opening Tree</button><button class=\"ds-ptab\">Details</button></div>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-tabs{display:flex;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--rule);background:var(--panel)} .ds-ptab{font-family:var(--ui-font);font-size:13.5px;cursor:pointer;background:transparent;border:none;border-radius:3px 3px 0 0;color:var(--chalk-2);padding:8px 12px 9px;font-weight:500;position:relative} .ds-ptab:hover{background:var(--panel-hover);color:var(--chalk)} .ds-ptab.on{color:var(--chalk);font-weight:600} .ds-ptab.on::after{content:\"\";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px} .ds-ptab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Raised brown pill with a remove button that turns hot red on hover.",
+      "html": "<span class=\"ds-tag\">Najdorf<button class=\"ds-tag-x\" aria-label=\"Remove\"><svg viewBox=\"0 0 20 20\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5.5 5.5l9 9M14.5 5.5l-9 9\"/></svg></button></span>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-tag{display:inline-flex;align-items:center;gap:2px;padding:1px 2px 1px 8px;background:var(--raised);border:1px solid var(--rule-strong);border-radius:10px;font-family:var(--ui-font);font-size:12.5px;color:var(--chalk)} .ds-tag-x{display:inline-flex;border:none;background:transparent;padding:2px 5px;border-radius:10px;color:var(--chalk-2);cursor:pointer} .ds-tag-x:hover{background:var(--danger);color:var(--shell)} .ds-tag-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat brown tile with a ruled head; no shadow, no border.",
+      "html": "<section class=\"ds-panel\"><header class=\"ds-panel-head\"><h2>Engine Assessment</h2></header><div class=\"ds-panel-body\">Accuracy <strong class=\"ds-num\">48.8%</strong></div></section>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-panel{background:var(--panel);border-radius:4px;color:var(--chalk);font-family:var(--ui-font);font-size:14px;line-height:1.45;max-width:320px} .ds-panel-head{padding:14px 16px 12px;border-bottom:1px solid var(--rule)} .ds-panel-head h2{margin:0;font-size:15px;font-weight:600;line-height:1.3} .ds-panel-body{padding:10px 16px 16px;color:var(--chalk-2);display:flex;align-items:baseline;gap:8px} .ds-num{margin-left:auto;font-family:var(--num-font);font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;color:var(--chalk)}"
+    },
+    {
+      "name": "Scoresheet Rows",
+      "kind": "custom",
+      "refersTo": "scoresheet-move",
+      "description": "Mono numbered rows; current move filled Deep Green with cream ink and a 1px green edge, classified moves underlined in their mark colour, variations in mint.",
+      "html": "<div class=\"ds-sheet\"><span class=\"ds-no\">16.</span><button class=\"ds-move ds-blunder\">axb3</button><button class=\"ds-move ds-blunder\">Nc5</button><span class=\"ds-no\">17.</span><button class=\"ds-move ds-mistake\">Kb1</button><button class=\"ds-move ds-current\">a4</button></div><p class=\"ds-var\">17.Kb1 Nc5 18.Nxc5</p>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-sheet{display:grid;grid-template-columns:40px 1fr 1fr;background:var(--panel);font-family:var(--num-font);font-size:14px;max-width:320px;padding:6px 0} .ds-no{color:var(--chalk-3);text-align:right;padding:3px 10px 3px 0} .ds-move{font:inherit;line-height:20px;text-align:left;background:transparent;border:none;border-radius:2px;padding:3px 8px;color:var(--chalk);cursor:pointer} .ds-move:hover{background:var(--panel-hover)} .ds-blunder{--mark:var(--mark-blunder)} .ds-mistake{--mark:var(--mark-mistake)} .ds-blunder,.ds-mistake{color:var(--mark);text-decoration:underline 2px var(--mark);text-underline-offset:4px} .ds-move.ds-current{background:var(--select);color:var(--select-ink);font-weight:700;box-shadow:inset 0 0 0 1px var(--green-edge)} .ds-move:focus-visible{outline:2px solid var(--accent);outline-offset:2px} .ds-var{margin:0;padding:2px 12px 6px 48px;font-family:var(--num-font);font-size:13px;color:var(--engine);background:var(--panel);max-width:260px}"
+    },
+    {
+      "name": "Move Rail",
+      "kind": "custom",
+      "refersTo": "rail-marker",
+      "description": "Signature: one round marker per main-line move under the board, sized from the Game length by a container query; classified markers grow (mistake 1.2x, blunder 1.4x) and give the width back; current move ringed; click to jump.",
+      "html": "<div class=\"ds-rail-wrap\"><nav class=\"ds-rail\" aria-label=\"Main line\" style=\"--moves:12\"><button class=\"ds-start\" aria-label=\"Start\"></button><button></button><button class=\"ds-b\"></button><button></button><button class=\"ds-b\"></button><button data-mark class=\"ds-inacc\"></button><button class=\"ds-b\"></button><button data-mark class=\"ds-mistake\"></button><button data-mark class=\"ds-b ds-blunder\"></button><button></button><button class=\"ds-b\"></button><button data-mark class=\"ds-blunder ds-current\"></button></nav></div>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-rail-wrap{display:block;container-type:inline-size;max-width:360px} .ds-rail{--gap:clamp(1px,calc((100cqi - 24px) / var(--moves,40) * .2),4px);--m:clamp(4px,calc((100cqi - 24px) / var(--moves,40) - var(--gap)),13px);display:flex;align-items:center;gap:var(--gap);min-height:41px;padding:8px 12px;background:var(--panel);border-radius:4px;overflow:hidden} .ds-rail button{flex:none;width:var(--m);height:var(--m);padding:0;border:none;border-radius:50%;background:#6e5644;cursor:pointer;transition:transform .15s var(--ease-out),background-color .15s var(--ease-out)} .ds-rail .ds-b{background:#574334} .ds-rail .ds-start{background:transparent;box-shadow:inset 0 0 0 1.5px var(--rule-strong)} .ds-rail [data-mark]{--grow:1;width:calc(var(--m) * var(--grow));height:calc(var(--m) * var(--grow));margin:0 calc(var(--m) * (1 - var(--grow)) / 2);position:relative;z-index:1} .ds-rail .ds-inacc{background:var(--mark-inaccuracy)} .ds-rail .ds-mistake{background:var(--mark-mistake);--grow:1.2} .ds-rail .ds-blunder{background:var(--mark-blunder);--grow:1.4} .ds-rail button:not([data-mark]):hover{background:var(--chalk-3)} .ds-rail button:hover{transform:scale(1.25)} .ds-rail .ds-current{outline:2px solid var(--chalk);outline-offset:2px;z-index:2} .ds-rail button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Board Frame",
+      "kind": "custom",
+      "refersTo": "board-frame",
+      "description": "Every board hangs in a flat 4px Panel Brown frame, with 15px mono coordinates outside the squares, in Cream 2.",
+      "html": "<div class=\"ds-frame\"><div class=\"ds-board\"></div><div class=\"ds-ranks\"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div><div class=\"ds-files\"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div></div>",
+      "css": ":host{--shell:#22170f;--ground:#3b2a20;--sunken:#241911;--panel:#2d2017;--panel-hover:#392a1f;--raised:#46342a;--rule:#4a3829;--rule-strong:#634c3a;--chalk:#efe6d8;--chalk-2:#cbbda8;--chalk-3:#a5947e;--select:#173b2c;--select-hover:#1f4d3a;--select-ink:#efe6d8;--green-edge:#2d6b51;--accent:#6fb592;--engine:#8cc7a8;--mark-inaccuracy:#ecc65a;--mark-mistake:#e38a4c;--mark-blunder:#e85a3f;--danger:#e85a3f;--ui-font:\"Segoe UI Variable Text\",\"Segoe UI\",system-ui,sans-serif;--num-font:\"Cascadia Mono\",Consolas,ui-monospace,monospace;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-frame{position:relative;padding:14px 14px 30px 40px;background:var(--panel);border-radius:4px;width:240px} .ds-board{aspect-ratio:1;border-radius:2px;background:repeating-conic-gradient(#9a7457 0% 25%,#efe6d8 0% 50%) 0 0 / 25% 25%} .ds-ranks{position:absolute;left:16px;top:14px;bottom:30px;display:flex;flex-direction:column;justify-content:space-around} .ds-files{position:absolute;left:40px;right:14px;bottom:6px;display:flex;justify-content:space-around} .ds-ranks span,.ds-files span{font-family:var(--num-font);font-size:15px;font-weight:600;color:var(--chalk-2)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Analysis Room",
+    "overview": "The Owner's game hangs on the wall of the club's analysis room: a big cream-and-brown demonstration board in a dark brown frame, talked through and marked up after the round. The whole world is built from the Owner's three pinned colours: brown #3B2A20 is the room, cream #EFE6D8 is the text and the light squares, and dark green #173B2C is the felt of selection: the active tab, the current move and the primary action. Every other value is derived from those three. Colour is flat and unmodulated everywhere, and there are no shadows. Depth comes from a few close browns and thin rules. The few marks that carry meaning each have one colour: dark green fills for the thing you are on, a lighter green of the same hue for focus and hover lines, mint for what the engine says, and a ramp from yellow through orange to red for how bad a move was.\n\nThe interface is dense and built for one experienced user at a large monitor in a dim room. The board is always the largest element on the review screen and is sized from the viewport. Panels are plain brown tiles with ruled heads, set slightly darker than the ground. Tables and lists are ruled, not boxed. Every number (evaluations, Elo, dates, move numbers, coordinates) is set in a tabular monospace, so the board's world of notation reads as one voice against the humanist UI sans.\n\nIt refuses the grey analysis-site panel look and ChessBase's toolbar clutter: tools sit as quiet icon buttons in one row under the board, not as a ribbon.",
+    "keyCharacteristics": [
+      "The Owner's three colours (brown #3B2A20, cream #EFE6D8, dark green #173B2C) are the source of every token.",
+      "Flat brown tones (#22170f to #46342a) separated by 1px rules; no shadows, no texture.",
+      "Dark green fills with cream ink for current, active and primary, each edged in a 1px green line.",
+      "A lighter green of the same hue for focus rings, underlines, input focus and hover text.",
+      "Mint for everything the engine says; a yellow, orange, red ramp for how bad a move was.",
+      "Numbers and moves in Cascadia Mono, tabular; UI in Segoe UI Variable.",
+      "Small radii (2-4px); full rounding only for tags, the switch, dots and the round move-rail markers.",
+      "Every board hangs in a 4px brown frame with large mono coordinates outside the squares."
+    ],
+    "rules": [
+      {
+        "name": "The Three Colours Rule",
+        "body": "Every colour is Brand Brown, Brand Cream or Brand Green, or a shade derived from one of them. The only exceptions are the functional marks: engine, good and the classification ramp.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Meaning Rule",
+        "body": "Deep Green (with Light Green for its lines) means \"current or chosen\", Mint means \"the engine says\", the warm ramp means \"how bad\". Never use one for another's job.",
+        "section": "colors"
+      },
+      {
+        "name": "The Flat Colour Rule",
+        "body": "Surfaces are single flat colours: no grain, texture or gradients. Tints are an accent at low alpha (10-14% fills, 45% borders), never gradients.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every number (eval, Elo, dates, move numbers, results, scores, ECO codes) is in the mono with tabular figures. Column headers above numbers stay in the UI font.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Uppercase Rule",
+        "body": "No letter-spaced uppercase labels; hierarchy comes from weight and Cream 2/3.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Shadow Rule",
+        "body": "Separation is by tone and 1px rules. If something needs to float, it gets Raised Brown and a Strong Rule border, not a shadow. Inset rings are allowed only as edges: the Green Edge on dark green fills and the rail's start ring.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do derive any new colour from the Owner's three: brown #3B2A20, cream #EFE6D8, dark green #173B2C.",
+      "Do keep the board the largest element on any screen that shows it, sized from the viewport.",
+      "Do use Deep Green (select) only as a fill for current, chosen, active or primary, always with cream ink, and use Light Green (accent) for its thin lines and hover text.",
+      "Do use Mint (engine) for anything the engine produced, and nothing else.",
+      "Do set every number in Cascadia Mono with tabular figures.",
+      "Do separate surfaces with tone and 1px rules; float menus on Raised Brown with a Strong Rule border.",
+      "Do draw new icons on the 20x20 grid with a 1.6 round-capped stroke, in currentColor.",
+      "Do tile dense modules edge to edge with 1px rule gaps rather than spacing out separate cards."
+    ],
+    "donts": [
+      "Don't use drop shadows, gradients or grain on chrome; the only non-flat fills are the board's chessground marks (move dots, check glow), and the only box-shadows are inset edge rings (Green Edge on green fills, the rail's start ring).",
+      "Don't use Deep Green for text or thin lines on brown; it does not read. Use Light Green.",
+      "Don't introduce a hue outside the three brand colours and the functional marks (engine, good, the classification ramp).",
+      "Don't build toolbars or ribbons; tools are quiet icon buttons in one row.",
+      "Don't use letter-spaced uppercase labels or small headings above headings.",
+      "Don't use icon fonts or emoji glyphs as icons.",
+      "Don't show a board without its brown frame and outside coordinates."
+    ]
+  }
+}

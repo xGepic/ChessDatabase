@@ -2,6 +2,7 @@ import { Component, OnDestroy, computed, effect, inject, input, output, signal }
 import { map } from 'rxjs';
 import { Api, Game, GameDetails, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
+import { Icon } from '../shared/icon';
 import { SuggestInput } from '../shared/suggest-input';
 import { parseElo } from '../shared/elo';
 import { sameName } from '../shared/names';
@@ -11,7 +12,7 @@ const NOTES_DEBOUNCE_MS = 500;
 /** Edits a Game's details. Every change is saved at once; there is no Save button. */
 @Component({
   selector: 'app-game-details',
-  imports: [PlayerPicker, SuggestInput],
+  imports: [PlayerPicker, SuggestInput, Icon],
   template: `
     <section class="card side-card">
       <header class="card-head"><h2>Game</h2></header>
@@ -67,7 +68,7 @@ const NOTES_DEBOUNCE_MS = 500;
         <div class="tags">
           @for (tag of game().tags; track tag) {
             <span class="tag" data-testid="tag">{{ tag }}
-              <button type="button" class="tag-remove" [attr.aria-label]="'Remove tag ' + tag" (click)="removeTag(tag)">×</button>
+              <button type="button" class="tag-remove" [attr.aria-label]="'Remove tag ' + tag" (click)="removeTag(tag)"><app-icon name="close" /></button>
             </span>
           }
           <app-suggest-input inputId="details-tags" testId="tag-input" placeholder="Add a tag" [clearOnCommit]="true"

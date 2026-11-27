@@ -15,7 +15,7 @@
       <div class="tags">
         @for (alias of aliases(); track alias) {
           <span class="tag" data-testid="alias">{{ alias }}
-            <button type="button" class="tag-remove" [attr.aria-label]="'Remove alias ' + alias" (click)="removeAlias(alias)">×</button>
+            <button type="button" class="tag-remove" [attr.aria-label]="'Remove alias ' + alias" (click)="removeAlias(alias)"><app-icon name="close" /></button>
           </span>
         }
         <input #aliasInput id="alias-input" data-testid="alias-input" placeholder="Add another spelling"

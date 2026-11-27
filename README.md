@@ -112,4 +112,4 @@ Database migrations are created with the local EF tool, for example `dotnet ef m
 - [Spec](docs/specs/0001-chess-database.md)
 - ADRs: [0001 desktop shell (superseded)](docs/adr/0001-aspnet-core-angular-desktop-shell.md), [0004 web app on localhost](docs/adr/0004-web-app-on-localhost.md), [0002 Chess Rules in C#](docs/adr/0002-csharp-is-source-of-truth-for-chess-rules.md), [0003 Engine Assessment kept separate](docs/adr/0003-engine-assessment-separate-from-annotations.md)
 - [Tickets](docs/tickets/tickets.md)
-- [Product](PRODUCT.md) and the [design direction for the review screen](.impeccable/surfaces/review.md)
+- [Product](PRODUCT.md), the [design system](DESIGN.md) and the [design direction for the review screen](.impeccable/surfaces/ui-src-app-review-game-review-ts.md)

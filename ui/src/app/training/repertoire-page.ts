@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Api, MoveNode, OwnerColour, Repertoire, problemMessage } from '../api/api';
 import { Board } from '../review/board';
+import { Icon } from '../shared/icon';
 import { Scoresheet } from '../review/scoresheet';
 import { TreeAction, TreePort, TreeSession } from '../review/tree-session';
 
@@ -13,17 +14,17 @@ import { TreeAction, TreePort, TreeSession } from '../review/tree-session';
  */
 @Component({
   selector: 'app-repertoire-page',
-  imports: [Board, Scoresheet, RouterLink],
+  imports: [Board, Scoresheet, RouterLink, Icon],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
     <div class="review repertoire">
       <div class="board-column">
         <app-board [fen]="session.fen()" [orientation]="side()" [lastMove]="session.lastMove()" (move)="session.playMove($event)" />
         <div class="board-tools">
-          <button type="button" (click)="goTo(null)" title="Start (Home)" aria-label="Start">⏮</button>
-          <button type="button" (click)="session.back()" title="Back (←)" aria-label="Back">◀</button>
-          <button type="button" (click)="session.forward()" title="Forward (→)" aria-label="Forward">▶</button>
-          <button type="button" (click)="session.toEnd()" title="End (End)" aria-label="End">⏭</button>
+          <button type="button" class="icon-button" (click)="goTo(null)" title="Start (Home)" aria-label="Start"><app-icon name="first" /></button>
+          <button type="button" class="icon-button" (click)="session.back()" title="Back (←)" aria-label="Back"><app-icon name="back" /></button>
+          <button type="button" class="icon-button" (click)="session.forward()" title="Forward (→)" aria-label="Forward"><app-icon name="forward" /></button>
+          <button type="button" class="icon-button" (click)="session.toEnd()" title="End (End)" aria-label="End"><app-icon name="last" /></button>
           @if (error()) { <span class="board-error" role="alert" data-testid="repertoire-error">{{ error() }}</span> }
         </div>
       </div>

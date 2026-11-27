@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription, map } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -20,15 +20,19 @@ import { ExportTools } from './export-tools';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
 import { Scoresheet } from './scoresheet';
+import { MoveRail } from './move-rail';
+import { Icon } from '../shared/icon';
 import { TreeAction, TreePort, TreeSession } from './tree-session';
+
+type SideTab = 'analysis' | 'tree' | 'details';
 
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, ExportTools, RouterLink],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, ExportTools, MoveRail, Icon, RouterLink],
   providers: [EngineSession],
   templateUrl: './game-review.html',
-  host: { '(document:keydown)': 'onKey($event)' },
+  host: { '(document:keydown)': 'onKey($event)', '(document:click)': 'closeExportMenu($event)' },
 })
 export class GameReview {
   private readonly api = inject(Api);
@@ -48,10 +52,24 @@ export class GameReview {
   protected readonly currentId = this.session.currentId;
   protected readonly error = this.session.error;
   protected readonly flipped = signal(false);
+  /** The tools beside the scoresheet, one at a time. */
+  protected readonly sideTabs: { id: SideTab; label: string }[] = [
+    { id: 'analysis', label: 'Game Analysis' },
+    { id: 'tree', label: 'Opening Tree' },
+    { id: 'details', label: 'Details' },
+  ];
+  protected readonly sideTab = signal<SideTab>('analysis');
   protected readonly eloLabel = eloLabel;
   protected readonly resultLabel = resultLabel;
 
   private readonly board = viewChild(Board);
+  private readonly exportMenu = viewChild<ElementRef<HTMLDetailsElement>>('exportMenu');
+
+  /** The Export menu closes on a click outside it, and on Escape. */
+  protected closeExportMenu(event: Event) {
+    const menu = this.exportMenu()?.nativeElement;
+    if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+  }
 
   /** The Game's Engine Assessment, if it has one. */
   protected readonly assessment = signal<EngineAssessment | null>(null);
@@ -87,6 +105,9 @@ export class GameReview {
     const owner = this.game()?.ownerColour ?? 'white';
     return this.flipped() ? (owner === 'white' ? 'black' : 'white') : owner;
   });
+
+  /** The Engine's best move, drawn on the board while the Engine is on. */
+  protected readonly engineArrow = computed(() => (this.engine.on() ? (this.engine.update()?.lines?.[0]?.uci?.[0] ?? null) : null));
 
   /** The moves from the start to the board position, in UCI: what the Engine is given. */
   private readonly path = this.session.path;
@@ -184,6 +205,10 @@ export class GameReview {
   protected onKey(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select, [contenteditable]')) return;
+    if (event.key === 'Escape') {
+      const menu = this.exportMenu()?.nativeElement;
+      if (menu) menu.open = false;
+    }
     if (event.ctrlKey || event.altKey || event.metaKey) return;
 
     const handled = (() => {
