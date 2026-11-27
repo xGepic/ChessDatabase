@@ -55,6 +55,12 @@ public sealed class CollectionDbContext(DbContextOptions<CollectionDbContext> op
             engine.Property(e => e.Path).HasMaxLength(1000);
             engine.Property(e => e.Arguments).HasMaxLength(2000);
             engine.Property(e => e.ReportedName).HasMaxLength(200);
+            var json = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+            engine.Property(e => e.Options).HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, json),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<UciOption>>(v, json) ?? new List<UciOption>(),
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<UciOption>>(
+                    (a, b) => a!.SequenceEqual(b!), v => v.Count, v => v.ToList()));
             engine.HasData(EngineRecord.Stockfish());
         });
 
@@ -322,11 +328,17 @@ public sealed class SettingsRecord
     /// <summary>Where daily backups go; null means "Backups" beside the Collection's file.</summary>
     public string? BackupFolder { get; set; }
 
+    /// <summary>The Engine definition Interactive Analysis uses; null (or one since removed) means the first.</summary>
+    public int? InteractiveEngineId { get; set; }
+
+    /// <summary>The Engine definition Game Analysis (and Mistake Training) uses; null (or one since removed) means the first.</summary>
+    public int? AnalysisEngineId { get; set; }
+
 }
 
 /// <summary>
-/// An Engine definition: a UCI program and the options it runs with. Several can exist; only
-/// Stockfish ships, and it starts without a path until the Owner sets one.
+/// An Engine definition: a UCI program and the options it runs with. Several can exist (say
+/// Stockfish and Lc0); only Stockfish ships, and it starts without a path until the Owner sets one.
 /// </summary>
 public sealed class EngineRecord
 {
@@ -355,10 +367,16 @@ public sealed class EngineRecord
     /// <summary>What the program called itself when the path was saved ("id name"), e.g. "Stockfish 17.1".</summary>
     public string? ReportedName { get; set; }
 
+    /// <summary>Further UCI options, such as Lc0's WeightsFile and Backend. Stored as JSON.</summary>
+    public List<UciOption> Options { get; set; } = [];
+
     /// <summary>The shipped definition, with the Interactive Analysis defaults.</summary>
     public static EngineRecord Stockfish() =>
         new() { Id = StockfishId, Name = "Stockfish", Path = "", Threads = 16, HashMb = 8192, MultiPv = 3, AnalysisMsPerMove = 2000 };
 }
+
+/// <summary>A UCI option as "setoption name {Name} value {Value}" sends it.</summary>
+public sealed record UciOption(string Name, string Value);
 
 /// <summary>
 /// The Engine's verdict on a Game's main line (ADR 0003: kept apart from the Owner's Annotations).
@@ -372,6 +390,12 @@ public sealed class EngineAssessmentRecord
 
     /// <summary>What the Engine called itself, version included, e.g. "Stockfish 17.1".</summary>
     public string EngineName { get; set; } = "";
+
+    /// <summary>
+    /// The Engine definition that produced it, so Mistake Training judges answers with the same
+    /// Engine; null for assessments from before Engines could be chosen, or once it is removed.
+    /// </summary>
+    public int? EngineId { get; set; }
     public int Threads { get; set; }
     public int HashMb { get; set; }
     public int MsPerMove { get; set; }

@@ -36,8 +36,8 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 26 | [Mistake Training](#26-mistake-training) | 12, 25 | **Done** |
 | 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | **Done** |
 | 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | **Done** |
-| 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | Open |
-| 30 | [Side-by-side engines in Interactive Analysis](#30-side-by-side-engines-in-interactive-analysis) | 29 | Open |
+| 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | **Done** |
+| 30 | [Side-by-side engines in Interactive Analysis](#30-side-by-side-engines-in-interactive-analysis) | 29 | **Done** |
 
 When a ticket is finished, set its Status here to **Done**, set the **Status:** line in the ticket itself to `done`, and tick its acceptance criteria.
 
@@ -506,13 +506,15 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 13 (Game Analysis queue, re-run and analysed indicator).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Multiple engine definitions can be added, edited and removed in Settings, each with its own UCI options
-- [ ] The engine for Interactive Analysis and for Game Analysis is chosen separately
-- [ ] Lc0 runs on the GPU with the configured weights and streams lines like Stockfish
-- [ ] The Engine Assessment shows which engine produced it
-- [ ] Engine Host tests with two fake engines verify that selection routes to the right process
+- [x] Multiple engine definitions can be added, edited and removed in Settings, each with its own UCI options
+- [x] The engine for Interactive Analysis and for Game Analysis is chosen separately
+- [x] Lc0 runs on the GPU with the configured weights and streams lines like Stockfish
+- [x] The Engine Assessment shows which engine produced it
+- [x] Engine Host tests with two fake engines verify that selection routes to the right process
+
+Note: Lc0 was not installed when this was built, so it was tested against the fake engine announcing Lc0's options (Threads, MultiPV, WeightsFile, Backend; no Hash). Check it once with the real Lc0 and a network file.
 
 ---
 
@@ -522,8 +524,8 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 
 **Blocked by:** 29 (Leela Chess Zero and engine selection).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two engines can be active at once, each with its own lines panel and evaluation
-- [ ] Both follow the current position and both stop on switch-off or when leaving the Game
-- [ ] Hub tests with two fake engines verify independent streaming and stop
+- [x] Two engines can be active at once, each with its own lines panel and evaluation
+- [x] Both follow the current position and both stop on switch-off or when leaving the Game
+- [x] Hub tests with two fake engines verify independent streaming and stop

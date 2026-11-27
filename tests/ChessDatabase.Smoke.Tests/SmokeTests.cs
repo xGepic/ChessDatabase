@@ -375,11 +375,58 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Compare_two_engines_side_by_side_in_a_game()
+    {
+        var gameId = await _app.CreateGameAsync("e4");
+        const string afterE4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -";
+        await _app.UseFakeEngineAsync(new() { [afterE4] = (["depth 20 multipv 1 score cp -25 pv c7c5 g1f3"], "c7c5") });
+        await _app.AddFakeEngineAsync("Lc0", "Fake Lc0", new() { [afterE4] = (["depth 8 multipv 1 score cp -10 pv e7e5 g1f3"], "e7e5") });
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
+
+        await Page.GetByTestId("compare-engine").SelectOptionAsync(new SelectOptionValue { Label = "Lc0" });
+        await Page.GetByTestId("engine-toggle").ClickAsync();
+
+        var main = Page.GetByTestId("engine-panel");
+        var compared = Page.GetByTestId("compare-panel");
+        await Expect(main.GetByTestId("engine-title")).ToHaveTextAsync("Stockfish");
+        await Expect(compared.GetByTestId("engine-title")).ToHaveTextAsync("Lc0");
+        await Expect(main.GetByTestId("engine-eval")).ToHaveTextAsync("+0.25");
+        await Expect(compared.GetByTestId("engine-eval")).ToHaveTextAsync("+0.10");
+        await Expect(compared.GetByTestId("engine-line")).ToContainTextAsync("1...e5 2.Nf3");
+
+        // Switching off stops both; closing the comparison removes its panel.
+        await Page.GetByTestId("engine-toggle").ClickAsync();
+        await Expect(Page.GetByTestId("engine-line")).ToHaveCountAsync(0);
+        await compared.GetByTestId("compare-close").ClickAsync();
+        await Expect(compared).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Add_lc0_in_settings_and_use_it_for_game_analysis()
+    {
+        await Page.GotoAsync($"{_app.BaseUrl}/settings");
+
+        await Page.GetByTestId("add-lc0").ClickAsync();
+        var form = Page.GetByTestId("engine-form-new");
+        await Expect(form.GetByTestId("engine-option")).ToHaveCountAsync(2); // WeightsFile and Backend
+        await form.GetByTestId("engine-path").FillAsync(Path.Combine(AppContext.BaseDirectory, "FakeEngine.exe"));
+        await form.GetByTestId("engine-save").ClickAsync();
+        await Expect(Page.GetByTestId("engine-form-Lc0")).ToBeVisibleAsync();
+
+        await Page.GetByTestId("analysis-engine").SelectOptionAsync(new SelectOptionValue { Label = "Lc0" });
+        await Expect(Page.GetByTestId("selection-status")).ToHaveTextAsync("Saved");
+        await Page.ReloadAsync();
+        await Expect(Page.GetByTestId("analysis-engine").Locator("option:checked")).ToHaveTextAsync("Lc0");
+        await Expect(Page.GetByTestId("interactive-engine").Locator("option:checked")).ToHaveTextAsync("Stockfish");
+    }
+
+    [Fact]
     public async Task Set_the_engine_path_in_settings()
     {
         await Page.GotoAsync($"{_app.BaseUrl}/settings");
 
-        await Page.GetByTestId("engine-path").FillAsync(@"C:
+        var stockfish = Page.GetByTestId("engine-form-Stockfish");
+        await stockfish.GetByTestId("engine-path").FillAsync(@"C:
 owhere\stockfish.exe");
         await Page.GetByTestId("engine-save").ClickAsync();
         await Expect(Page.GetByTestId("engine-status")).ToContainTextAsync("There is no file at");

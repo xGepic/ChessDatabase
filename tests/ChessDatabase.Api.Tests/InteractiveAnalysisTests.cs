@@ -16,9 +16,9 @@ public class EngineSettingsTests
         using var factory = new CollectionFactory();
         var client = factory.CreateClient();
 
-        var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDto>>("/api/engines"))!);
+        var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDefinitionDto>>("/api/engines"))!);
 
-        Assert.Equal(new EngineDto(1, "Stockfish", "", 16, 8192, 3, null, 2.0, null), engine);
+        Assert.Equivalent(new EngineDefinitionDto(1, "Stockfish", "", 16, 8192, 3, null, 2.0, null, []), engine, strict: true);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class EngineSettingsTests
 
         await client.UseAsync(fake, threads: 4, hashMb: 256, multiPv: 2);
 
-        var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDto>>("/api/engines"))!);
+        var engine = Assert.Single((await client.GetFromJsonAsync<List<EngineDefinitionDto>>("/api/engines"))!);
         Assert.Equal(FakeEngine.ExePath, engine.Path);
         Assert.Equal((4, 256, 2), (engine.Threads, engine.HashMb, engine.MultiPv));
         Assert.Equal("Fake Engine 2.5", engine.ReportedName);

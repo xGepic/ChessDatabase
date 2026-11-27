@@ -19,6 +19,12 @@ public sealed class FakeEngine : IDisposable
 
     public string Name { get; init; } = "Fake Engine 1.0";
     public int LineDelayMs { get; init; }
+
+    /// <summary>The UCI options it announces; Lc0, for one, has no Hash.</summary>
+    public string[] Options { get; init; } = ["Threads", "Hash", "MultiPV"];
+
+    /// <summary>Exits when asked "isready", as Lc0 does when its weights file is missing.</summary>
+    public bool QuitOnIsReady { get; init; }
     public string LogPath => Path.Combine(_directory, "commands.log");
 
     /// <summary>Canned output for the position after the given moves from the start.</summary>
@@ -33,7 +39,7 @@ public sealed class FakeEngine : IDisposable
     {
         Directory.CreateDirectory(_directory);
         var script = Path.Combine(_directory, "script.json");
-        File.WriteAllText(script, JsonSerializer.Serialize(new { name = Name, lineDelayMs = LineDelayMs, positions = _positions }));
+        File.WriteAllText(script, JsonSerializer.Serialize(new { name = Name, lineDelayMs = LineDelayMs, options = Options, quitOnIsReady = QuitOnIsReady, positions = _positions }));
         return $"\"{script}\" --log \"{LogPath}\"";
     }
 
@@ -56,13 +62,9 @@ public sealed class FakeEngine : IDisposable
     public void Dispose() => CollectionFactory.DeleteDirectory(_directory);
 }
 
-public sealed record EngineDto(
-    int Id, string Name, string Path, int Threads, int HashMb, int MultiPv, int? InteractiveSecondsLimit,
-    double AnalysisSecondsPerMove, string? ReportedName);
-
 public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, double WhitePercent, List<string> San, List<string> Uci);
 
-public sealed record AnalysisUpdateDto(int RequestId, List<AnalysisLineDto> Lines);
+public sealed record AnalysisUpdateDto(int RequestId, List<AnalysisLineDto> Lines, int EngineId);
 
 public static class EngineTestExtensions
 {
@@ -99,22 +101,31 @@ public static class EngineTestExtensions
 public sealed class AnalysisClient : IAsyncDisposable
 {
     private readonly List<AnalysisUpdateDto> _updates = [];
-    private readonly List<string> _errors = [];
+    private readonly List<(string Message, int EngineId)> _errors = [];
 
     public AnalysisClient(HubConnection connection)
     {
         Connection = connection;
         connection.On<AnalysisUpdateDto>("lines", u => { lock (_updates) _updates.Add(u); });
-        connection.On<string>("engineError", e => { lock (_errors) _errors.Add(e); });
+        connection.On<string, int>("engineError", (e, engineId) => { lock (_errors) _errors.Add((e, engineId)); });
     }
 
     public HubConnection Connection { get; }
 
     public IReadOnlyList<AnalysisUpdateDto> Updates { get { lock (_updates) return [.. _updates]; } }
 
-    public IReadOnlyList<string> Errors { get { lock (_errors) return [.. _errors]; } }
+    public IReadOnlyList<string> Errors { get { lock (_errors) return [.. _errors.Select(e => e.Message)]; } }
 
-    public Task AnalyseAsync(int requestId, params string[] moves) => Connection.InvokeAsync("Analyse", requestId, moves);
+    /// <summary>Errors with the Engine each one is about.</summary>
+    public IReadOnlyList<(string Message, int EngineId)> EngineErrors { get { lock (_errors) return [.. _errors]; } }
+
+    /// <summary>Analyses with the Interactive Analysis engine alone.</summary>
+    public Task AnalyseAsync(int requestId, params string[] moves) =>
+        Connection.InvokeAsync("Analyse", requestId, moves, (int?)null);
+
+    /// <summary>Analyses with the Interactive Analysis engine and a second one side by side.</summary>
+    public Task AnalyseSideBySideAsync(int requestId, int secondEngineId, params string[] moves) =>
+        Connection.InvokeAsync("Analyse", requestId, moves, (int?)secondEngineId);
 
     public Task StopAsync() => Connection.InvokeAsync("Stop");
 

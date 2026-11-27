@@ -5,9 +5,28 @@ namespace ChessDatabase.Api.Engines;
 
 public static class EngineQueries
 {
-    /// <summary>The Stockfish definition (it always exists: the first migration seeds it).</summary>
-    public static Task<EngineRecord> StockfishAsync(this DbSet<EngineRecord> engines, CancellationToken cancellationToken = default) =>
-        engines.AsNoTracking().SingleAsync(e => e.Id == EngineRecord.StockfishId, cancellationToken);
+    /// <summary>The Engine Interactive Analysis runs.</summary>
+    public static async Task<EngineRecord> InteractiveEngineAsync(this CollectionDbContext db, CancellationToken cancellationToken = default) =>
+        await SelectedAsync(db, (await SettingsAsync(db, cancellationToken))?.InteractiveEngineId, cancellationToken);
+
+    /// <summary>The Engine Game Analysis runs, and with it Mistake Training's judging.</summary>
+    public static async Task<EngineRecord> AnalysisEngineAsync(this CollectionDbContext db, CancellationToken cancellationToken = default) =>
+        await SelectedAsync(db, (await SettingsAsync(db, cancellationToken))?.AnalysisEngineId, cancellationToken);
+
+    /// <summary>A definition by id; null when there is no such Engine.</summary>
+    public static Task<EngineRecord?> EngineAsync(this CollectionDbContext db, int id, CancellationToken cancellationToken = default) =>
+        db.Engines.AsNoTracking().SingleOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    private static Task<SettingsRecord?> SettingsAsync(CollectionDbContext db, CancellationToken cancellationToken) =>
+        db.Settings.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+
+    /// <summary>
+    /// The chosen definition, or the first one when none is chosen or the chosen one was removed.
+    /// There is always at least one: the last Engine can't be removed.
+    /// </summary>
+    private static async Task<EngineRecord> SelectedAsync(CollectionDbContext db, int? id, CancellationToken cancellationToken) =>
+        (id is { } chosen ? await db.EngineAsync(chosen, cancellationToken) : null)
+        ?? await db.Engines.AsNoTracking().OrderBy(e => e.Id).FirstAsync(cancellationToken);
 
     /// <summary>Why the Engine can't be started as configured, or null when it can be tried.</summary>
     public static string? StartProblem(this EngineRecord engine)

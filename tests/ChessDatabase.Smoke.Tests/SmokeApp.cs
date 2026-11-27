@@ -132,6 +132,29 @@ public sealed class SmokeApp : IAsyncLifetime
         })).EnsureSuccessStatusCode();
     }
 
+    /// <summary>Adds another Engine definition running the fake engine with its own script; returns its id.</summary>
+    public async Task<int> AddFakeEngineAsync(string name, string reportedName, Dictionary<string, (string[] Infos, string Bestmove)> positions)
+    {
+        var script = Path.Combine(_directory, $"engine-script-{name}.json");
+        await File.WriteAllTextAsync(script, JsonSerializer.Serialize(new
+        {
+            name = reportedName,
+            positions = positions.ToDictionary(p => p.Key, p => new { infos = p.Value.Infos, bestmove = p.Value.Bestmove }),
+        }));
+        using var http = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        var response = await http.PostAsJsonAsync("/api/engines", new
+        {
+            name,
+            path = Path.Combine(AppContext.BaseDirectory, "FakeEngine.exe"),
+            arguments = $"\"{script}\"",
+            threads = 1,
+            hashMb = 16,
+            multiPv = 1,
+        });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+    }
+
     /// <summary>A stand-in for explorer.lichess.org on a loopback port, so smoke tests never go online.</summary>
     private async Task<string> StartFakeLichessAsync()
     {

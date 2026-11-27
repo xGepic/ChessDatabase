@@ -184,13 +184,16 @@ export interface BackupStatus {
   lastBackupAt: string | null;
 }
 
-/** The Stockfish definition's id (the only Engine that ships). */
-export const STOCKFISH_ID = 1;
-
 /** Game Analysis time per position, in seconds: the backend's allowed range. */
 export const ANALYSIS_SECONDS = { min: 0.1, max: 600 };
 
-/** An Engine definition (only Stockfish ships). */
+/** A UCI option as "setoption name {name} value {value}" sends it. */
+export interface UciOption {
+  name: string;
+  value: string;
+}
+
+/** An Engine definition. Only Stockfish ships; others, such as Lc0, are added in Settings. */
 export interface Engine {
   id: number;
   name: string;
@@ -206,6 +209,17 @@ export interface Engine {
   analysisSecondsPerMove: number;
   /** What the program called itself, e.g. "Stockfish 17.1". */
   reportedName: string | null;
+  /** Further UCI options, e.g. Lc0's WeightsFile and Backend. Only those the program announces are sent. */
+  options: UciOption[];
+}
+
+/** What the Owner fills in for an Engine definition. */
+export type EngineForm = Omit<Engine, 'id' | 'reportedName'>;
+
+/** Which Engine definition each use runs. */
+export interface EngineSelection {
+  interactiveEngineId: number;
+  analysisEngineId: number;
 }
 
 /** One Engine line. Scores are from White's side: positive favours White. */
@@ -223,6 +237,8 @@ export interface AnalysisLine {
 
 export interface AnalysisUpdate {
   requestId: number;
+  /** The Engine definition the lines come from (two can run side by side). */
+  engineId: number;
   /** Empty when the position has no legal moves. */
   lines: AnalysisLine[];
 }
@@ -762,11 +778,21 @@ export class Api {
     return this.http.get<EngineAssessment>(`/api/games/${gameId}/assessment`);
   }
   /** Saving a path starts the program once to check it is a UCI engine. */
-  saveEngine(
-    engine: Pick<Engine, 'id' | 'path' | 'threads' | 'hashMb' | 'multiPv' | 'interactiveSecondsLimit' | 'analysisSecondsPerMove'>,
-  ): Observable<Engine> {
-    const { id, ...body } = engine;
-    return this.http.put<Engine>(`/api/engines/${id}`, body);
+  saveEngine(id: number, engine: EngineForm): Observable<Engine> {
+    return this.http.put<Engine>(`/api/engines/${id}`, engine);
+  }
+  addEngine(engine: EngineForm): Observable<Engine> {
+    return this.http.post<Engine>('/api/engines', engine);
+  }
+  /** Its uses move to the first remaining Engine. The last one can't be removed. */
+  removeEngine(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/engines/${id}`);
+  }
+  getEngineSelection(): Observable<EngineSelection> {
+    return this.http.get<EngineSelection>('/api/engines/selection');
+  }
+  saveEngineSelection(selection: EngineSelection): Observable<EngineSelection> {
+    return this.http.put<EngineSelection>('/api/engines/selection', selection);
   }
 
   // Backups

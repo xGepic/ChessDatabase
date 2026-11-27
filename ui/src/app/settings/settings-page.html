@@ -27,53 +27,7 @@
   </div>
 </section>
 
-<section class="card narrow-card">
-  <header class="card-head"><h2>Engine</h2></header>
-  @if (engine(); as e) {
-    <form class="form-grid" (submit)="$event.preventDefault(); saveEngine(path.value, threads.value, hash.value, lines.value, limit.value, seconds.value)">
-      <label for="engine-path">{{ e.name }} program</label>
-      <div>
-        <input #path id="engine-path" data-testid="engine-path" [value]="e.path" placeholder="e.g. C:\Tools\stockfish\stockfish.exe" />
-        <p class="hint">
-          @if (e.reportedName) { Found <strong data-testid="engine-name">{{ e.reportedName }}</strong>. }
-          The .exe from stockfishchess.org. Replace it any time to update {{ e.name }}.
-        </p>
-      </div>
-
-      <label for="engine-threads">Threads</label>
-      <input #threads id="engine-threads" class="elo" type="number" min="1" max="1024" [value]="e.threads" />
-
-      <label for="engine-hash">Hash (MB)</label>
-      <input #hash id="engine-hash" class="elo" type="number" min="1" [value]="e.hashMb" />
-
-      <label for="engine-lines">Lines</label>
-      <div>
-        <input #lines id="engine-lines" class="elo" type="number" min="1" max="3" [value]="e.multiPv" />
-        <p class="hint">How many best lines Interactive Analysis shows (up to 3).</p>
-      </div>
-
-      <label for="engine-limit">Time limit</label>
-      <div>
-        <input #limit id="engine-limit" class="elo" type="number" min="1" max="3600" [value]="e.interactiveSecondsLimit ?? ''"
-               placeholder="none" /> seconds
-        <p class="hint">How long Interactive Analysis thinks about a position. Leave empty to let it think until you move on.</p>
-      </div>
-
-      <label for="engine-seconds">Game Analysis</label>
-      <div>
-        <input #seconds id="engine-seconds" class="elo" type="number" [min]="analysisSeconds.min" [max]="analysisSeconds.max" step="0.1"
-               [value]="e.analysisSecondsPerMove" /> seconds per position
-        <p class="hint">Game Analysis uses one line and the threads and hash above.</p>
-      </div>
-
-      <span></span>
-      <div class="form-actions">
-        <button type="submit" class="primary" data-testid="engine-save" [disabled]="engineSaving()">Save</button>
-        @if (engineMessage()) { <span class="status" data-testid="engine-status" role="status">{{ engineMessage() }}</span> }
-      </div>
-    </form>
-  }
-</section>
+<app-engine-settings />
 
 <section class="card narrow-card">
   <header class="card-head"><h2>Lichess</h2></header>

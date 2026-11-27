@@ -15,8 +15,10 @@ public sealed class EngineHost : IAsyncDisposable
     /// <summary>Process ids of the engines running now, for diagnostics and tests.</summary>
     public IReadOnlyCollection<int> RunningProcessIds => [.. _running.Values];
 
-    /// <summary>Starts the Engine and applies its options (Threads, Hash, MultiPV).</summary>
-    public async Task<UciEngine> StartAsync(EngineRecord definition, int multiPv, CancellationToken cancellationToken = default)
+    /// <summary>Starts the Engine and applies its options: Threads, Hash, MultiPV and the further ones.</summary>
+    /// <param name="threads">Overrides the definition's threads (two Engines side by side share the CPU).</param>
+    public async Task<UciEngine> StartAsync(
+        EngineRecord definition, int multiPv, int? threads = null, CancellationToken cancellationToken = default)
     {
         if (definition.StartProblem() is { } problem) throw new EngineException(problem);
 
@@ -24,8 +26,16 @@ public sealed class EngineHost : IAsyncDisposable
         try
         {
             await engine.ConfigureAsync(
-                [("Threads", definition.Threads), ("Hash", definition.HashMb), ("MultiPV", multiPv)], cancellationToken);
+                [("Threads", threads ?? definition.Threads), ("Hash", definition.HashMb), ("MultiPV", multiPv),
+                 .. definition.Options.Select(o => (o.Name, (object)o.Value))],
+                cancellationToken);
             return engine;
+        }
+        catch (EngineException e)
+        {
+            await engine.DisposeAsync();
+            throw new EngineException(
+                $"{definition.Name} {e.Message}. Check its options in Settings (for Lc0, the weights file and backend).", e);
         }
         catch
         {

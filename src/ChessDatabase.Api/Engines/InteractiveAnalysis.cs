@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading.Channels;
 using ChessDatabase.Api.Assessment;
 using ChessDatabase.Api.Collection;
@@ -16,43 +17,97 @@ public sealed record AnalysisLineDto(
 
 /// <param name="RequestId">Echoes the request, so the UI can drop updates for a position it has left.</param>
 /// <param name="Lines">Best first. Empty when the position has no legal moves.</param>
-public sealed record AnalysisUpdateDto(int RequestId, IReadOnlyList<AnalysisLineDto> Lines);
+/// <param name="EngineId">The Engine definition the lines come from (two can run side by side).</param>
+public sealed record AnalysisUpdateDto(int RequestId, IReadOnlyList<AnalysisLineDto> Lines, int EngineId);
 
 /// <summary>
 /// Interactive Analysis over SignalR. The UI calls Analyse with the moves from the start to the
-/// position on the board; the Engine searches until the next Analyse or Stop (or the time limit)
-/// and streams its lines back as "lines" messages. Closing the connection (leaving the Game) stops
-/// the Engine too.
+/// position on the board, and optionally a second Engine to run beside the Interactive Analysis
+/// one. Each Engine searches until the next Analyse or Stop (or its time limit) and streams its
+/// lines back as "lines" messages; "engineError" says what went wrong with which Engine. Closing
+/// the connection (leaving the Game) stops every Engine too.
 /// </summary>
 public sealed class AnalysisHub(InteractiveAnalysis analysis) : Hub
 {
     public const string Path = "/hubs/analysis";
 
-    public Task Analyse(int requestId, string[] moves) => analysis.AnalyseAsync(Context.ConnectionId, requestId, moves);
+    /// <param name="secondEngineId">An Engine to run side by side; null for the Interactive Analysis engine alone.</param>
+    /// <returns>The Interactive Analysis engine's id: the main lines are the ones with it.</returns>
+    public Task<int> Analyse(int requestId, string[] moves, int? secondEngineId) =>
+        analysis.AnalyseAsync(Context.ConnectionId, requestId, moves, secondEngineId);
 
     public Task Stop() => analysis.StopAsync(Context.ConnectionId);
 
     public override Task OnDisconnectedAsync(Exception? exception) => analysis.CloseAsync(Context.ConnectionId);
 }
 
-/// <summary>Keeps one Engine session per connection.</summary>
+/// <summary>How two Engines side by side share the CPU.</summary>
+public static class ThreadShare
+{
+    /// <summary>
+    /// The threads of two Engines running at once. Together they use no more than the busier one
+    /// alone: the one with fewer threads keeps them, up to half, and the other gets the rest. Lc0,
+    /// which mostly runs on the GPU, keeps its few threads and Stockfish gives up as many. (Each
+    /// keeps at least one, so two single-threaded Engines run with one each.)
+    /// </summary>
+    public static (int A, int B) SideBySide(int a, int b)
+    {
+        var budget = Math.Max(a, b);
+        var fewer = Math.Max(1, Math.Min(Math.Min(a, b), budget / 2));
+        var rest = Math.Max(1, budget - fewer);
+        return b < a ? (rest, fewer) : (fewer, rest);
+    }
+}
+
+/// <summary>Keeps the Engine sessions of each connection: the Interactive Analysis engine and maybe a second one.</summary>
 public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory scopes, IHubContext<AnalysisHub> hub) : IAsyncDisposable
 {
     /// <summary>
-    /// Per connection: a gate so its calls run one at a time, its session, and whether it has
-    /// closed. A call still waiting at the gate when the connection closes finds it closed and
-    /// starts nothing, so no Engine outlives its Game view.
+    /// An Engine as it is to run: its definition and its share of the threads. Two runs with the
+    /// same <see cref="Settings"/> can share a process; any change (path, options, threads) needs a new one.
+    /// </summary>
+    private sealed record EngineRun(EngineRecord Definition, int Threads)
+    {
+        public string Settings { get; } = JsonSerializer.Serialize(new
+        {
+            Definition.Path, Definition.Arguments, Threads, Definition.HashMb, Definition.MultiPv,
+            Definition.InteractiveSecondsLimit, Definition.Options,
+        });
+    }
+
+    /// <summary>A running Engine of a connection and the settings it was started with.</summary>
+    private sealed record EngineSession(InteractiveSession Session, string Settings);
+
+    /// <summary>
+    /// Per connection: a gate so its calls run one at a time, its sessions by Engine id, and
+    /// whether it has closed. A call still waiting at the gate when the connection closes finds it
+    /// closed and starts nothing, so no Engine outlives its Game view.
     /// </summary>
     private sealed class Connection
     {
         public SemaphoreSlim Gate { get; } = new(1, 1);
-        public InteractiveSession? Session { get; set; }
+        public Dictionary<int, EngineSession> Sessions { get; } = [];
         public bool Closed { get; set; }
+
+        /// <summary>The Engine last asked for side by side.</summary>
+        public int? SecondId { get; set; }
+
+        /// <summary>
+        /// A second Engine that failed. It isn't tried again on every move (one that hangs would
+        /// hold up the main Engine each time), only once it is asked for afresh.
+        /// </summary>
+        public int? FailedSecondId { get; set; }
     }
 
     private readonly ConcurrentDictionary<string, Connection> _connections = new();
 
-    public async Task AnalyseAsync(string connectionId, int requestId, IReadOnlyList<string> moves)
+    /// <param name="secondEngineId">Runs this Engine too, side by side; null for the Interactive Analysis engine alone.</param>
+    /// <returns>The Interactive Analysis engine's id, so the UI knows which lines are the main ones.</returns>
+    /// <exception cref="HubException">
+    /// The moves are not legal, or the Interactive Analysis engine failed. A second Engine's
+    /// failure goes out as "engineError" instead, and the main one keeps running.
+    /// </exception>
+    public async Task<int> AnalyseAsync(string connectionId, int requestId, IReadOnlyList<string> moves, int? secondEngineId = null)
     {
         var connection = _connections.GetOrAdd(connectionId, _ => new Connection());
         var position = Position.Initial;
@@ -66,22 +121,44 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
         await connection.Gate.WaitAsync();
         try
         {
-            if (connection.Closed) return;
-            if (connection.Session is not { HasEnded: false } session)
+            var (main, second, secondProblem) = await PlanAsync(connection, secondEngineId);
+            if (connection.Closed) return main.Definition.Id;
+            if (secondProblem is not null && secondEngineId is { } missing)
             {
-                if (connection.Session is not null) await connection.Session.DisposeAsync();
-                connection.Session = session = await StartSessionAsync(connectionId);
+                connection.FailedSecondId = missing;
+                await SendErrorAsync(connectionId, secondProblem, missing);
             }
+
+            // Engines no longer wanted, gone, or due other settings stop first, so the CPU is free for the rest.
+            EngineRun[] runs = second is null ? [main] : [main, second];
+            foreach (var (id, running) in connection.Sessions.ToList())
+            {
+                if (runs.Any(r => r.Definition.Id == id && r.Settings == running.Settings) && !running.Session.HasEnded) continue;
+                await running.Session.DisposeAsync();
+                connection.Sessions.Remove(id);
+            }
+
             try
             {
-                await session.AnalyseAsync(requestId, moves, position);
+                await AnalyseWithAsync(connection, connectionId, main, requestId, moves, position);
             }
             catch (EngineException e)
             {
-                await session.DisposeAsync();
-                connection.Session = null;
                 throw new HubException(e.Message);
             }
+            if (second is not null)
+            {
+                try
+                {
+                    await AnalyseWithAsync(connection, connectionId, second, requestId, moves, position);
+                }
+                catch (EngineException e)
+                {
+                    connection.FailedSecondId = second.Definition.Id;
+                    await SendErrorAsync(connectionId, e.Message, second.Definition.Id);
+                }
+            }
+            return main.Definition.Id;
         }
         finally
         {
@@ -89,20 +166,63 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
         }
     }
 
-    /// <summary>The Owner switched the Engine off: its process ends, the connection stays usable.</summary>
-    public Task StopAsync(string connectionId) => EndSessionAsync(connectionId, close: false);
+    /// <summary>
+    /// The main Engine and the second one, if it should run, with their shares of the threads.
+    /// A second Engine that no longer exists gives a problem for its panel instead.
+    /// </summary>
+    private async Task<(EngineRun Main, EngineRun? Second, string? SecondProblem)> PlanAsync(Connection connection, int? secondEngineId)
+    {
+        if (secondEngineId != connection.SecondId) connection.FailedSecondId = null; // asked for afresh: try again
+        connection.SecondId = secondEngineId;
 
-    /// <summary>The connection is gone (Game view left, app closed).</summary>
-    public Task CloseAsync(string connectionId) => EndSessionAsync(connectionId, close: true);
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
+        var main = await db.InteractiveEngineAsync();
+        if (secondEngineId is not { } id || id == main.Id || id == connection.FailedSecondId)
+            return (new EngineRun(main, main.Threads), null, null);
+        if (await db.EngineAsync(id) is not { } second)
+            return (new EngineRun(main, main.Threads), null, "That Engine has been removed. Choose another one to compare with.");
+        var (mainThreads, secondThreads) = ThreadShare.SideBySide(main.Threads, second.Threads);
+        return (new EngineRun(main, mainThreads), new EngineRun(second, secondThreads), null);
+    }
 
-    private async Task EndSessionAsync(string connectionId, bool close)
+    /// <summary>Starts the Engine's session if it has none, then moves it to the position.</summary>
+    /// <exception cref="EngineException">The Engine failed; its session is gone.</exception>
+    private async Task AnalyseWithAsync(
+        Connection connection, string connectionId, EngineRun run, int requestId, IReadOnlyList<string> moves, Position position)
+    {
+        var id = run.Definition.Id;
+        if (!connection.Sessions.TryGetValue(id, out var running))
+        {
+            running = new EngineSession(await StartSessionAsync(connectionId, run), run.Settings);
+            connection.Sessions[id] = running;
+        }
+        try
+        {
+            await running.Session.AnalyseAsync(requestId, moves, position);
+        }
+        catch (EngineException)
+        {
+            await running.Session.DisposeAsync();
+            connection.Sessions.Remove(id);
+            throw;
+        }
+    }
+
+    /// <summary>The Owner switched the Engines off: their processes end, the connection stays usable.</summary>
+    public Task StopAsync(string connectionId) => EndSessionsAsync(connectionId, close: false);
+
+    /// <summary>The connection is gone (Game view left, browser tab closed).</summary>
+    public Task CloseAsync(string connectionId) => EndSessionsAsync(connectionId, close: true);
+
+    private async Task EndSessionsAsync(string connectionId, bool close)
     {
         if (!_connections.TryGetValue(connectionId, out var connection)) return;
         await connection.Gate.WaitAsync();
         try
         {
-            if (connection.Session is not null) await connection.Session.DisposeAsync();
-            connection.Session = null;
+            await Task.WhenAll(connection.Sessions.Values.Select(r => r.Session.DisposeAsync().AsTask()));
+            connection.Sessions.Clear();
             if (close)
             {
                 connection.Closed = true;
@@ -115,28 +235,29 @@ public sealed class InteractiveAnalysis(EngineHost host, IServiceScopeFactory sc
         }
     }
 
-    private async Task<InteractiveSession> StartSessionAsync(string connectionId)
+    /// <exception cref="EngineException">The Engine could not be started.</exception>
+    private async Task<InteractiveSession> StartSessionAsync(string connectionId, EngineRun run)
     {
-        EngineRecord definition;
-        using (var scope = scopes.CreateScope())
-            definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Engines.StockfishAsync();
+        var definition = run.Definition;
+        var engine = await host.StartAsync(definition, definition.MultiPv, run.Threads);
+        return new InteractiveSession(engine, definition.Id, definition.MultiPv, definition.InteractiveSecondsLimit,
+            update => hub.Clients.Client(connectionId).SendAsync("lines", update),
+            message => SendErrorAsync(connectionId, message, definition.Id));
+    }
+
+    /// <summary>Tells the UI what went wrong with which Engine; a client that has gone away is ignored.</summary>
+    private async Task SendErrorAsync(string connectionId, string message, int engineId)
+    {
         try
         {
-            var engine = await host.StartAsync(definition, definition.MultiPv);
-            var client = hub.Clients.Client(connectionId);
-            return new InteractiveSession(engine, definition.MultiPv, definition.InteractiveSecondsLimit,
-                update => client.SendAsync("lines", update),
-                message => client.SendAsync("engineError", message));
+            await hub.Clients.Client(connectionId).SendAsync("engineError", message, engineId);
         }
-        catch (EngineException e)
-        {
-            throw new HubException(e.Message);
-        }
+        catch (Exception) { } // the client may be gone
     }
 
     public async ValueTask DisposeAsync()
     {
-        await Task.WhenAll(_connections.Values.Select(c => c.Session).OfType<InteractiveSession>().Select(s => s.DisposeAsync().AsTask()));
+        await Task.WhenAll(_connections.Values.SelectMany(c => c.Sessions.Values).Select(r => r.Session.DisposeAsync().AsTask()));
         _connections.Clear();
     }
 }
@@ -154,6 +275,7 @@ public sealed class InteractiveSession : IAsyncDisposable
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(10);
 
     private readonly UciEngine _engine;
+    private readonly int _engineId;
     private readonly int _multiPv;
     private readonly int? _secondsLimit;
     private readonly Func<AnalysisUpdateDto, Task> _publish;
@@ -175,10 +297,12 @@ public sealed class InteractiveSession : IAsyncDisposable
     }
 
     /// <param name="secondsLimit">Null: search until told otherwise.</param>
+    /// <param name="engineId">The Engine definition, so its updates say where they come from.</param>
     public InteractiveSession(
-        UciEngine engine, int multiPv, int? secondsLimit, Func<AnalysisUpdateDto, Task> publish, Func<string, Task> fail)
+        UciEngine engine, int engineId, int multiPv, int? secondsLimit, Func<AnalysisUpdateDto, Task> publish, Func<string, Task> fail)
     {
         _engine = engine;
+        _engineId = engineId;
         _multiPv = multiPv;
         _secondsLimit = secondsLimit;
         _publish = publish;
@@ -195,7 +319,7 @@ public sealed class InteractiveSession : IAsyncDisposable
         var legal = position.LegalMoves().Count;
         if (legal == 0)
         {
-            await _publish(new AnalysisUpdateDto(requestId, []));
+            await _publish(new AnalysisUpdateDto(requestId, [], _engineId));
             return;
         }
         _search = new Search(requestId, position, Math.Min(_multiPv, legal));
@@ -279,7 +403,7 @@ public sealed class InteractiveSession : IAsyncDisposable
         search.SincePublished.Restart();
         try
         {
-            await _publish(new AnalysisUpdateDto(search.RequestId, [.. search.Lines.Values]));
+            await _publish(new AnalysisUpdateDto(search.RequestId, [.. search.Lines.Values], _engineId));
         }
         catch (Exception e) when (e is not OperationCanceledException) { }
     }

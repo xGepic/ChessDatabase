@@ -28,7 +28,12 @@
         </div>
       }
       <app-engine-panel [on]="engine.on()" [update]="engine.update()" [error]="engine.error()" [fen]="fen()"
-                        (toggle)="toggleEngine()" (play)="onPlayLine($event)" />
+                        [name]="engine.main()?.name ?? ''" [compareOptions]="compareOptions()" [compareId]="engine.compared()?.id ?? null"
+                        (toggle)="toggleEngine()" (play)="onPlayLine($event)" (compare)="engine.compareWith($event)" />
+      @if (engine.compared(); as compared) {
+        <app-engine-panel [secondary]="true" [name]="compared.name" [on]="engine.on()" [update]="engine.comparedUpdate()"
+                          [error]="engine.comparedError()" [fen]="fen()" (play)="onPlayLine($event)" (compare)="engine.compareWith($event)" />
+      }
       <app-tablebase-panel [fen]="fen()" (play)="onTreeMove($event)" />
       <app-opening-tree [fen]="fen()" [game]="g" (play)="onTreeMove($event)" (openGame)="onOpenAtPosition($event)"
                         (addToRepertoire)="addToRepertoire()" />

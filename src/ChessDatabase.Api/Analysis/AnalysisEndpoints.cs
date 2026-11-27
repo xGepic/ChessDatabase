@@ -43,7 +43,7 @@ public static class AnalysisEndpoints
     {
         if (secondsPerMove is { } seconds && !AnalysisTime.IsValid(seconds))
             return Invalid("secondsPerMove", AnalysisTime.RangeMessage);
-        return (await db.Engines.StockfishAsync()).StartProblem() is { } problem ? Invalid("engine", problem) : null;
+        return (await db.AnalysisEngineAsync()).StartProblem() is { } problem ? Invalid("engine", problem) : null;
     }
 
     private static int? ToMs(double? seconds) => seconds is { } s ? AnalysisTime.ToMs(s) : null;

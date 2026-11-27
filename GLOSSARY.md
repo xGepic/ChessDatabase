@@ -49,7 +49,7 @@ A picture of a board position. "Copy diagram" puts the board as it is turned on 
 ## Analysis
 
 **Engine**
-An external chess program (Stockfish by default) that evaluates positions and suggests the best moves.
+An external chess program that evaluates positions and suggests the best moves: Stockfish by default, or another UCI engine such as Leela Chess Zero (Lc0) added in Settings. Interactive Analysis and Game Analysis each use the Engine chosen for them.
 
 **Interactive Analysis**
 The Owner steps through a Game while the Engine continuously shows its evaluation and best lines for the current position.

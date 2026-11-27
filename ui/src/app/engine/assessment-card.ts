@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { ANALYSIS_SECONDS, AnalysisQueue, Api, EngineAssessment, OwnerColour, STOCKFISH_ID } from '../api/api';
+import { ANALYSIS_SECONDS, AnalysisQueue, Api, EngineAssessment, OwnerColour } from '../api/api';
+import { forkJoin } from 'rxjs';
 import { EvalGraph } from './eval-graph';
 import { numberedLine } from './scores';
 
@@ -117,9 +118,10 @@ export class AssessmentCard {
   protected readonly numberedLine = numberedLine;
 
   constructor() {
-    this.api.getEngines().subscribe((list) => {
-      const stockfish = list.find((e) => e.id === STOCKFISH_ID);
-      if (stockfish) this.defaultSeconds.set(stockfish.analysisSecondsPerMove);
+    // The default time is the Game Analysis engine's.
+    forkJoin([this.api.getEngines(), this.api.getEngineSelection()]).subscribe(([list, selection]) => {
+      const engine = list.find((e) => e.id === selection.analysisEngineId);
+      if (engine) this.defaultSeconds.set(engine.analysisSecondsPerMove);
     });
   }
 

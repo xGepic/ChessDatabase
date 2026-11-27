@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261126215117_TrainingItems";
+    public override string LastMigrationId => "20261127072922_EngineDefinitions";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -30,6 +30,9 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
 
                 b.Property<DateTime>("AnalysedAt")
                     .HasColumnType("TEXT");
+
+                b.Property<int?>("EngineId")
+                    .HasColumnType("INTEGER");
 
                 b.Property<string>("EngineName")
                     .IsRequired()
@@ -91,6 +94,10 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(100)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Options")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("Path")
                     .IsRequired()
                     .HasMaxLength(1000)
@@ -115,6 +122,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                         HashMb = 8192,
                         MultiPv = 3,
                         Name = "Stockfish",
+                        Options = "[]",
                         Path = "",
                         Threads = 16
                     });
@@ -382,8 +390,14 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasColumnType("TEXT");
 
+                b.Property<int?>("AnalysisEngineId")
+                    .HasColumnType("INTEGER");
+
                 b.Property<string>("BackupFolder")
                     .HasColumnType("TEXT");
+
+                b.Property<int?>("InteractiveEngineId")
+                    .HasColumnType("INTEGER");
 
                 b.Property<string>("OwnerName")
                     .IsRequired()

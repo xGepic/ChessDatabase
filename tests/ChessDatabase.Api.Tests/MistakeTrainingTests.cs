@@ -59,6 +59,28 @@ public class MistakeTrainingTests
     }
 
     [Fact]
+    public async Task Answers_are_judged_by_the_engine_that_produced_the_assessment_even_after_switching()
+    {
+        using var factory = new CollectionFactory(clock: new FakeTimeProvider(Morning));
+        var client = factory.CreateClient();
+        using var analysedWith = Engine();
+        using var other = new FakeEngine { Name = "Other Engine" };
+        var analysing = await client.AddEngineAsync("Analysing", analysedWith);
+        await client.SelectEnginesAsync(interactive: 1, analysis: analysing.Id);
+        await AnalysedScholarsMateAsync(client, "black");
+        await client.UseAsync(other);
+        await client.SelectEnginesAsync(interactive: 1, analysis: 1); // Game Analysis moves on to another Engine
+        var itemId = (await client.NextMistakeAsync())!.ItemId;
+        var searchesBefore = analysedWith.Commands().Count(c => c.StartsWith("go", StringComparison.Ordinal));
+
+        var qe7 = await client.AnswerMistakeAsync(itemId, "Qe7");
+
+        Assert.True(qe7.Correct); // the analysing Engine's verdict; the other one has no script for it
+        Assert.Equal(searchesBefore + 1, analysedWith.Commands().Count(c => c.StartsWith("go", StringComparison.Ordinal)));
+        Assert.DoesNotContain(other.Commands(), c => c.StartsWith("go", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Editing_a_Game_before_a_mistake_drops_it_until_the_Game_is_analysed_again_and_editing_after_keeps_it()
     {
         using var factory = new CollectionFactory(clock: new FakeTimeProvider(Morning));

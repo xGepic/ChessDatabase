@@ -30,6 +30,11 @@ public sealed class UciEngine : IAsyncDisposable
 
     public int ProcessId => _process.Id;
 
+    /// <summary>The options the Engine announced in its handshake ("option name ..."). Others are never sent.</summary>
+    public IReadOnlySet<string> AnnouncedOptions => _announcedOptions;
+
+    private readonly HashSet<string> _announcedOptions = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Raised once when the engine is disposed.</summary>
     public event Action<UciEngine>? Disposed;
 
@@ -66,6 +71,7 @@ public sealed class UciEngine : IAsyncDisposable
             await engine.ReadUntilAsync(line =>
             {
                 if (line.StartsWith("id name ", StringComparison.Ordinal)) engine.Name = line["id name ".Length..].Trim();
+                else if (OptionName(line) is { } option) engine._announcedOptions.Add(option);
                 return line == "uciok";
             }, timeout.Token);
             return engine;
@@ -78,6 +84,15 @@ public sealed class UciEngine : IAsyncDisposable
     }
 
     public const string NotAnEngine = "That program did not answer as a UCI engine.";
+
+    /// <summary>The name in "option name {name} type ...", which may contain spaces.</summary>
+    private static string? OptionName(string line)
+    {
+        const string prefix = "option name ";
+        if (!line.StartsWith(prefix, StringComparison.Ordinal)) return null;
+        var end = line.IndexOf(" type ", prefix.Length, StringComparison.Ordinal);
+        return (end < 0 ? line[prefix.Length..] : line[prefix.Length..end]).Trim();
+    }
 
     public void Send(string command)
     {
@@ -92,14 +107,30 @@ public sealed class UciEngine : IAsyncDisposable
     public void SetPosition(IReadOnlyList<string> moves) =>
         Send(moves.Count == 0 ? "position startpos" : $"position startpos moves {string.Join(' ', moves)}");
 
-    /// <summary>Sets the options, then waits until the Engine is ready (a large hash can take a while).</summary>
+    /// <summary>
+    /// Sets the options the Engine announced (others are skipped: Lc0 has no Hash, for one), then
+    /// waits until it is ready. A large hash or a neural network can take a while to load.
+    /// </summary>
+    /// <exception cref="EngineException">The Engine quit or did not get ready within a minute.</exception>
     public async Task ConfigureAsync(IEnumerable<(string Name, object Value)> options, CancellationToken cancellationToken = default)
     {
-        foreach (var (name, value) in options) Send($"setoption name {name} value {value}");
-        Send("isready");
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromMinutes(1));
-        await ReadUntilAsync(line => line == "readyok", timeout.Token);
+        try
+        {
+            foreach (var (name, value) in options)
+                if (_announcedOptions.Contains(name)) Send($"setoption name {name} value {value}");
+            Send("isready");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromMinutes(1));
+            await ReadUntilAsync(line => line == "readyok", timeout.Token);
+        }
+        catch (Exception e) when (e is ChannelClosedException or IOException)
+        {
+            throw new EngineException("stopped while loading its options", e);
+        }
+        catch (OperationCanceledException e) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new EngineException("did not get ready within a minute", e);
+        }
     }
 
     /// <summary>The next output line. Throws ChannelClosedException once the process has ended.</summary>

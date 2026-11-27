@@ -10,6 +10,8 @@ using ChessDatabase.Rules;
 // {
 //   "name": "Fake Engine 1.0",
 //   "lineDelayMs": 0,                      // pause before each info line
+//   "options": ["Threads", "Hash", "MultiPV"],   // the UCI options it announces (this is the default)
+//   "quitOnIsReady": false,                // exit instead of answering "isready" (like Lc0 with a bad weights file)
 //   "positions": {
 //     "<FEN, first four fields>": {
 //       "infos": ["depth 1 multipv 1 score cp 20 pv e2e4 e7e5", ...],   // text after "info "
@@ -55,12 +57,11 @@ while (Console.ReadLine() is { } command)
         case "uci":
             Send($"id name {script.Name}");
             Send("id author ChessDatabase tests");
-            Send("option name Threads type spin default 1 min 1 max 1024");
-            Send("option name Hash type spin default 16 min 1 max 33554432");
-            Send("option name MultiPV type spin default 1 min 1 max 500");
+            foreach (var option in script.Options) Send($"option name {option} type string default <empty>");
             Send("uciok");
             break;
         case "isready":
+            if (script.QuitOnIsReady) return;
             Send("readyok");
             break;
         case "position":
@@ -121,6 +122,8 @@ sealed class Script
 {
     public string Name { get; init; } = "Fake Engine 1.0";
     public int LineDelayMs { get; init; }
+    public List<string> Options { get; init; } = ["Threads", "Hash", "MultiPV"];
+    public bool QuitOnIsReady { get; init; }
     public Dictionary<string, Answer> Positions { get; init; } = [];
 
     public Answer AnswerFor(Position position)

@@ -38,9 +38,10 @@ public sealed record MistakeAnswerDto(
 /// <param name="Before">The position the move was played in.</param>
 /// <param name="Evaluation">The Engine's evaluation of <paramref name="Before"/> (from the side to move) and its best line.</param>
 /// <param name="MsPerMove">The time the Engine had per position in that analysis.</param>
+/// <param name="EngineId">The Engine definition that analysed it; answers are judged by the same one.</param>
 public sealed record AnalysedMistake(
     int GameId, int Ply, IReadOnlyList<string> MainLine, Position Before, string PlayedSan,
-    MoveClassification Classification, StoredEvaluation Evaluation, int MsPerMove)
+    MoveClassification Classification, StoredEvaluation Evaluation, int MsPerMove, int? EngineId)
 {
     /// <summary>The Game and the position (as the position index keys it): the same position after re-running Game Analysis is the same item.</summary>
     public string Key => $"{GameId}:{PositionIndex.Key(Before)}";
@@ -81,7 +82,7 @@ public sealed class AnalysedMistakes
             if (assessment.Moves[i].Classification is MoveClassification.Mistake or MoveClassification.Blunder)
                 mistakes.Add(new AnalysedMistake(
                     record.GameId, i + 1, record.MainLine, position, position.ToSan(move),
-                    assessment.Moves[i].Classification!.Value, record.Positions[i], record.MsPerMove));
+                    assessment.Moves[i].Classification!.Value, record.Positions[i], record.MsPerMove, record.EngineId));
             position = position.Play(move);
         }
         return mistakes;
@@ -161,7 +162,7 @@ public static class MistakeTrainingEndpoints
         if (mistake.MainLine[mistake.Ply - 1] == uci) return false;
 
         var after = await analyzer.EvaluateOnceAsync(
-            [.. mistake.MainLine.Take(mistake.Ply - 1), uci], mistake.Before.Play(move), mistake.MsPerMove, cancellationToken);
+            [.. mistake.MainLine.Take(mistake.Ply - 1), uci], mistake.Before.Play(move), mistake.MsPerMove, mistake.EngineId, cancellationToken);
         var mover = mistake.Mover;
         double ForMover(double whitePercent) => mover == Color.White ? whitePercent : 100 - whitePercent;
         var before = ForMover(WinningChances.WhitePercent(new EngineScore(mistake.Evaluation.Cp, mistake.Evaluation.Mate), mover));

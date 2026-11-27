@@ -29,7 +29,7 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
         using (var scope = scopes.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
-            definition = await db.Engines.StockfishAsync(cancellationToken);
+            definition = await db.AnalysisEngineAsync(cancellationToken);
             var nodes = await db.MoveNodes.AsNoTracking().Where(n => n.GameId == gameId).ToListAsync(cancellationToken);
             mainLine = [.. new MoveTree(nodes).MainLine().Select(n => n.Uci)];
         }
@@ -61,6 +61,7 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
             {
                 GameId = gameId,
                 EngineName = engineName,
+                EngineId = definition.Id,
                 Threads = definition.Threads,
                 HashMb = definition.HashMb,
                 MsPerMove = time,
@@ -78,20 +79,28 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
     /// <paramref name="position"/>, reached by <paramref name="moves"/> (UCI) from the start.
     /// </summary>
     /// <param name="msPerMove">The time to think: pass an Engine Assessment's own, to compare with its evaluations.</param>
+    /// <param name="engineId">
+    /// The Engine to ask: pass the one that produced the Engine Assessment, as Engines score on
+    /// different scales. When it is null or has been removed, the Game Analysis engine is asked.
+    /// </param>
     /// <exception cref="EngineException">The Engine could not be started, crashed or stopped answering.</exception>
     public async Task<StoredEvaluation> EvaluateOnceAsync(
-        IReadOnlyList<string> moves, Position position, int msPerMove, CancellationToken cancellationToken = default)
+        IReadOnlyList<string> moves, Position position, int msPerMove, int? engineId, CancellationToken cancellationToken = default)
     {
         EngineRecord definition;
         using (var scope = scopes.CreateScope())
-            definition = await scope.ServiceProvider.GetRequiredService<CollectionDbContext>().Engines.StockfishAsync(cancellationToken);
+        {
+            var db = scope.ServiceProvider.GetRequiredService<CollectionDbContext>();
+            definition = (engineId is { } id ? await db.EngineAsync(id, cancellationToken) : null)
+                ?? await db.AnalysisEngineAsync(cancellationToken);
+        }
         await using var engine = await StartEngineAsync(definition, cancellationToken);
         return await EvaluateAsync(engine, moves, position, msPerMove, cancellationToken);
     }
 
     private async Task<UciEngine> StartEngineAsync(EngineRecord definition, CancellationToken cancellationToken)
     {
-        var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken);
+        var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken: cancellationToken);
         engine.Send("ucinewgame");
         return engine;
     }
