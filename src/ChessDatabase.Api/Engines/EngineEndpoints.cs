@@ -128,7 +128,9 @@ public static class EngineEndpoints
         var errors = new Dictionary<string, string[]>();
         var name = body.Name?.Trim() ?? engine.Name;
         if (name.Length is 0 or > 100) errors["name"] = ["An Engine name has 1 to 100 characters."];
-        else if (await db.Engines.AnyAsync(e => e.Id != engine.Id && e.Name.ToLower() == name.ToLower()))
+        // Compared in memory (there are only a few Engines): SQL can't take a StringComparison.
+        else if ((await db.Engines.Where(e => e.Id != engine.Id).Select(e => e.Name).ToListAsync())
+                 .Any(other => string.Equals(other, name, StringComparison.CurrentCultureIgnoreCase)))
             errors["name"] = [$"There is already an Engine called {name}."];
         if (body.Threads is < 1 or > MaxThreads) errors["threads"] = [$"Threads run from 1 to {MaxThreads}."];
         if (body.HashMb is < 1 or > MaxHashMb) errors["hashMb"] = [$"Hash runs from 1 to {MaxHashMb} MB."];
@@ -184,7 +186,7 @@ public static class EngineEndpoints
     }
 
     /// <summary>Null when the options can be sent as they are, otherwise why not.</summary>
-    private static string? OptionsProblem(IReadOnlyList<UciOption> options)
+    private static string? OptionsProblem(List<UciOption> options)
     {
         if (options.Count > MaxOptions) return $"An Engine takes at most {MaxOptions} further options.";
         foreach (var (name, value) in options)

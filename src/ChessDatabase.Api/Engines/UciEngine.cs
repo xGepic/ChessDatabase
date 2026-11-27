@@ -33,7 +33,7 @@ public sealed class UciEngine : IAsyncDisposable
     /// <summary>The options the Engine announced in its handshake ("option name ..."). Others are never sent.</summary>
     public IReadOnlySet<string> AnnouncedOptions => _announcedOptions;
 
-    private readonly HashSet<string> _announcedOptions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _announcedOptions = [with(StringComparer.OrdinalIgnoreCase)];
 
     /// <summary>Raised once when the engine is disposed.</summary>
     public event Action<UciEngine>? Disposed;
