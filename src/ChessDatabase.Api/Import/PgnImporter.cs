@@ -1,6 +1,5 @@
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
-using ChessDatabase.Api.Openings;
 using ChessDatabase.Api.Pgn;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +40,7 @@ public abstract record ResolveOutcome
 /// review list instead when it has no result, no side matches the Owner, or its Opponent only
 /// resembles an existing Player; it is reported as a duplicate when the Game is already there.
 /// </summary>
-public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openings)
+public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
 {
     private List<PlayerRecord> _players = [];
     private List<PersonName> _ownerNames = [];
@@ -207,7 +206,7 @@ public sealed class PgnImporter(CollectionDbContext db, OpeningClassifier openin
             CreatedAt = DateTime.UtcNow,
             MoveNodes = tree.Nodes,
         };
-        MainLine.Apply(game, tree.MainLineUcis, openings);
+        gameMoves.DeriveForNew(game, tree.MainLineUcis);
         db.Games.Add(game);
         await db.SaveChangesAsync();
         return game;

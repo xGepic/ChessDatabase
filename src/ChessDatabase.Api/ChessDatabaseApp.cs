@@ -29,6 +29,7 @@ public static class ChessDatabaseApp
         builder.Services.AddLocalOnly();
         builder.Services.AddCollection();
         builder.Services.AddSingleton<OpeningClassifier>();
+        builder.Services.AddScoped<GameMoves>();
         builder.Services.AddScoped<PgnImporter>();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<CollectionBackup>();
@@ -68,7 +69,7 @@ public static class ChessDatabaseApp
     {
         var app = builder.Build();
         app.Services.MigrateCollection();
-        Games.PositionIndex.Backfill(app.Services);
+        GameMoves.DeriveMissing(app.Services);
 
         app.UseLocalOnly();
         app.UseDefaultFiles();

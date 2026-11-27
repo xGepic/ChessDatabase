@@ -49,7 +49,7 @@ public static class RepertoireEndpoints
                 return Invalid("parentId", "That move is not part of this Repertoire.");
             var moves = body.Moves ?? [];
             if (moves.Count == 0) return Invalid("moves", "Give at least one move.");
-            if (MoveTreeEndpoints.ReadLine(tree.PositionAfter(body.ParentId), moves, out var line) is { } illegal)
+            if (MoveReading.ReadLine(tree.PositionAfter(body.ParentId), moves, out var line) is { } illegal)
                 return Invalid("moves", $"'{illegal}' is not a legal move here.");
 
             var (last, added) = tree.AddLine(body.ParentId, line, m =>

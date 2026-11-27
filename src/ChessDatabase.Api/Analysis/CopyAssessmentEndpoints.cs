@@ -1,7 +1,6 @@
 using ChessDatabase.Api.Assessment;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Games;
-using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Analysis;
@@ -19,39 +18,38 @@ public static class CopyAssessmentEndpoints
 {
     public static void MapCopyAssessmentEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/games/{id:int}/assessment/moves/{ply:int}/copy", async (int id, int ply, CollectionDbContext db) =>
+        app.MapPost("/api/games/{id:int}/assessment/moves/{ply:int}/copy", async (int id, int ply, CollectionDbContext db, GameMoves gameMoves) =>
         {
             if (await AssessmentQueries.LoadAsync(db, id) is not { } assessment) return Results.NotFound();
             if (assessment.Moves.FirstOrDefault(m => m.Ply == ply) is not { } move) return Results.NotFound();
             if (move.Classification is null) return Invalid("ply", "The Engine had nothing against that move.");
             if (move.NodeId is null) return Invalid("ply", "That move has changed since the analysis. Analyse the Game again.");
 
-            var copied = await CopyAsync(db, id, [move]);
+            var copied = await CopyAsync(gameMoves, id, [move]);
             return Results.Ok(new CopyResultDto(copied, (await GameQueries.LoadGameDtoAsync(db, id))!));
         });
 
         // "Copy all mistakes and blunders": inaccuracies stay out.
-        app.MapPost("/api/games/{id:int}/assessment/copy", async (int id, CollectionDbContext db) =>
+        app.MapPost("/api/games/{id:int}/assessment/copy", async (int id, CollectionDbContext db, GameMoves gameMoves) =>
         {
             if (await AssessmentQueries.LoadAsync(db, id) is not { } assessment) return Results.NotFound();
             var moves = assessment.Moves
                 .Where(m => m.NodeId is not null && m.Classification is MoveClassification.Mistake or MoveClassification.Blunder)
                 .ToList();
-            var copied = await CopyAsync(db, id, moves);
+            var copied = await CopyAsync(gameMoves, id, moves);
             return Results.Ok(new CopyResultDto(copied, (await GameQueries.LoadGameDtoAsync(db, id))!));
         });
     }
 
     /// <summary>Copies the moves and returns how many of them changed anything.</summary>
-    private static async Task<int> CopyAsync(CollectionDbContext db, int gameId, List<AssessedMoveDto> moves)
+    private static async Task<int> CopyAsync(GameMoves gameMoves, int gameId, List<AssessedMoveDto> moves)
     {
         if (moves.Count == 0) return 0;
-        var game = await db.Games.Include(g => g.MoveNodes).SingleAsync(g => g.Id == gameId);
-        var tree = new MoveTree(game.MoveNodes);
+        await using var edit = (await gameMoves.OpenAsync(gameId))!;
         var copied = 0;
         foreach (var move in moves)
         {
-            var node = tree.Node(move.NodeId!.Value);
+            if (edit.Node(move.NodeId!.Value) is not { } node) continue; // changed meanwhile
             var changed = false;
             if (!node.Nags.Any(Nags.IsMoveSymbol))
             {
@@ -59,10 +57,10 @@ public static class CopyAssessmentEndpoints
                 changed = true;
             }
             if (move.BestLineUci.Count > 0 && move.BestLineUci[0] != node.Uci)
-                changed |= MoveTreeEndpoints.AddLine(game, tree, node.ParentId, [.. move.BestLineUci.Zip(move.BestLineSan)]).Added;
+                changed |= (await edit.AddLineAsync(node.ParentId, [.. move.BestLineUci])).Changed;
             if (changed) copied++;
         }
-        await db.SaveChangesAsync();
+        await edit.SaveAsync();
         return copied;
     }
 

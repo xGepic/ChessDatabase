@@ -37,6 +37,9 @@ The standard text format for chess games. Used to bring Games in and out of the 
 
 ## Moves and commentary
 
+**Main line**
+The moves actually played in a Game: the first continuation at every point of its moves. The ECO code, the opening name and the position index (what Position Search and the Opening Tree look up) are derived from it, and follow it whenever the moves change.
+
 **Variation**
 An alternative sequence of moves branching off the moves actually played. Variations can contain further Variations.
 

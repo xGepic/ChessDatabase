@@ -127,7 +127,7 @@ public static class MistakeTrainingEndpoints
             var (items, mistakes) = await SyncAsync(db, analysed, clock);
             if (items.FirstOrDefault(i => i.Id == itemId) is not { } item) return Results.NotFound();
             var mistake = mistakes[item.Key];
-            if (!MoveTreeEndpoints.TryReadMove(mistake.Before, body.Move, out var move))
+            if (!MoveReading.TryReadMove(mistake.Before, body.Move, out var move))
                 return Invalid("move", $"'{body.Move}' is not a legal move here.");
 
             bool right;

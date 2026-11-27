@@ -1,127 +1,66 @@
 using ChessDatabase.Api.Collection;
-using ChessDatabase.Api.Openings;
-using ChessDatabase.Rules;
-using Microsoft.EntityFrameworkCore;
 using static ChessDatabase.Api.ApiResults;
 
 namespace ChessDatabase.Api.Games;
 
-/// <summary>Operations on a Game's move tree. Every change is checked by Chess Rules and saved at once.</summary>
+/// <summary>The HTTP side of changing a Game's moves; <see cref="GameMoves"/> does the work.</summary>
 public static class MoveTreeEndpoints
 {
     public static void MapMoveTreeEndpoints(this RouteGroupBuilder games)
     {
-        games.MapPost("/{id:int}/moves", (int id, AddMoveRequest body, CollectionDbContext db, OpeningClassifier openings) =>
-            AddLineAsync(db, openings, id, body.ParentId, [body.Move], "move"));
+        games.MapPost("/{id:int}/moves", (int id, AddMoveRequest body, GameMoves moves, CollectionDbContext db) =>
+            AddLineAsync(moves, db, id, body.ParentId, [body.Move], "move"));
 
         // A whole line at once, e.g. an Engine line the Owner clicked.
-        games.MapPost("/{id:int}/moves/line", (int id, AddLineRequest body, CollectionDbContext db, OpeningClassifier openings) =>
-            AddLineAsync(db, openings, id, body.ParentId, body.Moves ?? [], "moves"));
+        games.MapPost("/{id:int}/moves/line", (int id, AddLineRequest body, GameMoves moves, CollectionDbContext db) =>
+            AddLineAsync(moves, db, id, body.ParentId, body.Moves ?? [], "moves"));
 
-        games.MapPost("/{id:int}/moves/{nodeId:int}/promote", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
-        {
-            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
-            tree.PromoteToMainLine(nodeId);
-            await db.SaveChangesAsync();
-            await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
-        });
+        games.MapPost("/{id:int}/moves/{nodeId:int}/promote", (int id, int nodeId, GameMoves moves, CollectionDbContext db) =>
+            ChangeAsync(moves, db, id, edit => edit.PromoteAsync(nodeId)));
 
-        games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
-        {
-            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
-            if (tree.VariationStart(nodeId) is not { } start)
-                return Invalid("nodeId", "That move is on the main line, not in a Variation.");
-            await DeleteSubtreeAsync(db, tree, start);
-            await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
-        });
+        games.MapDelete("/{id:int}/moves/{nodeId:int}/variation", (int id, int nodeId, GameMoves moves, CollectionDbContext db) =>
+            ChangeAsync(moves, db, id, edit => edit.DeleteVariationAsync(nodeId)));
 
-        // Delete from here: the move and everything after it. If it was the main continuation, the
-        // next Variation at that point (if any) becomes the main line.
-        games.MapDelete("/{id:int}/moves/{nodeId:int}", async (int id, int nodeId, CollectionDbContext db, OpeningClassifier openings) =>
-        {
-            if (await LoadTreeAsync(db, id, nodeId) is not { } tree) return Results.NotFound();
-            await DeleteSubtreeAsync(db, tree, nodeId);
-            await MainLine.RefreshAsync(db, openings, id);
-            return Results.Ok(await GameQueries.LoadGameDtoAsync(db, id));
-        });
+        // Delete from here: the move and everything after it.
+        games.MapDelete("/{id:int}/moves/{nodeId:int}", (int id, int nodeId, GameMoves moves, CollectionDbContext db) =>
+            ChangeAsync(moves, db, id, edit => edit.DeleteFromAsync(nodeId)));
     }
 
-    /// <summary>
-    /// Plays the moves one after another from the parent. Where a move is already recorded there,
-    /// it just moves along it; the first new move starts a new line (a Variation if the position
-    /// already had a continuation). Every move is checked before anything is saved.
-    /// </summary>
+    /// <summary>Plays a line from the parent; answers with its last move and the Game.</summary>
     private static async Task<IResult> AddLineAsync(
-        CollectionDbContext db, OpeningClassifier openings, int gameId, int? parentId, IReadOnlyList<string?> moves, string field)
+        GameMoves moves, CollectionDbContext db, int gameId, int? parentId, IReadOnlyList<string?> line, string field)
     {
-        var game = await db.Games.Include(g => g.MoveNodes).SingleOrDefaultAsync(g => g.Id == gameId);
-        if (game is null) return Results.NotFound();
-        var tree = new MoveTree(game.MoveNodes);
-        if (parentId is { } id && !tree.Contains(id))
-            return Invalid("parentId", "That move is not part of this Game.");
-        if (moves.Count == 0) return Invalid(field, "Give at least one move.");
-
-        if (ReadLine(tree.PositionAfter(parentId), moves, out var line) is { } illegal)
-            return Invalid(field, $"'{illegal}' is not a legal move here.");
-
-        var (last, added) = AddLine(game, tree, parentId, line);
-
-        if (added)
-        {
-            await db.SaveChangesAsync();
-            await MainLine.RefreshAsync(db, openings, gameId);
-        }
-        return Results.Ok(new AddMoveResponse(last.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
+        await using var edit = await moves.OpenAsync(gameId);
+        if (edit is null) return Results.NotFound();
+        var change = await edit.AddLineAsync(parentId, line);
+        if (change.Problem is { } problem)
+            return problem == MoveChangeProblem.NotInGame
+                ? Invalid("parentId", "That move is not part of this Game.")
+                : Invalid(field, Message(change));
+        await edit.SaveAsync();
+        return Results.Ok(new AddMoveResponse(change.Last!.Id, (await GameQueries.LoadGameDtoAsync(db, gameId))!));
     }
 
-    /// <summary>Adds checked moves to a Game's tracked nodes through <see cref="MoveTree{TNode}.AddLine"/>. Nothing is saved.</summary>
-    public static (MoveNodeRecord Last, bool Added) AddLine(
-        GameRecord game, MoveTree tree, int? parentId, IReadOnlyList<(string Uci, string San)> line) =>
-        tree.AddLine(parentId, line, m =>
-        {
-            var node = new MoveNodeRecord { GameId = game.Id, ParentId = m.ParentId, Parent = m.Parent, Order = m.Order, Uci = m.Uci, San = m.San };
-            game.MoveNodes.Add(node);
-            return node;
-        });
-
-    /// <summary>Loads the Game's tree (tracked, so order changes save), or null if the Game or node is not there.</summary>
-    private static async Task<MoveTree?> LoadTreeAsync(CollectionDbContext db, int gameId, int nodeId)
+    /// <summary>A change to one move of the Game; a move that isn't there is not found.</summary>
+    private static async Task<IResult> ChangeAsync(
+        GameMoves moves, CollectionDbContext db, int gameId, Func<GameMovesEdit, Task<MoveChange>> change)
     {
-        var nodes = await db.MoveNodes.Where(n => n.GameId == gameId).ToListAsync();
-        var tree = new MoveTree(nodes);
-        return tree.Contains(nodeId) ? tree : null;
+        await using var edit = await moves.OpenAsync(gameId);
+        if (edit is null) return Results.NotFound();
+        var result = await change(edit);
+        if (result.Problem is { } problem)
+            return problem == MoveChangeProblem.NotInGame ? Results.NotFound() : Invalid("nodeId", Message(result));
+        await edit.SaveAsync();
+        return Results.Ok(await GameQueries.LoadGameDtoAsync(db, gameId));
     }
 
-    /// <summary>Deletes through the change tracker, so the removed nodes don't linger in this context.</summary>
-    private static async Task DeleteSubtreeAsync(CollectionDbContext db, MoveTree tree, int nodeId)
+    /// <summary>What the Owner is told when a change could not be made.</summary>
+    private static string Message(MoveChange change) => change.Problem switch
     {
-        db.MoveNodes.RemoveRange(tree.Subtree(nodeId).Select(id => tree.Node(id)));
-        await db.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Reads moves typed or sent one after another from a position into checked (UCI, SAN) pairs.
-    /// Returns the first move that is not legal where it is played, or null when all are.
-    /// </summary>
-    public static string? ReadLine(Position position, IReadOnlyList<string?> moves, out List<(string Uci, string San)> line)
-    {
-        line = [];
-        foreach (var text in moves)
-        {
-            if (!TryReadMove(position, text, out var move)) return text ?? "";
-            line.Add((move.ToUci(), position.ToSan(move)));
-            position = position.Play(move);
-        }
-        return null;
-    }
-
-    /// <summary>A move typed or sent as UCI or SAN (German piece letters too), if it is legal here.</summary>
-    public static bool TryReadMove(Position position, string? text, out Move move)
-    {
-        text = text?.Trim();
-        if (Move.TryParseUci(text, out move) && position.IsLegal(move)) return true;
-        return position.TryParseSan(text, out move);
-    }
+        MoveChangeProblem.NotInGame => "That move is not part of this Game.",
+        MoveChangeProblem.NoMoves => "Give at least one move.",
+        MoveChangeProblem.IllegalMove => $"'{change.IllegalMove}' is not a legal move here.",
+        MoveChangeProblem.OnMainLine => "That move is on the main line, not in a Variation.",
+        _ => throw new ArgumentOutOfRangeException(nameof(change)),
+    };
 }

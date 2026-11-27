@@ -74,7 +74,7 @@ public static class RepertoireTrainingEndpoints
             var (items, repertoires) = await SyncAsync(db, clock);
             if (items.FirstOrDefault(i => i.Id == itemId) is not { } item || Locate(repertoires, item) is not { } found) return Results.NotFound();
             var position = found.Position;
-            if (!MoveTreeEndpoints.TryReadMove(position.Position, body.Move, out var move))
+            if (!MoveReading.TryReadMove(position.Position, body.Move, out var move))
                 return Invalid("move", $"'{body.Move}' is not a legal move here.");
 
             var right = position.Moves.Any(m => m.Uci == move.ToUci());
