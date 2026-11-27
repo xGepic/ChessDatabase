@@ -31,11 +31,15 @@ const OTHER_TEMPLATE: EngineForm = { ...LC0_TEMPLATE, name: '', threads: 4, hash
 
       <label [for]="id('path')">Program</label>
       <div>
-        <input [id]="id('path')" data-testid="engine-path" [value]="draft().path" (input)="set('path', value($event))"
-               placeholder="e.g. C:\\Tools\\stockfish\\stockfish.exe" />
+        <div class="path-row">
+          <input [id]="id('path')" data-testid="engine-path" [value]="draft().path" (input)="set('path', value($event))"
+                 placeholder="e.g. C:\\Tools\\stockfish\\stockfish.exe" />
+          <button type="button" data-testid="engine-browse" (click)="browse()" [disabled]="browsing() || saving()"
+                  title="Find the program in a Windows dialog">Browse…</button>
+        </div>
         <p class="hint">
           @if (engine()?.reportedName; as reported) { Found <strong data-testid="engine-name">{{ reported }}</strong>. }
-          The engine's .exe. Replace it any time to update the engine.
+          The engine's .exe: Browse… finds it, or paste its path. Replace it any time to update the engine.
         </p>
       </div>
 
@@ -112,6 +116,7 @@ export class EngineFormComponent {
 
   protected readonly analysisSeconds = ANALYSIS_SECONDS;
   protected readonly saving = signal(false);
+  protected readonly browsing = signal(false);
   protected readonly message = signal('');
   private readonly edits = signal<Partial<EngineForm>>({});
   protected readonly draft = computed<EngineForm>(() => ({ ...(this.engine() ?? this.template()), ...this.edits() }));
@@ -146,6 +151,25 @@ export class EngineFormComponent {
   }
   protected removeOption(index: number) {
     this.set('options', this.draft().options.filter((_, i) => i !== index));
+  }
+
+  /** Lets the Owner pick the program in the Windows dialog, then saves at once, which checks it. */
+  protected browse() {
+    this.browsing.set(true);
+    this.message.set('Choose the program in the window that opened…');
+    this.api.browseProgram(this.draft().name, this.draft().path).subscribe({
+      next: ({ path }) => {
+        this.browsing.set(false);
+        this.message.set('');
+        if (!path) return;
+        this.set('path', path);
+        this.save();
+      },
+      error: (e) => {
+        this.browsing.set(false);
+        this.message.set(problemMessage(e));
+      },
+    });
   }
 
   protected save() {

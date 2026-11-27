@@ -26,6 +26,13 @@ public sealed record SaveEngineRequest(
 /// <summary>Which Engine definition each use runs.</summary>
 public sealed record EngineSelectionDto(int InteractiveEngineId, int AnalysisEngineId);
 
+/// <param name="Name">The Engine's name, for the dialog's title.</param>
+/// <param name="CurrentPath">The program in the form now, if any: the dialog opens in its folder.</param>
+public sealed record BrowseProgramRequest(string? Name, string? CurrentPath);
+
+/// <param name="Path">The chosen program; null when the Owner cancelled.</param>
+public sealed record PickedProgramDto(string? Path);
+
 public static class EngineEndpoints
 {
     public const int MaxThreads = 1024;
@@ -72,6 +79,28 @@ public static class EngineEndpoints
             db.Engines.Remove(engine);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        // POST, so only the app's own pages can open a dialog (LocalOnly refuses other sites' posts).
+        engines.MapPost("/browse", async (BrowseProgramRequest body, IFilePicker picker, FileDialogGate dialogs, CancellationToken cancellationToken) =>
+        {
+            if (!await dialogs.Gate.WaitAsync(0, cancellationToken))
+                return Results.Problem("A file dialog is already open.", statusCode: StatusCodes.Status409Conflict);
+            try
+            {
+                var name = string.IsNullOrWhiteSpace(body.Name) ? "engine" : body.Name.Trim();
+                var request = new FilePickRequest(
+                    $"Choose the {name} program", "Programs (*.exe)|*.exe|All files (*.*)|*.*", InitialFolder(body.CurrentPath));
+                return Results.Ok(new PickedProgramDto(await picker.PickFileAsync(request, cancellationToken)));
+            }
+            catch (InvalidOperationException e)
+            {
+                return Invalid("path", e.Message);
+            }
+            finally
+            {
+                dialogs.Gate.Release();
+            }
         });
 
         engines.MapGet("/selection", async (CollectionDbContext db) =>
@@ -143,6 +172,15 @@ public static class EngineEndpoints
         engine.ReportedName = reportedName;
         engine.Options = options;
         return null;
+    }
+
+    /// <summary>The current program's folder when there is one, otherwise Downloads, where a new engine usually lands.</summary>
+    private static string InitialFolder(string? currentPath)
+    {
+        var path = (currentPath ?? "").Trim().Trim('"').Trim();
+        if (path.Length > 0 && Path.IsPathFullyQualified(path) && Path.GetDirectoryName(path) is { } folder && Directory.Exists(folder))
+            return folder;
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
 
     /// <summary>Null when the options can be sent as they are, otherwise why not.</summary>

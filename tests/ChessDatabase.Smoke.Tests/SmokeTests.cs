@@ -375,6 +375,19 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Browse_for_the_engine_program_instead_of_typing_its_path()
+    {
+        _app.FilePicker.Answer = Path.Combine(AppContext.BaseDirectory, "FakeEngine.exe");
+        await Page.GotoAsync($"{_app.BaseUrl}/settings");
+        var stockfish = Page.GetByTestId("engine-form-Stockfish");
+
+        await stockfish.GetByTestId("engine-browse").ClickAsync();
+
+        await Expect(stockfish.GetByTestId("engine-status")).ToHaveTextAsync("Saved. Found Fake Engine 1.0.");
+        await Expect(stockfish.GetByTestId("engine-path")).ToHaveValueAsync(_app.FilePicker.Answer);
+    }
+
+    [Fact]
     public async Task Add_lc0_in_settings_and_use_it_for_game_analysis()
     {
         await Page.GotoAsync($"{_app.BaseUrl}/settings");

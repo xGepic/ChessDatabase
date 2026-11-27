@@ -786,6 +786,13 @@ export class Api {
   removeEngine(id: number): Observable<void> {
     return this.http.delete<void>(`/api/engines/${id}`);
   }
+  /**
+   * Opens the Windows "Open" dialog on this PC (the backend shows it, as a browser can't say where a
+   * file is) and answers with the chosen program's path; null when cancelled.
+   */
+  browseProgram(name: string, currentPath: string): Observable<{ path: string | null }> {
+    return this.http.post<{ path: string | null }>('/api/engines/browse', { name, currentPath });
+  }
   getEngineSelection(): Observable<EngineSelection> {
     return this.http.get<EngineSelection>('/api/engines/selection');
   }

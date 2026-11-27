@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using ChessDatabase.Api;
+using ChessDatabase.Api.Engines;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -18,6 +19,9 @@ namespace ChessDatabase.Smoke.Tests;
 /// </summary>
 public sealed class SmokeApp : IAsyncLifetime
 {
+    /// <summary>Answers "Browse…" in place of the Windows "Open" dialog.</summary>
+    public ScriptedFilePicker FilePicker { get; } = new();
+
     private readonly string _directory =
         Path.Combine(Path.GetTempPath(), "ChessDatabaseSmoke", Guid.NewGuid().ToString("N"));
     private WebApplication? _app;
@@ -54,6 +58,7 @@ public sealed class SmokeApp : IAsyncLifetime
             WebRootPath = uiRoot,
         });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Services.AddSingleton<IFilePicker>(FilePicker); // never a real Windows dialog in tests
         _app = ChessDatabaseApp.Build(builder);
         await _app.StartAsync();
         BaseUrl = _app.Services.GetRequiredService<IServer>()
@@ -168,4 +173,12 @@ public sealed class SmokeApp : IAsyncLifetime
             dir = dir.Parent;
         return dir?.FullName ?? throw new InvalidOperationException("Repository root not found.");
     }
+}
+
+/// <summary>A file dialog that "chooses" whatever the test set, or cancels when nothing is set.</summary>
+public sealed class ScriptedFilePicker : IFilePicker
+{
+    public string? Answer { get; set; }
+
+    public Task<string?> PickFileAsync(FilePickRequest request, CancellationToken cancellationToken) => Task.FromResult(Answer);
 }

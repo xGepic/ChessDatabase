@@ -34,6 +34,8 @@ public static class ChessDatabaseApp
         builder.Services.AddSingleton<CollectionBackup>();
         builder.Services.AddHostedService<DailyBackups>();
         builder.Services.AddSingleton<EngineHost>();
+        builder.Services.AddSingleton<IFilePicker, WindowsFilePicker>();
+        builder.Services.AddSingleton<FileDialogGate>();
         builder.Services.AddSingleton<InteractiveAnalysis>();
         builder.Services.AddSignalR();
         builder.Services.AddSingleton<MastersState>();
