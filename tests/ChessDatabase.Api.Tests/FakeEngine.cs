@@ -64,7 +64,7 @@ public sealed class FakeEngine : IDisposable
 
 public sealed record AnalysisLineDto(int Rank, int Depth, int? Cp, int? Mate, double WhitePercent, List<string> San, List<string> Uci);
 
-public sealed record AnalysisUpdateDto(int RequestId, List<AnalysisLineDto> Lines, int EngineId);
+public sealed record AnalysisUpdateDto(int RequestId, List<AnalysisLineDto> Lines);
 
 public static class EngineTestExtensions
 {
@@ -101,31 +101,22 @@ public static class EngineTestExtensions
 public sealed class AnalysisClient : IAsyncDisposable
 {
     private readonly List<AnalysisUpdateDto> _updates = [];
-    private readonly List<(string Message, int EngineId)> _errors = [];
+    private readonly List<string> _errors = [];
 
     public AnalysisClient(HubConnection connection)
     {
         Connection = connection;
         connection.On<AnalysisUpdateDto>("lines", u => { lock (_updates) _updates.Add(u); });
-        connection.On<string, int>("engineError", (e, engineId) => { lock (_errors) _errors.Add((e, engineId)); });
+        connection.On<string>("engineError", e => { lock (_errors) _errors.Add(e); });
     }
 
     public HubConnection Connection { get; }
 
     public IReadOnlyList<AnalysisUpdateDto> Updates { get { lock (_updates) return [.. _updates]; } }
 
-    public IReadOnlyList<string> Errors { get { lock (_errors) return [.. _errors.Select(e => e.Message)]; } }
+    public IReadOnlyList<string> Errors { get { lock (_errors) return [.. _errors]; } }
 
-    /// <summary>Errors with the Engine each one is about.</summary>
-    public IReadOnlyList<(string Message, int EngineId)> EngineErrors { get { lock (_errors) return [.. _errors]; } }
-
-    /// <summary>Analyses with the Interactive Analysis engine alone.</summary>
-    public Task AnalyseAsync(int requestId, params string[] moves) =>
-        Connection.InvokeAsync("Analyse", requestId, moves, (int?)null);
-
-    /// <summary>Analyses with the Interactive Analysis engine and a second one side by side.</summary>
-    public Task AnalyseSideBySideAsync(int requestId, int secondEngineId, params string[] moves) =>
-        Connection.InvokeAsync("Analyse", requestId, moves, (int?)secondEngineId);
+    public Task AnalyseAsync(int requestId, params string[] moves) => Connection.InvokeAsync("Analyse", requestId, moves);
 
     public Task StopAsync() => Connection.InvokeAsync("Stop");
 

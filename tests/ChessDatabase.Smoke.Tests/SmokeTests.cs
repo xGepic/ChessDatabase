@@ -375,33 +375,6 @@ public class SmokeTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Compare_two_engines_side_by_side_in_a_game()
-    {
-        var gameId = await _app.CreateGameAsync("e4");
-        const string afterE4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -";
-        await _app.UseFakeEngineAsync(new() { [afterE4] = (["depth 20 multipv 1 score cp -25 pv c7c5 g1f3"], "c7c5") });
-        await _app.AddFakeEngineAsync("Lc0", "Fake Lc0", new() { [afterE4] = (["depth 8 multipv 1 score cp -10 pv e7e5 g1f3"], "e7e5") });
-        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
-
-        await Page.GetByTestId("compare-engine").SelectOptionAsync(new SelectOptionValue { Label = "Lc0" });
-        await Page.GetByTestId("engine-toggle").ClickAsync();
-
-        var main = Page.GetByTestId("engine-panel");
-        var compared = Page.GetByTestId("compare-panel");
-        await Expect(main.GetByTestId("engine-title")).ToHaveTextAsync("Stockfish");
-        await Expect(compared.GetByTestId("engine-title")).ToHaveTextAsync("Lc0");
-        await Expect(main.GetByTestId("engine-eval")).ToHaveTextAsync("+0.25");
-        await Expect(compared.GetByTestId("engine-eval")).ToHaveTextAsync("+0.10");
-        await Expect(compared.GetByTestId("engine-line")).ToContainTextAsync("1...e5 2.Nf3");
-
-        // Switching off stops both; closing the comparison removes its panel.
-        await Page.GetByTestId("engine-toggle").ClickAsync();
-        await Expect(Page.GetByTestId("engine-line")).ToHaveCountAsync(0);
-        await compared.GetByTestId("compare-close").ClickAsync();
-        await Expect(compared).ToHaveCountAsync(0);
-    }
-
-    [Fact]
     public async Task Add_lc0_in_settings_and_use_it_for_game_analysis()
     {
         await Page.GotoAsync($"{_app.BaseUrl}/settings");

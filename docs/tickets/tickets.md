@@ -37,7 +37,6 @@ Every ticket is only done once README.md reflects it. If the ticket changes how 
 | 27 | [Copy diagram as image](#27-copy-diagram-as-image) | 04 | **Done** |
 | 28 | [PDF export of an annotated Game](#28-pdf-export-of-an-annotated-game) | 05, 27 | **Done** |
 | 29 | [Leela Chess Zero and engine selection](#29-leela-chess-zero-and-engine-selection) | 13 | **Done** |
-| 30 | [Side-by-side engines in Interactive Analysis](#30-side-by-side-engines-in-interactive-analysis) | 29 | **Done** |
 
 When a ticket is finished, set its Status here to **Done**, set the **Status:** line in the ticket itself to `done`, and tick its acceptance criteria.
 
@@ -515,17 +514,3 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 - [x] Engine Host tests with two fake engines verify that selection routes to the right process
 
 Note: Lc0 was not installed when this was built, so it was tested against the fake engine announcing Lc0's options (Threads, MultiPV, WeightsFile, Backend; no Hash). Check it once with the real Lc0 and a network file.
-
----
-
-## 30: Side-by-side engines in Interactive Analysis
-
-**What to build:** In Interactive Analysis, the Owner runs two configured engines at once (e.g. Stockfish and Lc0) and sees their lines and evaluations side by side, so it's easy to see where they disagree. CPU threads are split sensibly, since Lc0 mostly uses the GPU.
-
-**Blocked by:** 29 (Leela Chess Zero and engine selection).
-
-**Status:** done
-
-- [x] Two engines can be active at once, each with its own lines panel and evaluation
-- [x] Both follow the current position and both stop on switch-off or when leaving the Game
-- [x] Hub tests with two fake engines verify independent streaming and stop

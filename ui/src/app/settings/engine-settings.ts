@@ -194,7 +194,7 @@ export class EngineFormComponent {
             <select id="interactive-engine" data-testid="interactive-engine" (change)="select('interactiveEngineId', $event)">
               @for (e of engines(); track e.id) { <option [value]="e.id" [selected]="e.id === s.interactiveEngineId">{{ e.name }}</option> }
             </select>
-            <p class="hint">"Compare with…" in a Game's Engine card runs a second one beside it.</p>
+            <p class="hint">A change takes effect on the next move in an open Game.</p>
           </div>
 
           <label for="analysis-engine">Game Analysis</label>

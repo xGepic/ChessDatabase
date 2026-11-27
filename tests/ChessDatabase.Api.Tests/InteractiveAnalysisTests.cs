@@ -232,6 +232,47 @@ public class InteractiveAnalysisTests
     }
 
     [Fact]
+    public async Task Changing_the_running_engine_in_settings_restarts_it_with_the_new_settings()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        using var stockfish = new FakeEngine { Name = "Fake Stockfish" };
+        await client.UseAsync(stockfish, multiPv: 3);
+        await using var analysis = await factory.ConnectAnalysisAsync();
+        await analysis.AnalyseAsync(1);
+        await analysis.WaitForAsync(u => u.RequestId == 1);
+
+        await client.UseAsync(stockfish, multiPv: 1);
+        await analysis.AnalyseAsync(2, "e2e4");
+        await analysis.WaitForAsync(u => u.RequestId == 2);
+
+        Assert.Equal("setoption name MultiPV value 1", stockfish.Commands().Last(c => c.StartsWith("setoption name MultiPV", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task Choosing_another_interactive_analysis_engine_takes_effect_on_the_next_move()
+    {
+        using var factory = new CollectionFactory();
+        var client = factory.CreateClient();
+        using var stockfish = new FakeEngine { Name = "Fake Stockfish" };
+        using var lc0 = new FakeEngine { Name = "Fake Lc0" };
+        await client.UseAsync(stockfish);
+        var leela = await client.AddEngineAsync("Lc0", lc0);
+        var host = factory.Services.GetRequiredService<EngineHost>();
+        await using var analysis = await factory.ConnectAnalysisAsync();
+        await analysis.AnalyseAsync(1);
+        await analysis.WaitForAsync(u => u.RequestId == 1);
+
+        await client.SelectEnginesAsync(interactive: leela.Id, analysis: 1);
+        await analysis.AnalyseAsync(2, "e2e4");
+        await analysis.WaitForAsync(u => u.RequestId == 2);
+
+        Assert.Contains("position startpos moves e2e4", lc0.Commands());
+        Assert.Contains("quit", stockfish.Commands());
+        Assert.Single(host.RunningProcessIds);
+    }
+
+    [Fact]
     public async Task Without_a_configured_Engine_the_Owner_is_told_to_set_the_path()
     {
         using var factory = new CollectionFactory();

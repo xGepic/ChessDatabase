@@ -172,7 +172,6 @@ Delivery happens in five phases. Each phase leaves the app usable:
 103. As the Owner, I want to export a single Game or the filtered list to PGN, so that I can share specific Games.
 104. As the Owner, I want to add Leela Chess Zero as a second Engine running on my GPU, so that I get a different perspective from Stockfish.
 105. As the Owner, I want to choose which Engine to use for Interactive Analysis and Game Analysis, so that I can compare their verdicts.
-106. As the Owner, I want to run two Engines side by side in Interactive Analysis, so that I can see where they disagree.
 
 ## Implementation Decisions
 

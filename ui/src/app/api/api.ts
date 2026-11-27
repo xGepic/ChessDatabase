@@ -237,8 +237,6 @@ export interface AnalysisLine {
 
 export interface AnalysisUpdate {
   requestId: number;
-  /** The Engine definition the lines come from (two can run side by side). */
-  engineId: number;
   /** Empty when the position has no legal moves. */
   lines: AnalysisLine[];
 }

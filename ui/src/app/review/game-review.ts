@@ -104,11 +104,6 @@ export class GameReview {
     return this.flipped() ? (owner === 'white' ? 'black' : 'white') : owner;
   });
 
-  /** Engines to compare the Interactive Analysis one with: the others that have a program set. */
-  protected readonly compareOptions = computed(() =>
-    this.engine.engines().filter((e) => e.id !== this.engine.mainId() && e.path),
-  );
-
   /** The moves from the start to the board position, in UCI: what the Engine is given. */
   private readonly path = computed(() => [...pathTo(this.nodes(), this.currentId()), ...this.explore().map((s) => s.uci)]);
 

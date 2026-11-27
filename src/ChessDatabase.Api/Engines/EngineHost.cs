@@ -16,9 +16,7 @@ public sealed class EngineHost : IAsyncDisposable
     public IReadOnlyCollection<int> RunningProcessIds => [.. _running.Values];
 
     /// <summary>Starts the Engine and applies its options: Threads, Hash, MultiPV and the further ones.</summary>
-    /// <param name="threads">Overrides the definition's threads (two Engines side by side share the CPU).</param>
-    public async Task<UciEngine> StartAsync(
-        EngineRecord definition, int multiPv, int? threads = null, CancellationToken cancellationToken = default)
+    public async Task<UciEngine> StartAsync(EngineRecord definition, int multiPv, CancellationToken cancellationToken = default)
     {
         if (definition.StartProblem() is { } problem) throw new EngineException(problem);
 
@@ -26,7 +24,7 @@ public sealed class EngineHost : IAsyncDisposable
         try
         {
             await engine.ConfigureAsync(
-                [("Threads", threads ?? definition.Threads), ("Hash", definition.HashMb), ("MultiPV", multiPv),
+                [("Threads", definition.Threads), ("Hash", definition.HashMb), ("MultiPV", multiPv),
                  .. definition.Options.Select(o => (o.Name, (object)o.Value))],
                 cancellationToken);
             return engine;

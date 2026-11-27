@@ -100,7 +100,7 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
 
     private async Task<UciEngine> StartEngineAsync(EngineRecord definition, CancellationToken cancellationToken)
     {
-        var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken: cancellationToken);
+        var engine = await host.StartAsync(definition, multiPv: 1, cancellationToken);
         engine.Send("ucinewgame");
         return engine;
     }
