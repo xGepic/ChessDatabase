@@ -60,6 +60,8 @@ export class PlayerPicker {
   protected readonly error = signal('');
   private readonly suggestions = signal<Player[]>([]);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
+  /** A new Player is being created, so leaving the box must not create it a second time. */
+  private choosing = false;
 
   protected readonly options = computed(() => {
     const typed = this.text().trim();
@@ -110,8 +112,25 @@ export class PlayerPicker {
     const next = event.relatedTarget as Node | null;
     if (!next || !(event.currentTarget as HTMLElement).contains(next)) {
       this.open.set(false);
-      this.text.set(this.player()?.name ?? this.text());
+      this.commitTyped();
     }
+  }
+
+  /**
+   * Leaving the box takes the typed name, so a name that looks entered is entered: the existing
+   * Player with exactly that name, otherwise a new Player.
+   */
+  private commitTyped() {
+    const typed = this.text().trim();
+    if (!typed || this.choosing || sameName(typed, this.player()?.name ?? '')) return;
+    clearTimeout(this.searchTimer);
+    this.api.searchPlayers(typed).subscribe({
+      next: (players) => {
+        const existing = players.find((p) => sameName(p.name, typed));
+        this.choose(existing ? { label: existing.name, player: existing } : { label: typed, player: null });
+      },
+      error: (e) => this.error.set(problemMessage(e)),
+    });
   }
 
   protected choose(option: { label: string; player: Player | null }) {
@@ -121,12 +140,17 @@ export class PlayerPicker {
       this.playerChange.emit(option.player);
       return;
     }
+    this.choosing = true;
     this.api.createPlayer(option.label).subscribe({
       next: (player) => {
+        this.choosing = false;
         this.text.set(player.name);
         this.playerChange.emit(player);
       },
-      error: (e) => this.error.set(problemMessage(e)),
+      error: (e) => {
+        this.choosing = false;
+        this.error.set(problemMessage(e));
+      },
     });
   }
 }

@@ -814,6 +814,32 @@ owhere\stockfish.exe");
     }
 
     [Fact]
+    public async Task A_typed_Opponent_counts_without_picking_from_the_list()
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) };
+        (await http.PostAsJsonAsync("/api/players", new { name = "Burstein, Viktoria" })).EnsureSuccessStatusCode();
+
+        // An existing Player's name, typed in another letter case, picks that Player.
+        await Page.GotoAsync($"{_app.BaseUrl}/games/new");
+        await Page.GetByTestId("opponent-input").FillAsync("burstein, viktoria");
+        await Page.GetByTestId("result-0-1").ClickAsync();
+        await Expect(Page.GetByTestId("start-game")).ToBeEnabledAsync();
+        await Expect(Page.GetByTestId("opponent-input")).ToHaveValueAsync("Burstein, Viktoria");
+
+        // A new name creates the Player when the box is left.
+        await Page.GotoAsync($"{_app.BaseUrl}/games/new");
+        await Page.GetByTestId("opponent-input").FillAsync("Typed Opponent");
+        await Page.GetByTestId("opponent-input").PressAsync("Tab");
+        await Page.GetByTestId("result-1-0").ClickAsync();
+        await Page.GetByTestId("start-game").ClickAsync();
+        await Expect(Page.GetByTestId("board")).ToBeVisibleAsync();
+
+        var players = await http.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/players?search=");
+        Assert.Equal(1, players.EnumerateArray().Count(p => p.GetProperty("name").GetString() == "Burstein, Viktoria"));
+        Assert.Equal(1, players.EnumerateArray().Count(p => p.GetProperty("name").GetString() == "Typed Opponent"));
+    }
+
+    [Fact]
     public async Task Build_a_repertoire_from_a_game_and_on_the_board()
     {
         var gameId = await _app.CreateGameAsync("e4", "e5", "Nf3", "Nc6");
