@@ -276,7 +276,7 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 **Status:** done
 
 - [x] Per-move "copy to Game" adds the symbol and the best line as a Variation
-- [x] "Copy all mistakes and blunders" does the same for every qualifying move
+- [x] "Copy all mistakes and blunders" does the same for every qualifying move (later removed: too easy to flood a Game with Variations)
 - [x] An existing Owner symbol or comment on that move is never replaced
 - [x] Copying the same move twice doesn't create a duplicate Variation
 - [x] API tests cover single copy, bulk copy and the no-overwrite rule

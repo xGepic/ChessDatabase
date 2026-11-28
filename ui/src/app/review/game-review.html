@@ -97,7 +97,7 @@
         <div class="tab-body" role="tabpanel" id="side-panel-analysis" aria-labelledby="side-tab-analysis" [hidden]="sideTab() !== 'analysis'">
           <app-assessment-card [gameId]="g.id" [assessment]="assessment()" [queue]="queue.status()" [error]="analysisError()"
                                [ownerColour]="g.ownerColour" [currentId]="currentId()"
-                               [copyMessage]="copyMessage()" (copy)="onCopy($event)" (copyAll)="onCopyAll()"
+                               [copyMessage]="copyMessage()" (copy)="onCopy($event)"
                                (analyse)="onAnalyse($event)" (goToPly)="onGoToPly($event)" />
         </div>
         <div class="tab-body" role="tabpanel" id="side-panel-tree" aria-labelledby="side-tab-tree" [hidden]="sideTab() !== 'tree'">

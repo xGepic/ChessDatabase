@@ -514,7 +514,6 @@ button.move.current, button.move.current:hover { background: var(--select) !impo
 .copy-move { padding: 1px 8px; font-size: 12px; opacity: 0; transition: opacity .15s var(--ease-out); }
 .classified-row:hover .copy-move, .classified-row:focus-within .copy-move, .classified-row:has(.classified-move.current) .copy-move { opacity: 1; }
 @media (hover: none) { .copy-move { opacity: 1; } }
-.copy-all { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; flex-wrap: wrap; }
 .classified-move {
   display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left;
   background: transparent; border: none; border-radius: 0; padding: 6px 16px; color: var(--chalk);

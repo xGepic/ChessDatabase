@@ -176,20 +176,6 @@ export class GameReview {
     });
   }
 
-  protected onCopyAll() {
-    const game = this.game();
-    if (!game) return;
-    this.api.copyMistakesAndBlunders(game.id).subscribe({
-      next: ({ copied, game: updated }) => {
-        this.session.replace(updated);
-        this.copyMessage.set(
-          copied === 0 ? 'Already in the Game.' : copied === 1 ? 'Copied 1 move into the Game.' : `Copied ${copied} moves into the Game.`,
-        );
-      },
-      error: (e) => this.copyMessage.set(problemMessage(e)),
-    });
-  }
-
   /** From the evaluation graph or the list of classified moves. */
   protected onGoToPly(ply: number) {
     if (ply === 0) {

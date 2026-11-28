@@ -63,13 +63,7 @@ import { numberedLine } from './scores';
             <p>Instead of <span class="mono">{{ numberedLine(m.ply, [m.san]) }}</span>, the Engine plays <span class="mono">{{ numberedLine(m.ply, m.bestLineSan) }}</span></p>
           </div>
         }
-        @if (hasMistakes()) {
-          <div class="copy-all">
-            <button type="button" data-testid="copy-all" (click)="copyAll.emit()"
-                    title="Adds ? and ?? where you have no symbol yet, and the Engine lines as Variations">Copy all mistakes and blunders</button>
-            @if (copyMessage()) { <span class="status" role="status" data-testid="copy-status">{{ copyMessage() }}</span> }
-          </div>
-        } @else if (copyMessage()) {
+        @if (copyMessage()) {
           <p class="assessment-note" role="status" data-testid="copy-status">{{ copyMessage() }}</p>
         }
         @if (a.stale) {
@@ -109,7 +103,6 @@ export class AssessmentCard {
   readonly goToPly = output<number>();
   /** Copy one classified move (by ply) into the Game. */
   readonly copy = output<number>();
-  readonly copyAll = output<void>();
   /** The outcome of the last copy. */
   readonly copyMessage = input('');
 
@@ -131,9 +124,6 @@ export class AssessmentCard {
   });
   protected readonly waiting = computed(() => this.queue().queued.includes(this.gameId()));
   protected readonly classified = computed(() => (this.assessment()?.moves ?? []).filter((m) => m.classification));
-  protected readonly hasMistakes = computed(() =>
-    this.classified().some((m) => m.nodeId !== null && (m.classification === 'mistake' || m.classification === 'blunder')),
-  );
   protected readonly currentPly = computed(() => {
     const id = this.currentId();
     if (id === null) return 0;

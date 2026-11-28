@@ -775,10 +775,6 @@ export class Api {
   copyAssessedMove(gameId: number, ply: number): Observable<CopyResult> {
     return this.http.post<CopyResult>(`/api/games/${gameId}/assessment/moves/${ply}/copy`, null);
   }
-  /** Copies every mistake and blunder the same way. */
-  copyMistakesAndBlunders(gameId: number): Observable<CopyResult> {
-    return this.http.post<CopyResult>(`/api/games/${gameId}/assessment/copy`, null);
-  }
   /** 404 when the Game has no Engine Assessment. */
   getAssessment(gameId: number): Observable<EngineAssessment> {
     return this.http.get<EngineAssessment>(`/api/games/${gameId}/assessment`);

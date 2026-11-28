@@ -25,24 +25,6 @@ public class CopyAssessmentTests
     }
 
     [Fact]
-    public async Task Copy_all_takes_every_mistake_and_blunder_and_leaves_inaccuracies()
-    {
-        var (factory, client, game) = await AnalysedScholarsMateAsync();
-        using var _ = factory;
-
-        var response = await client.PostAsync($"/api/games/{game.Id}/assessment/copy", null);
-
-        response.EnsureSuccessStatusCode();
-        var result = (await response.Content.ReadFromJsonAsync<CopyResultDto>())!;
-        Assert.Equal(1, result.Copied);
-        var line = result.Game.MainLine();
-        Assert.Empty(line[2].Nags);                // 2.Qh5 is book
-        Assert.Equal([Blunder], line[5].Nags);     // 3...Nf6??
-        Assert.Equal(["Nf6", "g6"], line[4].Children.Select(id => result.Game.Node(id).San));
-        Assert.Equal(["g6", "Qf3", "Nf6"], result.Game.LineFrom(line[4].Children[1]).Select(n => n.San));
-    }
-
-    [Fact]
     public async Task An_Owner_symbol_or_comment_on_the_move_is_never_replaced()
     {
         var (factory, client, game) = await AnalysedScholarsMateAsync();
@@ -81,16 +63,14 @@ public class CopyAssessmentTests
         var once = await client.CopyMoveResultAsync(game.Id, ply: 6);
         var again = await client.CopyMoveResultAsync(game.Id, ply: 6);
         var twice = again.Game;
-        var all = await (await client.PostAsync($"/api/games/{game.Id}/assessment/copy", null)).Content.ReadFromJsonAsync<CopyResultDto>();
-        var thrice = await client.GetGameAsync(game.Id);
 
-        Assert.Equal((1, 0, 0), (once.Copied, again.Copied, all!.Copied)); // nothing left to copy the second time
+        Assert.Equal((1, 0), (once.Copied, again.Copied)); // nothing left to copy the second time
 
-        Assert.Equal(twice.Nodes.Count, thrice.Nodes.Count);
-        var nf6 = thrice.MainLine()[5];
+        Assert.Equal(once.Game.Nodes.Count, twice.Nodes.Count);
+        var nf6 = twice.MainLine()[5];
         Assert.Equal([Blunder], nf6.Nags);
-        Assert.Equal(2, thrice.Node(nf6.ParentId!.Value).Children.Count);
-        Assert.Equal(game.Nodes.Count + 3, thrice.Nodes.Count);
+        Assert.Equal(2, twice.Node(nf6.ParentId!.Value).Children.Count);
+        Assert.Equal(game.Nodes.Count + 3, twice.Nodes.Count);
     }
 
     [Fact]
@@ -116,7 +96,7 @@ public class CopyAssessmentTests
 
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync($"/api/games/{game.Id}/assessment/moves/1/copy", null)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"/api/games/{game.Id}/assessment/moves/99/copy", null)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"/api/games/{other.Id}/assessment/copy", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"/api/games/{other.Id}/assessment/moves/6/copy", null)).StatusCode);
     }
 
     [Fact]

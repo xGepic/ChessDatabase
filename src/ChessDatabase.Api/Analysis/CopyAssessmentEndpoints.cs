@@ -28,17 +28,6 @@ public static class CopyAssessmentEndpoints
             var copied = await CopyAsync(gameMoves, id, [move]);
             return Results.Ok(new CopyResultDto(copied, (await GameQueries.LoadGameDtoAsync(db, id))!));
         });
-
-        // "Copy all mistakes and blunders": inaccuracies stay out.
-        app.MapPost("/api/games/{id:int}/assessment/copy", async (int id, CollectionDbContext db, GameMoves gameMoves) =>
-        {
-            if (await AssessmentQueries.LoadAsync(db, id) is not { } assessment) return Results.NotFound();
-            var moves = assessment.Moves
-                .Where(m => m.NodeId is not null && m.Classification is MoveClassification.Mistake or MoveClassification.Blunder)
-                .ToList();
-            var copied = await CopyAsync(gameMoves, id, moves);
-            return Results.Ok(new CopyResultDto(copied, (await GameQueries.LoadGameDtoAsync(db, id))!));
-        });
     }
 
     /// <summary>Copies the moves and returns how many of them changed anything.</summary>
