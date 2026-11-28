@@ -4,12 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChessDatabase.Api.Settings;
 
-/// <param name="Aliases">Other spellings of the Owner's name, used to recognise the Owner on import.</param>
 /// <param name="HasLichessToken">Whether a Lichess API token is stored. The token itself is never sent back.</param>
-public sealed record SettingsDto(string OwnerName, IReadOnlyList<string> Aliases, bool HasLichessToken);
+public sealed record SettingsDto(string OwnerName, bool HasLichessToken);
 
-/// <summary>Leaving Aliases out keeps the stored ones.</summary>
-public sealed record SaveSettingsRequest(string? OwnerName, IReadOnlyList<string>? Aliases);
+public sealed record SaveSettingsRequest(string? OwnerName);
 
 /// <param name="Token">A Lichess personal API token; empty removes the stored one.</param>
 public sealed record LichessTokenRequest(string? Token);
@@ -23,7 +21,7 @@ public static class SettingsEndpoints
         settings.MapGet("/", async (CollectionDbContext db, LichessTokenStore lichessToken) =>
         {
             var record = await db.Settings.AsNoTracking().SingleOrDefaultAsync();
-            return new SettingsDto(record?.OwnerName ?? "", record?.Aliases ?? [], lichessToken.HasToken);
+            return new SettingsDto(record?.OwnerName ?? "", lichessToken.HasToken);
         });
 
         // The token has its own call, so saving it never touches (or depends on) the other settings.
@@ -37,10 +35,8 @@ public static class SettingsEndpoints
         {
             var record = await LoadAsync(db);
             record.OwnerName = (body.OwnerName ?? "").Trim();
-            if (body.Aliases is not null)
-                record.Aliases = [.. body.Aliases.Select(a => a.Trim()).Where(a => a.Length > 0).Distinct()];
             await db.SaveChangesAsync();
-            return new SettingsDto(record.OwnerName, record.Aliases, lichessToken.HasToken);
+            return new SettingsDto(record.OwnerName, lichessToken.HasToken);
         });
     }
 

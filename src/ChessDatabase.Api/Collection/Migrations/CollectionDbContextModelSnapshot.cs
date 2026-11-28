@@ -15,7 +15,7 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261127072922_EngineDefinitions";
+    public override string LastMigrationId => "20261128091857_RemoveAliases";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -385,10 +385,6 @@ partial class CollectionDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
                     .HasColumnType("INTEGER");
-
-                b.PrimitiveCollection<string>("Aliases")
-                    .IsRequired()
-                    .HasColumnType("TEXT");
 
                 b.Property<int?>("AnalysisEngineId")
                     .HasColumnType("INTEGER");

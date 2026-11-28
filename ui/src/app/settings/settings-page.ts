@@ -1,18 +1,15 @@
 import { Component, inject, signal } from '@angular/core';
 import { Api, BackupStatus, problemMessage } from '../api/api';
 import { EngineSettings } from './engine-settings';
-import { Icon } from '../shared/icon';
-import { sameName } from '../shared/names';
 
 @Component({
   selector: 'app-settings-page',
-  imports: [EngineSettings, Icon],
+  imports: [EngineSettings],
   templateUrl: './settings-page.html',
 })
 export class SettingsPage {
   private readonly api = inject(Api);
   protected readonly ownerName = signal('');
-  protected readonly aliases = signal<string[]>([]);
   protected readonly hasLichessToken = signal(false);
   protected readonly lichessMessage = signal('');
   protected readonly status = signal('');
@@ -24,7 +21,6 @@ export class SettingsPage {
   constructor() {
     this.api.getSettings().subscribe((s) => {
       this.ownerName.set(s.ownerName);
-      this.aliases.set(s.aliases);
       this.hasLichessToken.set(s.hasLichessToken);
     });
     this.api.backupStatus().subscribe((b) => this.backup.set(b));
@@ -70,19 +66,6 @@ export class SettingsPage {
     this.saveTimer = setTimeout(() => this.save(), 400);
   }
 
-  protected addAlias(input: HTMLInputElement) {
-    const alias = input.value.trim();
-    input.value = '';
-    if (!alias || this.aliases().some((a) => sameName(a, alias))) return;
-    this.aliases.update((list) => [...list, alias]);
-    this.save();
-  }
-
-  protected removeAlias(alias: string) {
-    this.aliases.update((list) => list.filter((a) => a !== alias));
-    this.save();
-  }
-
   /** Saves (or with an empty value removes) the Lichess token. It has its own call, so the other settings are untouched. */
   protected saveLichessToken(input: HTMLInputElement, remove = false) {
     const token = remove ? '' : input.value.trim();
@@ -99,11 +82,8 @@ export class SettingsPage {
 
   protected save() {
     clearTimeout(this.saveTimer);
-    this.api.saveSettings({ ownerName: this.ownerName(), aliases: this.aliases() }).subscribe({
-      next: (s) => {
-        this.aliases.set(s.aliases);
-        this.status.set('Saved');
-      },
+    this.api.saveSettings({ ownerName: this.ownerName() }).subscribe({
+      next: () => this.status.set('Saved'),
       error: (e) => this.status.set(problemMessage(e)),
     });
   }

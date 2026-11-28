@@ -166,15 +166,12 @@ export interface GameDetails {
 
 export interface Settings {
   ownerName: string;
-  /** Other spellings of the Owner's name, used to recognise the Owner on import. */
-  aliases: string[];
   /** Whether a Lichess API token is stored (the token itself is never sent back). */
   hasLichessToken: boolean;
 }
 
 export interface SaveSettings {
   ownerName: string;
-  aliases: string[];
 }
 
 export interface BackupStatus {

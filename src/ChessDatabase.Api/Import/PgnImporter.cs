@@ -36,7 +36,7 @@ public abstract record ResolveOutcome
 
 /// <summary>
 /// Brings PGN entries into the Collection. Moves are replayed through Chess Rules (German piece
-/// letters become English) and the Owner is recognised by name or Alias. An entry goes to the
+/// letters become English) and the Owner is recognised by name. An entry goes to the
 /// review list instead when it has no result, no side matches the Owner, or its Opponent only
 /// resembles an existing Player; it is reported as a duplicate when the Game is already there.
 /// </summary>
@@ -116,8 +116,7 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
     {
         _players = await db.Players.ToListAsync();
         var settings = await db.Settings.AsNoTracking().SingleOrDefaultAsync();
-        _ownerNames = [.. new[] { settings?.OwnerName ?? "" }.Concat(settings?.Aliases ?? [])
-            .Where(n => !string.IsNullOrWhiteSpace(n)).Select(PersonName.Parse)];
+        _ownerNames = string.IsNullOrWhiteSpace(settings?.OwnerName) ? [] : [PersonName.Parse(settings.OwnerName)];
     }
 
     private async Task<ImportedGameDto> ImportOneAsync(PgnReadResult read, bool allowDuplicates)
@@ -157,8 +156,8 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         {
             if (!whiteMissing || !blackMissing)
                 problems.Add(IsOwner(white) && IsOwner(black)
-                    ? "Both sides match your name or an Alias."
-                    : "Neither side matches your name or an Alias.");
+                    ? "Both sides match your name."
+                    : "Neither side matches your name.");
         }
         else if (OpponentName(entry, ownerColour.Value) is { Length: > 0 } opponentName)
         {
@@ -243,7 +242,7 @@ public sealed class PgnImporter(CollectionDbContext db, GameMoves gameMoves)
         return SimilarPlayer(name) is { } player ? new Players.PlayerDto(player.Id, player.Name) : null;
     }
 
-    /// <summary>The Owner's colour when exactly one side matches the Owner's name or an Alias.</summary>
+    /// <summary>The Owner's colour when exactly one side matches the Owner's name.</summary>
     private OwnerColour? OwnerColourOf(PgnEntry entry)
     {
         bool white = IsOwner(entry.Tag("White")), black = IsOwner(entry.Tag("Black"));

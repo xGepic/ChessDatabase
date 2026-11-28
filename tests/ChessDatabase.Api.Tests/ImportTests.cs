@@ -8,7 +8,7 @@ public class ImportTests
 {
     /// <summary>
     /// One file with every case the import has to handle: Variations, comments and symbols,
-    /// German piece letters, the Owner's name in different forms and through an Alias, missing and
+    /// German piece letters, the Owner's name in different forms, missing and
     /// zero Elos, a malformed Game, a Game without the Owner and a Game without a result.
     /// </summary>
     private const string FixturePgn = """
@@ -39,7 +39,7 @@ public class ImportTests
         [Site "?"]
         [Date "2025.??.??"]
         [Round "-"]
-        [White "Maxi"]
+        [White "Max Mustermann"]
         [Black "Schuster, Paul"]
         [Result "1/2-1/2"]
         [WhiteElo "1790"]
@@ -81,7 +81,7 @@ public class ImportTests
     private static async Task<HttpClient> CollectionWithOwnerAsync(CollectionFactory factory)
     {
         var client = factory.CreateClient();
-        (await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max Mustermann", aliases = new[] { "Maxi" } }))
+        (await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max Mustermann" }))
             .EnsureSuccessStatusCode();
         return client;
     }
@@ -229,18 +229,6 @@ public class ImportTests
     }
 
     [Fact]
-    public async Task Aliases_are_managed_in_settings()
-    {
-        using var factory = new CollectionFactory();
-        var client = factory.CreateClient();
-
-        await client.PutAsJsonAsync("/api/settings", new { ownerName = "Max Mustermann", aliases = new[] { " Maxi ", "M. M.", "" } });
-
-        var settings = await client.GetFromJsonAsync<SettingsWithAliasesDto>("/api/settings");
-        Assert.Equal(["Maxi", "M. M."], settings!.Aliases);
-    }
-
-    [Fact]
     public async Task Text_that_is_not_pgn_fails_without_importing_anything()
     {
         using var factory = new CollectionFactory();
@@ -294,5 +282,3 @@ public class ImportTests
 public sealed record ImportSummaryDto(int Imported, int NeedsReview, int Duplicates, int Failed, List<ImportedGameDto> Games);
 
 public sealed record ImportedGameDto(int Index, string Status, string? Reason, string? White, string? Black, int? GameId, string? Pgn);
-
-public sealed record SettingsWithAliasesDto(string OwnerName, List<string> Aliases);

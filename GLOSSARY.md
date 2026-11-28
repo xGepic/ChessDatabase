@@ -14,9 +14,6 @@ The single person who uses the app. The Owner is always one of the two players i
 **Player**
 A person the Owner has played against, kept as one record so that the same opponent across many Games is recognised as the same person. Basis for head-to-head history and player dossiers.
 
-**Alias**
-An alternative spelling of the Owner's name, such as "Mustermann M.". Used to recognise which side was the Owner when Games are imported.
-
 **Opponent**
 The Player on the other side of the board from the Owner in a given Game.
 

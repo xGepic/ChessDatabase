@@ -158,7 +158,7 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 - [x] PGN file import and PGN paste both work for multi-game input
 - [x] Nested Variations, comments and NAGs survive import and render in the notation
 - [x] German-letter moves import correctly and display in English
-- [x] Aliases can be managed in Settings; matching is case-insensitive and tolerant of "Surname, Firstname" vs "Surname F." forms of the Owner's own name
+- [x] Aliases can be managed in Settings; matching is case-insensitive and tolerant of "Surname, Firstname" vs "Surname F." forms of the Owner's own name (Aliases later removed: the usual name forms are enough)
 - [x] Missing or 0 Elo tags import as unrated
 - [x] A malformed Game is reported in the summary with a reason; the other Games still import
 - [x] Games with no Owner match or no result are held back from the Collection and counted as "needs review"
