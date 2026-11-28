@@ -25,14 +25,14 @@ public sealed record OwnerStatisticsDto(
 public static class OwnerStatisticsEndpoints
 {
     /// <summary>
-    /// Maps GET /api/statistics/owner?from=&amp;to=&amp;timeControl=. The filters mean exactly what they
-    /// mean in the game list (partial dates overlap, time controls compare as names).
+    /// Maps GET /api/statistics/owner?from=&amp;to=. The date range means exactly what it means in the
+    /// game list (partial dates overlap).
     /// </summary>
     public static void MapOwnerStatisticsEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/statistics/owner", async (string? from, string? to, string? timeControl, CollectionDbContext db) =>
+        app.MapGet("/api/statistics/owner", async (string? from, string? to, CollectionDbContext db) =>
         {
-            var query = new GameListQuery(From: GameValues.OptionalText(from), To: GameValues.OptionalText(to), TimeControl: GameValues.OptionalText(timeControl));
+            var query = new GameListQuery(From: GameValues.OptionalText(from), To: GameValues.OptionalText(to));
             if (query.Validate() is { Count: > 0 } errors) return Results.ValidationProblem(errors);
             var games = (await query.RunAsync(db)).Select(r => r.Game).ToList();
 

@@ -404,7 +404,7 @@ When a ticket is finished, set its Status here to **Done**, set the **Status:** 
 - [x] Scores by colour and by opening are correct for a seeded Collection
 - [x] The rating history and average opponent rating leave out unrated values
 - [x] The Accuracy-over-time chart includes only analysed Games
-- [x] Date range and time control filters apply to every figure
+- [x] Date range and time control filters apply to every figure (time control filter later removed: the Owner plays one time control)
 - [x] API tests cover the figures, including the unrated exclusions
 
 ---

@@ -88,23 +88,6 @@ public class OwnerStatisticsTests
     }
 
     [Fact]
-    public async Task The_time_control_filter_applies_to_every_figure()
-    {
-        using var factory = new CollectionFactory();
-        var (client, ids, engine) = await SeedAsync(factory);
-        using var _e = engine;
-
-        var stats = await client.OwnerStatisticsAsync("timeControl=15%2B10");
-
-        Assert.Equal(new ScoreDto(1, 0, 0, 1, 0), stats.Score);
-        Assert.Equal(new ScoreDto(0, 0, 0, 0, 0), stats.Black);
-        Assert.Equal([ids[2]], stats.RatingHistory.Select(p => p.GameId));
-        Assert.Null(stats.AverageOpponentElo); // its only Opponent was unrated
-        Assert.Empty(stats.Accuracy);
-        Assert.Equal(["C20"], stats.Openings.Select(o => o.Eco));
-    }
-
-    [Fact]
     public async Task The_date_range_applies_to_every_figure()
     {
         using var factory = new CollectionFactory();

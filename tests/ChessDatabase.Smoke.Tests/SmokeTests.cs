@@ -781,20 +781,20 @@ owhere\stockfish.exe");
     }
 
     [Fact]
-    public async Task See_my_statistics_and_limit_them_by_time_control()
+    public async Task See_my_statistics_and_limit_them_by_date()
     {
-        var rapid = await _app.CreateGameAsync("e4", "e5");
-        var classical = await _app.CreateGameAsync("d4", "d5");
+        var earlier = await _app.CreateGameAsync("e4", "e5");
+        var later = await _app.CreateGameAsync("d4", "d5");
         using (var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) })
         {
-            foreach (var (id, date, mine, theirs, tc, result) in new[]
-                     { (rapid, "2024-01-10", 1990, 1850, "15+10", "0-1"), (classical, "2024-05-02", 2010, 1910, "90+30", "1-0") })
+            foreach (var (id, date, mine, theirs, result) in new[]
+                     { (earlier, "2024-01-10", 1990, 1850, "0-1"), (later, "2024-05-02", 2010, 1910, "1-0") })
             {
                 var game = await http.GetFromJsonAsync<System.Text.Json.JsonElement>($"/api/games/{id}");
                 (await http.PutAsJsonAsync($"/api/games/{id}", new
                 {
                     ownerColour = "white", opponentId = game.GetProperty("opponent").GetProperty("id").GetInt32(),
-                    result, date, whiteElo = mine, blackElo = theirs, timeControl = tc,
+                    result, date, whiteElo = mine, blackElo = theirs,
                 })).EnsureSuccessStatusCode();
             }
         }
@@ -805,9 +805,9 @@ owhere\stockfish.exe");
         await Expect(Page.GetByTestId("stats-opponent-elo")).ToHaveTextAsync("1880");
         await Expect(Page.Locator("app-time-chart").First.Locator("circle")).ToHaveCountAsync(2);
 
-        await Page.GetByTestId("stats-time-control").FillAsync("90+30");
-        await Page.GetByTestId("stats-time-control").PressAsync("Enter");
-        await Page.GetByTestId("stats-time-control").PressAsync("Tab");
+        await Page.GetByTestId("stats-from").FillAsync("2024-03");
+        await Page.GetByTestId("stats-from").PressAsync("Enter");
+        await Page.GetByTestId("stats-from").PressAsync("Tab");
         await Expect(Page.GetByTestId("stats-Overall")).ToHaveTextAsync("100%");
         await Expect(Page.GetByTestId("stats-opponent-elo")).ToHaveTextAsync("1910");
         await Expect(Page.GetByTestId("stats-accuracy")).ToContainTextAsync("No analysed Games");

@@ -6,11 +6,11 @@ import { Api, OwnerStatistics, problemMessage } from '../api/api';
 import { TimeChart, accuracyPoints, ratingPoints } from '../shared/time-chart';
 import { ScoreBar } from './score-bar';
 
-const FILTERS = ['from', 'to', 'timeControl'] as const;
+const FILTERS = ['from', 'to'] as const;
 
 /**
  * My statistics, the Owner's own figures: score overall, by colour and by opening, rating history, average
- * opponent rating and Accuracy over time. One date range and time control apply to every figure.
+ * opponent rating and Accuracy over time. One date range applies to every figure.
  */
 @Component({
   selector: 'app-owner-statistics-page',
@@ -24,8 +24,6 @@ const FILTERS = ['from', 'to', 'timeControl'] as const;
                               (change)="setFilter('from', $any($event.target).value)" /></label>
           <label>To <input class="date" data-testid="stats-to" placeholder="YYYY[-MM[-DD]]" [value]="value('to')"
                             (change)="setFilter('to', $any($event.target).value)" /></label>
-          <label>Time control <input class="short" data-testid="stats-time-control" placeholder="90+30" [value]="value('timeControl')"
-                                      (change)="setFilter('timeControl', $any($event.target).value)" /></label>
           @if (filtered()) { <button type="button" class="link-button" (click)="clear()">Clear filters</button> }
         </form>
         @if (error()) { <p class="field-error filter-error" role="alert">{{ error() }}</p> }

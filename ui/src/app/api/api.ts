@@ -615,7 +615,7 @@ export class Api {
   playerOverview(search = ''): Observable<PlayerRow[]> {
     return this.http.get<PlayerRow[]>('/api/players/overview', { params: { search } });
   }
-  /** filters: from, to (partial dates) and timeControl, as in the game list. */
+  /** filters: from, to (partial dates), as in the game list. */
   ownerStatistics(filters: Record<string, string>): Observable<OwnerStatistics> {
     return this.http.get<OwnerStatistics>('/api/statistics/owner', { params: filters });
   }
