@@ -52,7 +52,7 @@
             ],
             "styles": [
               "node_modules/@lichess-org/chessground/assets/chessground.base.css",
-              "src/chessground.staunty.css",
+              "src/chessground.maestro.css",
               "src/styles.css"
             ]
           },
