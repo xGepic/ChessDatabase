@@ -551,11 +551,11 @@ owhere\stockfish.exe");
 
         await Expect(Page.GetByTestId("analysis-strip")).ToBeVisibleAsync();
         await Expect(Page.GetByTestId("strip-game")).ToContainTextAsync("of 2");
-        await Expect(Page.Locator(".analysed-mark")).ToHaveCountAsync(2, new() { Timeout = 15_000 });
-        await Expect(Page.GetByTestId("analysis-strip")).ToBeHiddenAsync();
+        await Expect(Page.GetByTestId("analysis-strip")).ToBeHiddenAsync(new() { Timeout = 15_000 });
 
-        await Page.GetByTestId("filter-analysed").SelectOptionAsync("false");
-        await Expect(Page.GetByTestId("game-row")).ToHaveCountAsync(1);
+        using var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) };
+        var games = await http.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/games");
+        Assert.Equal(2, games.EnumerateArray().Count(g => g.GetProperty("analysed").GetBoolean()));
     }
 
     [Fact]

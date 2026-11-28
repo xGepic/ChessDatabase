@@ -55,13 +55,6 @@
         <option value="black" [selected]="value('ownerColour') === 'black'">Black</option>
       </select>
     </label>
-    <label>Analysed
-      <select data-testid="filter-analysed" (change)="setFilter('analysed', $any($event.target).value)">
-        <option value="" [selected]="!value('analysed')">Any</option>
-        <option value="true" [selected]="value('analysed') === 'true'">Yes</option>
-        <option value="false" [selected]="value('analysed') === 'false'">No</option>
-      </select>
-    </label>
     @if (filtered()) {
       <button type="button" class="link-button" data-testid="clear-filters" (click)="clearFilters()">Clear filters</button>
     }
@@ -89,7 +82,6 @@
                 <button type="button" class="sort-button" [attr.data-testid]="'sort-' + c.key" (click)="sortBy(c)">{{ c.label }}{{ sortMark(c) }}</button>
               </th>
             }
-            <th class="analysed-col" title="Has an Engine Assessment">Analysed</th>
           </tr>
         </thead>
         <tbody>
@@ -110,11 +102,6 @@
               <td><span class="colour-dot" [class.black]="game.ownerColour === 'black'"></span>{{ game.ownerColour === 'white' ? 'White' : 'Black' }}</td>
               <td data-testid="game-event">{{ game.event?.name ?? '' }}</td>
               <td class="mono" data-testid="game-eco" [title]="game.openingName ?? ''">{{ game.eco ?? '' }}</td>
-              <td class="analysed-col" data-testid="game-analysed">
-                @if (game.analysed) { <span class="analysed-mark" title="Analysed" aria-label="Analysed">●</span> }
-                @else if (queue.status().running?.gameId === game.id) { <span class="hint">running</span> }
-                @else if (queue.status().queued.includes(game.id)) { <span class="hint">queued</span> }
-              </td>
             </tr>
           }
         </tbody>

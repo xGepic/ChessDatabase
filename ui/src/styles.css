@@ -211,8 +211,6 @@ th.num, .tree-table th.num { font-family: var(--ui-font); }
 .game-table .pick { width: 40px; padding-right: 0; }
 .game-table .pick input { cursor: pointer; }
 .game-table tr.picked { background: rgba(111, 181, 146, .1); }
-.game-table .analysed-col { text-align: center; width: 84px; }
-.analysed-mark { color: var(--engine); }
 .sort-button {
   border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
 }
@@ -292,8 +290,9 @@ app-root:has(.analysis-strip) .review { --strip: 44px; }
 }
 .board-with-bar .board-frame { padding: 0 0 26px 26px; background: none; border-radius: 0; }
 .board { width: 100%; aspect-ratio: 1; position: relative; }
+/* the Lichess wood4 board (public/board, AGPLv3+, see the README there) */
 .board cg-board {
-  background: repeating-conic-gradient(var(--square-dark) 0% 25%, var(--square-light) 0% 50%) 0 0 / 25% 25%;
+  background: url('/board/wood4.jpg') 0 0 / cover;
   border-radius: 2px;
 }
 .board cg-board square.last-move { background-color: rgba(214, 178, 74, .5); }
@@ -341,6 +340,8 @@ app-eval-bar .eval-bar { flex: 1; }
 .material-pieces.cg-wrap { position: static; display: flex; width: auto; height: auto; }
 .material-pieces piece { position: static; display: block; width: 24px; height: 24px; margin-right: -6px; transform: none; }
 .material-side.black-side .material-pieces piece { margin-right: 0; margin-left: -6px; }
+/* dark pieces get a cream halo so they read on the dark panel */
+.material-pieces piece.black { filter: drop-shadow(0 0 1px rgba(239, 230, 216, .9)) drop-shadow(0 0 2px rgba(239, 230, 216, .35)); }
 .material-points { font-size: 13px; font-weight: 700; color: var(--chalk); margin-left: 4px; }
 .material-side.black-side .material-points { margin-left: 0; margin-right: 4px; }
 .material-even { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; }

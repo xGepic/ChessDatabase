@@ -1,12 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap, tap } from 'rxjs';
 import { Api, GameSummary, eloLabel, problemMessage, resultLabel } from '../api/api';
 import { AnalysisQueueService } from '../engine/analysis-queue';
 
 /** The filter fields, as they appear in the URL and in the API's query parameters. */
-const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour', 'analysed'];
+const FILTER_KEYS = ['opponentId', 'eventId', 'from', 'to', 'result', 'ownerColour'];
 /** What the URL may carry: the filters and the sort. Anything else (an old bookmark's ECO or Tag filter) is ignored. */
 const URL_KEYS = [...FILTER_KEYS, 'sort', 'direction'];
 
@@ -18,7 +18,7 @@ interface Column {
 
 /**
  * The game list: sort by any column (click its header, again to reverse) and filter by
- * Opponent, Event, dates, result, colour and whether it is analysed. Filters and sort live
+ * Opponent, Event, dates, result and colour. Filters and sort live
  * in the URL, so returning from a Game keeps them, and "Export to PGN" exports exactly what is shown.
  */
 @Component({
@@ -29,14 +29,13 @@ interface Column {
 export class GameList {
   constructor() {
     this.queue.watch();
-    this.queue.finished.pipe(takeUntilDestroyed()).subscribe(() => this.reload.next());
   }
 
   private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly queue = inject(AnalysisQueueService);
-  /** Reloads the list, e.g. when a Game Analysis finishes and the "analysed" mark changes. */
+  /** Reloads the list, e.g. after deleting Games. */
   private readonly reload = new Subject<void>();
 
   /** Games ticked for Game Analysis or deletion. */

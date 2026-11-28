@@ -48,10 +48,6 @@ const NOTES_DEBOUNCE_MS = 500;
         <app-suggest-input inputId="details-event" testId="event-input" placeholder="Tournament or league"
                            [value]="game().event?.name ?? null" [search]="searchEvents" (commit)="save({ event: $event })" />
 
-        <label for="details-site">Site</label>
-        <app-suggest-input inputId="details-site" testId="site-input" placeholder="Where"
-                           [value]="game().site" [search]="searchSites" (commit)="save({ site: $event })" />
-
         <label for="details-date">Date</label>
         <input id="details-date" data-testid="date-input" [value]="game().date ?? ''" placeholder="YYYY, YYYY-MM or YYYY-MM-DD"
                (change)="save({ date: $any($event.target).value.trim() || null })" />
@@ -59,10 +55,6 @@ const NOTES_DEBOUNCE_MS = 500;
         <label for="details-round">Round</label>
         <input id="details-round" class="short" data-testid="round-input" [value]="game().round ?? ''"
                (change)="save({ round: $any($event.target).value })" />
-
-        <label for="details-time-control">Time control</label>
-        <input id="details-time-control" class="short" data-testid="time-control-input" placeholder="e.g. 90+30"
-               [value]="game().timeControl ?? ''" (change)="save({ timeControl: $any($event.target).value })" />
 
         <label for="details-tags">Tags</label>
         <div class="tags">
@@ -113,7 +105,6 @@ export class GameDetailsCard implements OnDestroy {
   protected readonly confirmingDelete = signal(false);
 
   protected readonly searchEvents = (term: string) => this.api.searchEvents(term).pipe(map((l) => l.map((e) => e.name)));
-  protected readonly searchSites = (term: string) => this.api.searchSites(term);
   protected readonly searchTags = (term: string) => this.api.searchTags(term).pipe(map((l) => l.map((t) => t.name)));
 
   private readonly savedWhiteElo = computed(() => this.game().whiteElo);
