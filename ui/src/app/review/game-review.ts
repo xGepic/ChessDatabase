@@ -20,7 +20,7 @@ import { ExportTools } from './export-tools';
 import { AnnotationCard } from './annotation-card';
 import { GameDetailsCard } from './game-details';
 import { Scoresheet } from './scoresheet';
-import { MoveRail } from './move-rail';
+import { MaterialBalance } from './material-balance';
 import { Icon } from '../shared/icon';
 import { TreeAction, TreePort, TreeSession } from './tree-session';
 
@@ -29,7 +29,7 @@ type SideTab = 'analysis' | 'tree' | 'details';
 /** The Game view: board, scoresheet and details. */
 @Component({
   selector: 'app-game-review',
-  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, ExportTools, MoveRail, Icon, RouterLink],
+  imports: [Board, Scoresheet, AnnotationCard, GameDetailsCard, EnginePanel, EvalBar, AssessmentCard, OpeningTreePanel, TablebasePanel, ExportTools, MaterialBalance, Icon, RouterLink],
   providers: [EngineSession],
   templateUrl: './game-review.html',
   host: { '(document:keydown)': 'onKey($event)', '(document:click)': 'closeExportMenu($event)' },

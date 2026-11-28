@@ -452,13 +452,14 @@ owhere\stockfish.exe");
 
         await Expect(Page.GetByTestId("accuracy-white")).ToHaveTextAsync("88.0%");
         await Expect(Page.GetByTestId("accuracy-black")).ToHaveTextAsync("20.0%");
-        await Expect(Page.GetByTestId("classified-move")).ToHaveCountAsync(2);
-        await Expect(Page.GetByTestId("classified-move").Nth(1)).ToContainTextAsync("3...Nf6");
-        await Expect(Page.GetByTestId("classified-move").Nth(1)).ToContainTextAsync("blunder");
-        await Expect(Page.GetByTestId("best-move").Nth(1)).ToHaveTextAsync("3...g6");
+        // 2.Qh5 loses ground too, but it is book (Parham Attack), so only 3...Nf6 is classified.
+        await Expect(Page.GetByTestId("classified-move")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("classified-move")).ToContainTextAsync("3...Nf6");
+        await Expect(Page.GetByTestId("classified-move")).ToContainTextAsync("blunder");
+        await Expect(Page.GetByTestId("best-move")).ToHaveTextAsync("3...g6");
         await Expect(Page.Locator("[data-testid=move][data-mark=blunder]")).ToHaveTextAsync("Nf6");
 
-        await Page.GetByTestId("classified-move").Nth(1).ClickAsync();
+        await Page.GetByTestId("classified-move").ClickAsync();
         await Expect(Page.Locator("button.move.current")).ToHaveTextAsync("Nf6");
         await Expect(Page.GetByTestId("best-line")).ToContainTextAsync("3...g6 4.Qf3 Nf6");
 
@@ -814,6 +815,20 @@ owhere\stockfish.exe");
     }
 
     [Fact]
+    public async Task The_material_balance_under_the_board_follows_the_move_shown()
+    {
+        var gameId = await _app.CreateGameAsync("e4", "d5", "exd5", "Qxd5");
+
+        await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}?ply=3"); // after 2.exd5: White a pawn up
+        await Expect(Page.GetByTestId("material-white").Locator("piece.white.pawn")).ToHaveCountAsync(1);
+        await Expect(Page.GetByTestId("material-white")).ToContainTextAsync("+1");
+        await Expect(Page.GetByTestId("material-black").Locator("piece")).ToHaveCountAsync(0);
+
+        await Page.Keyboard.PressAsync("ArrowRight"); // 2...Qxd5 wins it back
+        await Expect(Page.GetByTestId("material-even")).ToBeVisibleAsync();
+    }
+
+    [Fact]
     public async Task A_typed_Opponent_counts_without_picking_from_the_list()
     {
         using var http = new HttpClient { BaseAddress = new Uri(_app.BaseUrl) };
@@ -934,18 +949,16 @@ owhere\stockfish.exe");
     [Fact]
     public async Task Mistake_Training_asks_for_a_better_move_than_my_blunder_and_opens_the_Game_there()
     {
-        // The Owner (White) blunders with 2.Qh5: the Engine wanted 2.Nf3.
-        string[] moves = ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"];
+        // The Owner (White) blunders with 2.Ba6 (out of book): the Engine wanted 2.Nf3.
+        string[] moves = ["e4", "e5", "Ba6", "bxa6"];
         var gameId = await _app.CreateGameAsync(moves);
         await _app.UseFakeEngineAsync(new()
         {
             [Key()] = (["depth 20 multipv 1 score cp 30 pv e2e4 e7e5"], "e2e4"),
             [Key(moves[..1])] = (["depth 20 multipv 1 score cp -30 pv e7e5 g1f3"], "e7e5"),
             [Key(moves[..2])] = (["depth 20 multipv 1 score cp 30 pv g1f3 b8c6"], "g1f3"),
-            [Key(moves[..3])] = (["depth 20 multipv 1 score cp 400 pv g8f6 h5e5"], "g8f6"),
-            [Key(moves[..4])] = (["depth 20 multipv 1 score cp 40 pv f1c4 g7g6"], "f1c4"),
-            [Key(moves[..5])] = (["depth 20 multipv 1 score cp 30 pv g7g6 h5f3"], "g7g6"),
-            [Key(moves[..6])] = (["depth 20 multipv 1 score mate 1 pv h5f7"], "h5f7"),
+            [Key(moves[..3])] = (["depth 20 multipv 1 score cp 400 pv b7a6 d2d4"], "b7a6"),
+            [Key(moves[..4])] = (["depth 20 multipv 1 score cp -400 pv d2d4 e5d4"], "d2d4"),
         });
         await Page.GotoAsync($"{_app.BaseUrl}/games/{gameId}");
         await Page.GetByTestId("analyse-game").ClickAsync();
@@ -954,7 +967,7 @@ owhere\stockfish.exe");
         await Page.GetByTestId("tab-training").ClickAsync();
         await Page.GetByTestId("training-mistakes").ClickAsync();
         await Expect(Page.GetByTestId("mistakes-due")).ToHaveTextAsync("1 due today");
-        await Expect(Page.GetByTestId("mistake-prompt")).ToContainTextAsync("You played 2.Qh5??");
+        await Expect(Page.GetByTestId("mistake-prompt")).ToContainTextAsync("You played 2.Ba6??");
 
         await Page.PlayAsync("g1f3");
         await Expect(Page.GetByTestId("mistake-verdict")).ToContainTextAsync("Right");

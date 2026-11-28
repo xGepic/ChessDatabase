@@ -6,7 +6,7 @@ namespace ChessDatabase.Api.Tests;
 /// <summary>Copying Engine Assessment into the Game (ADR 0003: the only route from one to the other).</summary>
 public class CopyAssessmentTests
 {
-    private const int Inaccuracy = 6, Mistake = 2, Blunder = 4, Good = 1;
+    private const int Blunder = 4, Good = 1;
 
     [Fact]
     public async Task Copying_one_move_adds_its_symbol_and_the_Engine_line_as_a_Variation()
@@ -14,13 +14,13 @@ public class CopyAssessmentTests
         var (factory, client, game) = await AnalysedScholarsMateAsync();
         using var _ = factory;
 
-        var updated = await client.CopyMoveAsync(game.Id, ply: 3); // 2.Qh5, an inaccuracy
+        var updated = await client.CopyMoveAsync(game.Id, ply: 6); // 3...Nf6??, a blunder
 
-        var qh5 = updated.MainLine()[2];
-        Assert.Equal([Inaccuracy], qh5.Nags);
-        var afterE5 = updated.Node(qh5.ParentId!.Value);
-        Assert.Equal(["Qh5", "Nf3"], afterE5.Children.Select(id => updated.Node(id).San));
-        Assert.Equal(["Nf3", "Nc6"], updated.LineFrom(afterE5.Children[1]).Select(n => n.San));
+        var nf6 = updated.MainLine()[5];
+        Assert.Equal([Blunder], nf6.Nags);
+        var afterBc4 = updated.Node(nf6.ParentId!.Value);
+        Assert.Equal(["Nf6", "g6"], afterBc4.Children.Select(id => updated.Node(id).San));
+        Assert.Equal(["g6", "Qf3", "Nf6"], updated.LineFrom(afterBc4.Children[1]).Select(n => n.San));
         Assert.Equal(game.MainLine().Select(n => n.Uci), updated.MainLine().Select(n => n.Uci));
     }
 
@@ -36,7 +36,7 @@ public class CopyAssessmentTests
         var result = (await response.Content.ReadFromJsonAsync<CopyResultDto>())!;
         Assert.Equal(1, result.Copied);
         var line = result.Game.MainLine();
-        Assert.Empty(line[2].Nags);                // 2.Qh5 was only an inaccuracy
+        Assert.Empty(line[2].Nags);                // 2.Qh5 is book
         Assert.Equal([Blunder], line[5].Nags);     // 3...Nf6??
         Assert.Equal(["Nf6", "g6"], line[4].Children.Select(id => result.Game.Node(id).San));
         Assert.Equal(["g6", "Qf3", "Nf6"], result.Game.LineFrom(line[4].Children[1]).Select(n => n.San));

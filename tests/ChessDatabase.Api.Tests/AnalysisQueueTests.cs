@@ -91,7 +91,7 @@ public class AnalysisQueueTests
 
         Assert.Equal("Fake Engine 4.0", after.EngineName);
         Assert.Equal((8, 512, 0.5), (after.Threads, after.HashMb, after.SecondsPerMove));
-        Assert.Contains("go movetime 500", second.Commands());
+        Assert.Contains("go depth 20 movetime 500", second.Commands());
     }
 
     [Fact]

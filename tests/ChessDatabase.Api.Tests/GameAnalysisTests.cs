@@ -12,7 +12,7 @@ public class GameAnalysisTests
 
     /// <summary>
     /// 1.e4 e5 2.Qh5 Nc6 3.Bc4 Nf6?? 4.Qxf7#. Scores as the Engine gives them: from the side to move.
-    /// 2.Qh5 drops White from +0.30 to −0.40 (an inaccuracy); 3...Nf6 walks into mate (a blunder).
+    /// 2.Qh5 drops White from +0.30 to −0.40, but it is book (Parham Attack), so not classified; 3...Nf6 walks into mate (a blunder).
     /// </summary>
     public static FakeEngine ScholarsMateEngine(int lineDelayMs = 0) => new FakeEngine { Name = "Fake Engine 3.1", LineDelayMs = lineDelayMs }
         .Answer([], "e2e4", "depth 20 multipv 1 score cp 30 pv e2e4 e7e5")
@@ -45,7 +45,7 @@ public class GameAnalysisTests
         Assert.Equal([52.8, 52.8, 52.8, 46.3, 46.3, 47.2, 97.5, 97.5], assessment.Positions.Select(p => p.WhitePercent));
 
         Assert.Equal(["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"], assessment.Moves.Select(m => m.San));
-        Assert.Equal([null, null, "inaccuracy", null, null, "blunder", null], assessment.Moves.Select(m => m.Classification));
+        Assert.Equal([null, null, null, null, null, "blunder", null], assessment.Moves.Select(m => m.Classification));
         Assert.Equal([0, 0, 12.9, 0, 0, 100.6, 0], assessment.Moves.Select(m => m.Loss));
         var qh5 = assessment.Moves[2];
         Assert.Equal("Nf3", qh5.BestSan);
@@ -56,7 +56,7 @@ public class GameAnalysisTests
         Assert.Equal(game.MainLine().Select(n => (int?)n.Id), assessment.Moves.Select(m => m.NodeId));
 
         // The rules settle the final position (checkmate); the Engine is asked about the other seven.
-        Assert.Equal(7, engine.Commands().Count(c => c == "go movetime 2000"));
+        Assert.Equal(7, engine.Commands().Count(c => c == "go depth 20 movetime 2000"));
         Assert.Contains("setoption name MultiPV value 1", engine.Commands());
     }
 

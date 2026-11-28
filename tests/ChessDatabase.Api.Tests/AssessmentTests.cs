@@ -82,6 +82,25 @@ public class AssessmentTests
     }
 
     [Fact]
+    public void Book_moves_are_never_classified()
+    {
+        // 1...f6 loses as much as in the test above, but here it counts as book.
+        var evals = new[] { Eval(30, "e2e4"), Eval(30, "e7e5", blackToMove: true), Eval(190, "d2d4") };
+
+        Assert.Null(Assessor.Assess(evals, ["e2e4", "f7f6"], bookMoves: 2).Moves[1].Classification);
+        Assert.Equal(MoveClassification.Mistake, Assessor.Assess(evals, ["e2e4", "f7f6"], bookMoves: 1).Moves[1].Classification);
+    }
+
+    [Fact]
+    public void Book_moves_count_until_the_first_move_out_of_the_opening_dataset()
+    {
+        // Alekhine Defence 1.e4 Nf6 2.e5 Nd5 3.d4 is a named line; 3...Nc6 is not.
+        var line = ChessDatabase.Rules.Line.FromUci(["e2e4", "g8f6", "e4e5", "f6d5", "d2d4", "b8c6", "g1f3"]);
+
+        Assert.Equal(5, ChessDatabase.Api.Openings.OpeningClassifier.BookMoves(line.Positions.Skip(1)));
+    }
+
+    [Fact]
     public void Accuracy_follows_the_Lichess_method()
     {
         Assert.Equal(64.58, Accuracy.OfMove(60, 50), 2);

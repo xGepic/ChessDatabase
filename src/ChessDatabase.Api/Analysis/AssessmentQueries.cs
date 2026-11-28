@@ -2,6 +2,7 @@ using ChessDatabase.Api.Assessment;
 using ChessDatabase.Api.Collection;
 using ChessDatabase.Api.Engines;
 using ChessDatabase.Api.Games;
+using ChessDatabase.Api.Openings;
 using ChessDatabase.Rules;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,9 +26,11 @@ public sealed record EngineAssessmentDto(
 /// <summary>Reading a Game's Engine Assessment the way the API shows it.</summary>
 public static class AssessmentQueries
 {
-    /// <summary>Classifications and Accuracy worked out from the stored evaluations.</summary>
+    /// <summary>Classifications and Accuracy worked out from the stored evaluations. Book moves are never classified.</summary>
     public static GameAssessment Assess(EngineAssessmentRecord record) =>
-        Assessor.Assess([.. record.Positions.Select(p => new PositionEvaluation(new EngineScore(p.Cp, p.Mate), p.Line))], record.MainLine);
+        Assessor.Assess(
+            [.. record.Positions.Select(p => new PositionEvaluation(new EngineScore(p.Cp, p.Mate), p.Line))], record.MainLine,
+            OpeningClassifier.BookMoves(Line.FromUci(record.MainLine).Positions.Skip(1)));
 
     /// <summary>
     /// The Game's Engine Assessment, worked out from the stored evaluations and matched to the

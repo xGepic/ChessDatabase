@@ -8,11 +8,18 @@ using Microsoft.EntityFrameworkCore;
 namespace ChessDatabase.Api.Analysis;
 
 /// <summary>
-/// Game Analysis of one Game: the Engine evaluates every position of the main line for a fixed
-/// time (MultiPV 1) and the result replaces the Game's Engine Assessment. The move tree is only read.
+/// Game Analysis of one Game: the Engine evaluates every position of the main line to a fixed depth,
+/// capped by the time per position (MultiPV 1), and the result replaces the Game's Engine Assessment.
+/// The move tree is only read.
 /// </summary>
 public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, TimeProvider clock)
 {
+    /// <summary>
+    /// The Engine stops each position at this depth, or at the time per position if that comes first.
+    /// About the strength Lichess uses for its own Game analysis; with many threads it takes well under a second.
+    /// </summary>
+    public const int AnalysisDepth = 20;
+
     /// <summary>Engine lines are stored up to this many moves.</summary>
     private const int StoredLineLength = 12;
 
@@ -111,7 +118,8 @@ public sealed class GameAnalyzer(EngineHost host, IServiceScopeFactory scopes, T
             return position.IsCheck ? new StoredEvaluation(null, 0, []) : new StoredEvaluation(0, null, []);
 
         engine.SetPosition(moves);
-        engine.Send($"go movetime {msPerMove}");
+        // Depth bounds the work in clear positions; the time per position is the cap for hard ones.
+        engine.Send($"go depth {AnalysisDepth} movetime {msPerMove}");
 
         UciInfo? best = null;
         string? bestmove = null;

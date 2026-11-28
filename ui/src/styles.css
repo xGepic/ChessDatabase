@@ -331,30 +331,19 @@ app-eval-bar .eval-bar { flex: 1; }
 .eval-bar.flipped .eval-label { bottom: auto; top: 4px; }
 .eval-bar.flipped .eval-label:not(.white-side) { top: auto; bottom: 4px; }
 
-/* the move rail: one round marker per main-line move, like magnets along the board's edge.
-   Every marker is sized from the Game's length, so a long Game scales them all together. */
-app-move-rail { display: block; container-type: inline-size; }
-.move-rail {
-  --gap: clamp(1px, calc((100cqi - 24px) / var(--moves, 40) * .2), 4px);
-  --m: clamp(4px, calc((100cqi - 24px) / var(--moves, 40) - var(--gap)), 13px);
-  display: flex; align-items: center; justify-content: flex-start; gap: var(--gap); min-height: 41px;
-  padding: 8px 12px; background: var(--panel); border-radius: var(--radius); overflow: hidden;
+/* material under the board: White's extra pieces on the left, Black's on the right, the lead in points beside them */
+.material {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 41px;
+  padding: 6px 12px; background: var(--panel); border-radius: var(--radius);
 }
-.move-rail button {
-  flex: none; width: var(--m); height: var(--m); padding: 0;
-  border: none; border-radius: 50%; background: #6e5644;
-  transition: transform .15s var(--ease-out), background-color .15s var(--ease-out);
-}
-.move-rail button.black { background: #574334; }
-.move-rail .rail-start { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule-strong); }
-/* classified moves grow by severity but give the width back with a negative margin, so the line keeps its length */
-.move-rail button[data-mark] { --grow: 1; width: calc(var(--m) * var(--grow)); height: calc(var(--m) * var(--grow)); margin: 0 calc(var(--m) * (1 - var(--grow)) / 2); position: relative; z-index: 1; }
-.move-rail button[data-mark="inaccuracy"] { background: var(--mark-inaccuracy); }
-.move-rail button[data-mark="mistake"] { background: var(--mark-mistake); --grow: 1.2; }
-.move-rail button[data-mark="blunder"] { background: var(--mark-blunder); --grow: 1.4; }
-.move-rail button:not([data-mark]):hover:not(:disabled) { background: var(--chalk-3); }
-.move-rail button:hover:not(:disabled) { transform: scale(1.25); border: none; }
-.move-rail button.current { outline: 2px solid var(--chalk); outline-offset: 2px; z-index: 2; }
+.material-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.material-side.black-side { flex-direction: row-reverse; }
+.material-pieces.cg-wrap { position: static; display: flex; width: auto; height: auto; }
+.material-pieces piece { position: static; display: block; width: 24px; height: 24px; margin-right: -6px; transform: none; }
+.material-side.black-side .material-pieces piece { margin-right: 0; margin-left: -6px; }
+.material-points { font-size: 13px; font-weight: 700; color: var(--chalk); margin-left: 4px; }
+.material-side.black-side .material-points { margin-left: 0; margin-right: 4px; }
+.material-even { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; }
 
 .board-tools { display: flex; align-items: center; gap: 4px; }
 .tool-group { display: flex; gap: 0; }

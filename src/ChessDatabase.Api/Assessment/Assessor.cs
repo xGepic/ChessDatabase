@@ -52,9 +52,10 @@ public static class Assessor
     /// <summary>
     /// Assesses the moves of a Game from the initial position: <paramref name="positions"/> has one
     /// evaluation per position, the starting one included, so one more than <paramref name="played"/>.
-    /// A move that is the Engine's own choice is never classified.
+    /// A move that is the Engine's own choice is never classified, and neither are the first
+    /// <paramref name="bookMoves"/> moves: known opening theory, where a short think's verdict is noise.
     /// </summary>
-    public static GameAssessment Assess(IReadOnlyList<PositionEvaluation> positions, IReadOnlyList<string> played)
+    public static GameAssessment Assess(IReadOnlyList<PositionEvaluation> positions, IReadOnlyList<string> played, int bookMoves = 0)
     {
         if (positions.Count != played.Count + 1)
             throw new ArgumentException("There must be one evaluation per position, including the starting one.");
@@ -71,7 +72,8 @@ public static class Assessor
             var after = whiteMoved ? whitePercents[i + 1] : 100 - whitePercents[i + 1];
             var loss = Loss(before, after);
             var playedBest = positions[i].Line is [var best, ..] && best == played[i];
-            moves.Add(new AssessedMove(i + 1, loss, playedBest ? null : Classify(loss), Accuracy.OfMove(before, after)));
+            var classified = !playedBest && i >= bookMoves;
+            moves.Add(new AssessedMove(i + 1, loss, classified ? Classify(loss) : null, Accuracy.OfMove(before, after)));
         }
 
         var (white, black) = Accuracy.OfGame(whitePercents);

@@ -6,7 +6,7 @@
         <app-board [fen]="fen()" [orientation]="orientation()" [lastMove]="lastMove()" [arrow]="engineArrow()"
                    (move)="onBoardMove($event)" />
       </div>
-      <app-move-rail [game]="g" [marks]="marks()" [currentId]="currentId()" (select)="goTo($event)" />
+      <app-material-balance [fen]="fen()" />
 
       <div class="board-tools" role="toolbar" aria-label="Board">
         <div class="tool-group">
