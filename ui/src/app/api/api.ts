@@ -522,11 +522,25 @@ export interface ImportSummary {
   games: ImportedGame[];
 }
 
-export const RESULTS: { value: GameResult; label: string }[] = [
-  { value: '1-0', label: '1-0' },
-  { value: '0-1', label: '0-1' },
-  { value: '1/2-1/2', label: '½-½' },
+/** A result as the Owner sees it. Stored Games keep the board result (1-0, 0-1, ½-½). */
+export type Outcome = 'won' | 'lost' | 'draw';
+
+export const OUTCOMES: { value: Outcome; label: string }[] = [
+  { value: 'won', label: 'I won' },
+  { value: 'lost', label: 'I lost' },
+  { value: 'draw', label: 'Remis' },
 ];
+
+export function resultFor(outcome: Outcome, ownerColour: OwnerColour): GameResult {
+  if (outcome === 'draw') return '1/2-1/2';
+  return (outcome === 'won') === (ownerColour === 'white') ? '1-0' : '0-1';
+}
+
+export function outcomeOf(result: GameResult | null, ownerColour: OwnerColour | null): Outcome | null {
+  if (!result || !ownerColour) return null;
+  if (result === '1/2-1/2') return 'draw';
+  return (result === '1-0') === (ownerColour === 'white') ? 'won' : 'lost';
+}
 
 export function resultLabel(result: GameResult): string {
   return result === '1/2-1/2' ? '½-½' : result;

@@ -32,9 +32,10 @@
 
           <span class="label">Result</span>
           <div class="segmented" role="radiogroup" aria-label="Result">
-            @for (r of results; track r.value) {
-              <button type="button" role="radio" [attr.data-testid]="'review-result-' + r.label" [attr.aria-checked]="draft(item).result === r.value"
-                      [class.on]="draft(item).result === r.value" (click)="update(item, { result: r.value })">{{ r.label }}</button>
+            @for (o of outcomes; track o.value) {
+              <button type="button" role="radio" [attr.data-testid]="'review-result-' + o.value" [attr.aria-checked]="outcome(item) === o.value"
+                      [class.on]="outcome(item) === o.value" [disabled]="!draft(item).ownerColour"
+                      [title]="draft(item).ownerColour ? '' : 'Choose your side first'" (click)="setOutcome(item, o.value)">{{ o.label }}</button>
             }
           </div>
 

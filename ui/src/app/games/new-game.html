@@ -22,9 +22,9 @@
 
     <span class="label">Result</span>
     <div class="segmented" role="radiogroup" aria-label="Result">
-      @for (r of results; track r.value) {
-        <button type="button" role="radio" [attr.data-testid]="'result-' + r.label" [attr.aria-checked]="result() === r.value"
-                [class.on]="result() === r.value" (click)="result.set(r.value)">{{ r.label }}</button>
+      @for (o of outcomes; track o.value) {
+        <button type="button" role="radio" [attr.data-testid]="'result-' + o.value" [attr.aria-checked]="outcome() === o.value"
+                [class.on]="outcome() === o.value" (click)="outcome.set(o.value)">{{ o.label }}</button>
       }
     </div>
 
@@ -42,7 +42,7 @@
     <span></span>
     <div class="form-actions">
       <button type="submit" class="primary" data-testid="start-game" [disabled]="!ready()">Start entering moves</button>
-      @if (!result()) { <span class="hint">A Game needs a result.</span> }
+      @if (!outcome()) { <span class="hint">A Game needs a result.</span> }
       @if (error()) { <span class="field-error">{{ error() }}</span> }
     </div>
   </form>

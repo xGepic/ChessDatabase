@@ -39,7 +39,7 @@ public class SmokeTests : IAsyncLifetime
         await Page.GetByTestId("opponent-create").ClickAsync();
         await Page.GetByTestId("owner-elo").FillAsync("1650");
         await Page.GetByTestId("opponent-elo").FillAsync("0");
-        await Page.GetByTestId("result-1-0").ClickAsync();
+        await Page.GetByTestId("result-won").ClickAsync();
         await Page.GetByTestId("new-event").FillAsync("Smoke Open");
         await Page.GetByTestId("new-round").FillAsync("3");
         await Page.GetByTestId("start-game").ClickAsync();
@@ -822,7 +822,7 @@ owhere\stockfish.exe");
         // An existing Player's name, typed in another letter case, picks that Player.
         await Page.GotoAsync($"{_app.BaseUrl}/games/new");
         await Page.GetByTestId("opponent-input").FillAsync("burstein, viktoria");
-        await Page.GetByTestId("result-0-1").ClickAsync();
+        await Page.GetByTestId("result-lost").ClickAsync();
         await Expect(Page.GetByTestId("start-game")).ToBeEnabledAsync();
         await Expect(Page.GetByTestId("opponent-input")).ToHaveValueAsync("Burstein, Viktoria");
 
@@ -830,9 +830,13 @@ owhere\stockfish.exe");
         await Page.GotoAsync($"{_app.BaseUrl}/games/new");
         await Page.GetByTestId("opponent-input").FillAsync("Typed Opponent");
         await Page.GetByTestId("opponent-input").PressAsync("Tab");
-        await Page.GetByTestId("result-1-0").ClickAsync();
+        await Page.GetByTestId("result-won").ClickAsync();
+        await Page.GetByTestId("colour-black").ClickAsync(); // "I won" follows the colour
         await Page.GetByTestId("start-game").ClickAsync();
         await Expect(Page.GetByTestId("board")).ToBeVisibleAsync();
+        var gameId = Page.Url.Split('/').Last().Split('?')[0];
+        var saved = await http.GetFromJsonAsync<System.Text.Json.JsonElement>($"/api/games/{gameId}");
+        Assert.Equal("0-1", saved.GetProperty("result").GetString());
 
         var players = await http.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/players?search=");
         Assert.Equal(1, players.EnumerateArray().Count(p => p.GetProperty("name").GetString() == "Burstein, Viktoria"));

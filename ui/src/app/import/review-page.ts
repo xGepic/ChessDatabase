@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PlayerPicker } from '../shared/player-picker';
-import { Api, GameResult, OwnerColour, Player, RESULTS, ReviewItem, problemMessage } from '../api/api';
+import { Api, GameResult, OUTCOMES, Outcome, OwnerColour, Player, ReviewItem, outcomeOf, problemMessage, resultFor } from '../api/api';
 
 /** What the Owner has chosen so far for one held-back import. */
 interface Draft {
@@ -26,7 +26,7 @@ interface Draft {
 export class ReviewPage {
   private readonly api = inject(Api);
 
-  protected readonly results = RESULTS;
+  protected readonly outcomes = OUTCOMES;
   protected readonly items = signal<ReviewItem[] | null>(null);
   protected readonly drafts = signal<Record<number, Draft>>({});
   protected readonly errors = signal<Record<number, string>>({});
@@ -54,6 +54,17 @@ export class ReviewPage {
 
   protected update(item: ReviewItem, change: Partial<Draft>) {
     this.drafts.update((d) => ({ ...d, [item.id]: { ...d[item.id], ...change } }));
+  }
+
+  /** The result as the Owner sees it. A result from the PGN stays the board result when the side changes. */
+  protected outcome(item: ReviewItem): Outcome | null {
+    const d = this.draft(item);
+    return outcomeOf(d.result, d.ownerColour);
+  }
+
+  protected setOutcome(item: ReviewItem, outcome: Outcome) {
+    const colour = this.draft(item).ownerColour;
+    if (colour) this.update(item, { result: resultFor(outcome, colour) });
   }
 
   /** The existing Player the Opponent may be, once the Owner's side is known. */

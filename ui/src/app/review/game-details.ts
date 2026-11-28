@@ -1,6 +1,6 @@
 import { Component, OnDestroy, computed, effect, inject, input, output, signal } from '@angular/core';
 import { map } from 'rxjs';
-import { Api, Game, GameDetails, GameResult, OwnerColour, Player, RESULTS, problemMessage } from '../api/api';
+import { Api, Game, GameDetails, OUTCOMES, Outcome, OwnerColour, Player, outcomeOf, problemMessage, resultFor } from '../api/api';
 import { PlayerPicker } from '../shared/player-picker';
 import { Icon } from '../shared/icon';
 import { SuggestInput } from '../shared/suggest-input';
@@ -38,9 +38,9 @@ const NOTES_DEBOUNCE_MS = 500;
 
         <span class="label">Result</span>
         <div class="segmented" role="radiogroup" aria-label="Result">
-          @for (r of results; track r.value) {
-            <button type="button" role="radio" [attr.aria-checked]="game().result === r.value"
-                    [class.on]="game().result === r.value" (click)="setResult(r.value)">{{ r.label }}</button>
+          @for (o of outcomes; track o.value) {
+            <button type="button" role="radio" [attr.data-testid]="'details-result-' + o.value" [attr.aria-checked]="outcome() === o.value"
+                    [class.on]="outcome() === o.value" (click)="setOutcome(o.value)">{{ o.label }}</button>
           }
         </div>
 
@@ -104,7 +104,8 @@ export class GameDetailsCard implements OnDestroy {
   readonly saved = output<Game>();
   readonly deleted = output<void>();
 
-  protected readonly results = RESULTS;
+  protected readonly outcomes = OUTCOMES;
+  protected readonly outcome = computed(() => outcomeOf(this.game().result, this.game().ownerColour));
   protected readonly whiteElo = signal('');
   protected readonly blackElo = signal('');
   protected readonly notes = signal('');
@@ -154,15 +155,19 @@ export class GameDetailsCard implements OnDestroy {
     this.flushNotes();
   }
 
+  /** Switching colour keeps "I won" / "I lost", so the board result flips with it. */
   protected setColour(ownerColour: OwnerColour) {
-    if (ownerColour !== this.game().ownerColour) this.save({ ownerColour });
+    const outcome = this.outcome();
+    if (ownerColour === this.game().ownerColour || !outcome) return;
+    this.save({ ownerColour, result: resultFor(outcome, ownerColour) });
   }
 
   protected setOpponent(player: Player) {
     if (player.id !== this.game().opponent.id) this.save({ opponentId: player.id });
   }
 
-  protected setResult(result: GameResult) {
+  protected setOutcome(outcome: Outcome) {
+    const result = resultFor(outcome, this.game().ownerColour);
     if (result !== this.game().result) this.save({ result });
   }
 
